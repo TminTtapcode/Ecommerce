@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -12,6 +14,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class Product {
 
     @Id
@@ -46,5 +49,14 @@ public class Product {
     private Brand brand;
 
     @Column(nullable = false, length = 20)
-    private String status; // ACTIVE, HIDDEN, OUT_OF_STOCK, BANNED
+    @Builder.Default // Nếu đang dùng @Builder của Lombok, phải có annotation này
+    private String status = "ACTIVE";
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductVariant> variants = new ArrayList<>();
+
+    // Trong class Product
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
+
 }

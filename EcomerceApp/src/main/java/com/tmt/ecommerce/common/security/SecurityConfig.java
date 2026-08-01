@@ -42,13 +42,17 @@ public class SecurityConfig {
                         // 2. Cho phép các endpoint Auth (Login, Register)
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
+                        // 👉 THÊM DÒNG NÀY: Mở tạm thời API Product để test CRUD
+                        .requestMatchers("/api/v1/products/**").permitAll()
+                        .requestMatchers("/api/v1/media/**").permitAll() // 👉 THÊM DÒNG NÀY ĐỂ CHO PHÉP UPLOAD ẢNH
                         // 3. Các request còn lại đều phải xác thực
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-               .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) ;
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) ;
 
         return http.build();
     }
+
 }
