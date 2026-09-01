@@ -20,4 +20,6 @@ public class UserRegisterRequest {
 
     @NotBlank(message = "Họ tên không được để trống")
     private String fullName;
+
+    private String phone;
 }

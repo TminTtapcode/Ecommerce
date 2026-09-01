@@ -31,14 +31,15 @@ public class AuthenticationService {
             throw new IllegalArgumentException("Email này đã được sử dụng.");
         }
 
-        // Tìm role mặc định là ROLE_USER (Trong DB cần có sẵn bản ghi này)
+        // Tìm role mặc định là ROLE_USER (nếu chưa có trong DB thì tự động tạo mới)
         Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new IllegalStateException("Hệ thống chưa khởi tạo ROLE_USER"));
+                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
 
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
+                .phone(request.getPhone())
                 .status("ACTIVE")
                 .build();
 

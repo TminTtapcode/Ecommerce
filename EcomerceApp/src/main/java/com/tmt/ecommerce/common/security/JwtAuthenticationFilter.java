@@ -44,7 +44,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 3. Tách lấy phần Token (bỏ đi chữ "Bearer " - 7 ký tự)
         jwt = authHeader.substring(7);
 
-        // 4. Gọi JwtService để giải mã lấy Email
+        try {
+            // 4. Gọi JwtService để giải mã lấy Email
         userEmail = jwtService.extractUsername(jwt);
 
         // 5. Nếu có Email và User này chưa được xác thực trong Context hiện tại
@@ -71,6 +72,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 8. Cất thẻ vào SecurityContextHolder (Két sắt của Spring Security)
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
+        }
+        } catch (Exception e) {
+            // Token is invalid or expired, just proceed without authentication
+            // SecurityContext will remain null, leading to 401/403 for protected routes
         }
 
         // 9. Cho phép Request đi tiếp tới Trạm gác tiếp theo hoặc tới Controller

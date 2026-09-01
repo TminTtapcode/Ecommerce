@@ -38,6 +38,12 @@ public class JwtService {
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
 
+        if (userDetails instanceof com.tmt.ecommerce.identity.entity.User) {
+            com.tmt.ecommerce.identity.entity.User user = (com.tmt.ecommerce.identity.entity.User) userDetails;
+            extraClaims.put("userId", user.getId());
+            extraClaims.put("fullName", user.getFullName());
+        }
+
         // Lấy danh sách quyền (Roles) và chuyển thành List<String>
         var roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
