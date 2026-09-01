@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import com.tmt.ecommerce.product.enums.ProductStatus;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -43,6 +44,7 @@ public class ProductVariant {
     @Column(name = "attributes", columnDefinition = "json")
     private Map<String, Object> attributes;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status; // ACTIVE, OUT_OF_STOCK, HIDDEN
+    private ProductStatus status = ProductStatus.ACTIVE; // ACTIVE, OUT_OF_STOCK, HIDDEN
 }

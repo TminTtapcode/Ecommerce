@@ -6,6 +6,7 @@ import lombok.Builder;
 public record ProductImageResponse(
         Long id,
         String imageUrl,
+        String publicId,
         boolean isThumbnail,
         int sortOrder
 ) {}

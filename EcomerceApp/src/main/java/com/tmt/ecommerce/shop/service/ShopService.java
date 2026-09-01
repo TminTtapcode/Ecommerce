@@ -1,12 +1,10 @@
 package com.tmt.ecommerce.shop.service;
 
 import com.tmt.ecommerce.common.service.EmailService;
-import com.tmt.ecommerce.identity.entity.Role;
-import com.tmt.ecommerce.identity.entity.User;
-import com.tmt.ecommerce.identity.repository.RoleRepository;
-import com.tmt.ecommerce.identity.repository.UserRepository;
+import com.tmt.ecommerce.identity.api.IdentityInternalService;
 import com.tmt.ecommerce.shop.dto.ShopCreateRequest;
 import com.tmt.ecommerce.shop.entity.Shop;
+import com.tmt.ecommerce.shop.enums.ShopStatus;
 import com.tmt.ecommerce.shop.repository.ShopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,8 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShopService {
 
     private final ShopRepository shopRepository;
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final IdentityInternalService identityInternalService;
     private final EmailService emailService; // <-- Inject EmailService vào đây
 
     @Transactional
@@ -39,7 +36,7 @@ public class ShopService {
                 .userId(userId)
                 .name(request.getName())
                 .description(request.getDescription())
-                .status("PENDING") // Luôn ở trạng thái chờ Admin duyệt
+                .status(ShopStatus.PENDING) // Luôn ở trạng thái chờ Admin duyệt
                 .build();
 
         shopRepository.save(newShop);
@@ -55,25 +52,18 @@ public class ShopService {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy gian hàng."));
 
-        if (!"PENDING".equals(shop.getStatus())) {
+        if (shop.getStatus() != ShopStatus.PENDING) {
             throw new IllegalStateException("Gian hàng này không ở trạng thái chờ duyệt.");
         }
 
         // Cập nhật trạng thái
-        shop.setStatus("ACTIVE");
+        shop.setStatus(ShopStatus.ACTIVE);
         shopRepository.save(shop);
 
-        // Cấp quyền cho User
-        User user = userRepository.findById(shop.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chủ sở hữu."));
-
-        Role shopRole = roleRepository.findByName("ROLE_SHOP_OWNER")
-                .orElseThrow(() -> new IllegalStateException("Chưa cấu hình quyền ROLE_SHOP_OWNER."));
-
-        user.getRoles().add(shopRole);
-        userRepository.save(user);
+        // Cấp quyền cho User thông qua Internal API
+        String userEmail = identityInternalService.assignShopOwnerRole(shop.getUserId());
 
         // Gửi email thông báo chạy ngầm
-        emailService.sendShopApprovalNotification(user.getEmail(), shop.getName());
+        emailService.sendShopApprovalNotification(userEmail, shop.getName());
     }
 }

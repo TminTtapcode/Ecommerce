@@ -2,6 +2,7 @@ package com.tmt.ecommerce.product.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.tmt.ecommerce.product.enums.ProductStatus;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -48,9 +49,10 @@ public class Product {
     @JoinColumn(name = "brand_id")
     private Brand brand;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default // Nếu đang dùng @Builder của Lombok, phải có annotation này
-    private String status = "ACTIVE";
+    private ProductStatus status = ProductStatus.ACTIVE;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductVariant> variants = new ArrayList<>();

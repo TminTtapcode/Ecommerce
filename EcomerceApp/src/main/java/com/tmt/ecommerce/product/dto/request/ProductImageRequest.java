@@ -9,6 +9,8 @@ public record ProductImageRequest(
         @NotBlank(message = "URL hình ảnh không được để trống")
         String imageUrl,
 
+        String publicId,
+
         @NotNull(message = "Phải xác định ảnh này có phải là ảnh đại diện hay không")
         Boolean isThumbnail,
 

@@ -2,6 +2,7 @@ package com.tmt.ecommerce.shop.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.tmt.ecommerce.shop.enums.ShopStatus;
 
 @Entity
 @Table(name = "shops")
@@ -26,6 +27,7 @@ public class Shop {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status; // PENDING, ACTIVE, BANNED
+    private ShopStatus status; // PENDING, ACTIVE, BANNED
 }

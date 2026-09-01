@@ -4,6 +4,7 @@ import com.tmt.ecommerce.common.dto.ApiResponse;
 import com.tmt.ecommerce.product.dto.request.ProductCreateRequest;
 import com.tmt.ecommerce.product.dto.request.ProductUpdateRequest;
 import com.tmt.ecommerce.product.dto.response.ProductResponse;
+import com.tmt.ecommerce.common.annotation.CurrentUserId;
 import com.tmt.ecommerce.product.entity.Product;
 import com.tmt.ecommerce.product.service.ProductService;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,9 +23,12 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(@Valid @RequestBody ProductCreateRequest request) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'SHOP_OWNER')")
+    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
+            @CurrentUserId Long userId,
+            @Valid @RequestBody ProductCreateRequest request) {
         // @Valid sẽ tự động kiểm tra dữ liệu trước khi chạy vào hàm này
-        ProductResponse createdProduct = productService.createProduct(request);
+        ProductResponse createdProduct = productService.createProduct(userId, request);
 
         // Bọc dữ liệu vào ApiResponse để đồng bộ với các API khác
         ApiResponse<ProductResponse> response = ApiResponse.<ProductResponse>builder()
@@ -66,8 +71,11 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id);
+    @PreAuthorize("hasAnyRole('ADMIN', 'SHOP_OWNER')")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(
+            @CurrentUserId Long userId,
+            @PathVariable Long id) {
+        productService.deleteProduct(userId, id);
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .status(HttpStatus.OK.value())
@@ -77,11 +85,13 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SHOP_OWNER')")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
+            @CurrentUserId Long userId,
             @PathVariable Long id,
             @Valid @RequestBody ProductUpdateRequest request) {
 
-        ProductResponse updatedProduct = productService.updateProduct(id, request);
+        ProductResponse updatedProduct = productService.updateProduct(userId, id, request);
 
         ApiResponse<ProductResponse> response = ApiResponse.<ProductResponse>builder()
                 .status(HttpStatus.OK.value())

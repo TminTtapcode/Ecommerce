@@ -20,6 +20,9 @@ public class ProductImage {
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
+    @Column(name = "public_id")
+    private String publicId;
+
     @Column(name = "is_thumbnail")
     private boolean isThumbnail; // Đánh dấu ảnh bìa
 

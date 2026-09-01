@@ -6,6 +6,7 @@ import lombok.Builder;
 public record ProductImageUpdateRequest(
         Long id, // Có thể null nếu là ảnh thêm mới
         String imageUrl,
+        String publicId,
         Boolean isThumbnail,
         Integer sortOrder
 ) {}
