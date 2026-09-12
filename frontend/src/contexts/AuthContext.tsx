@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { userApi } from '../api/userApi';
 import type { Profile, ProfileUpdate } from '../api/userApi';
-import { decodeUser, authSessionGuard } from './authSession';
+import { decodeUser } from './authSession';
 import type { UserPayload } from './authSession';
+import { websocketService } from '../services/websocket';
+import type { RealtimeSession } from '../services/websocket';
+
 export type { UserPayload } from './authSession';
 
 interface AuthContextType {
-  session: import("../services/websocket").RealtimeSession | null;
+  session: RealtimeSession | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isVendor: boolean;
@@ -17,77 +20,129 @@ interface AuthContextType {
   loadProfile: () => Promise<Profile | null>;
   saveProfile: (body: ProfileUpdate) => Promise<Profile | null>;
 }
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState(() => decodeUser(localStorage.getItem('token')));
-  const [session, setSession] = useState(() => {
+  const [user, setUser] = useState<UserPayload | null>(() => {
     const token = localStorage.getItem('token');
-    return token && decodeUser(token) ? { token, generation: authSessionGuard.capture() } : null;
+    return decodeUser(token);
   });
-  const requestVersion = React.useRef(0);
-  const profileRequest = useCallback(async (body?: ProfileUpdate): Promise<Profile | null> => {
-    const generation = authSessionGuard.capture();
+  const [session, setSession] = useState<RealtimeSession | null>(() => {
     const token = localStorage.getItem('token');
-    const identity = decodeUser(token);
-    if (!identity || !token) return null;
+    return token ? { token } : null;
+  });
+  const [loading] = useState<boolean>(false);
 
-    const version = body ? ++requestVersion.current : requestVersion.current;
+  // Hàm tải thông tin hồ sơ người dùng từ Backend
+  const loadProfile = useCallback(async (): Promise<Profile | null> => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
     try {
-      const session = { token, generation };
-      const response = body ? await userApi.updateProfile(body, session) : await userApi.getProfile(session);
-      if (!authSessionGuard.accepts(generation) || localStorage.getItem('token') !== token || version !== requestVersion.current) return null;
+      const response = await userApi.getProfile();
       const profile = response.data.data;
-      if (!profile || profile.id !== identity.userId) throw new Error('Profile identity mismatch');
-      setUser(current => current?.userId === identity.userId ? { ...current, fullName: profile.fullName } : current);
-      return profile;
+      if (profile) {
+        setUser((prev) => (prev ? { ...prev, fullName: profile.fullName } : prev));
+        return profile;
+      }
+      return null;
     } catch (error) {
-      if (!authSessionGuard.accepts(generation) || localStorage.getItem('token') !== token || version !== requestVersion.current) return null;
+      console.error('Lỗi khi tải thông tin cá nhân:', error);
+      return null;
+    }
+  }, []);
+
+  // Hàm cập nhật hồ sơ cá nhân
+  const saveProfile = useCallback(async (body: ProfileUpdate): Promise<Profile | null> => {
+    try {
+      const response = await userApi.updateProfile(body);
+      const profile = response.data.data;
+      if (profile) {
+        setUser((prev) => (prev ? { ...prev, fullName: profile.fullName } : prev));
+        return profile;
+      }
+      return null;
+    } catch (error) {
+      console.error('Lỗi khi cập nhật hồ sơ:', error);
       throw error;
     }
   }, []);
-  const loadProfile = useCallback(() => profileRequest(), [profileRequest]);
-  const saveProfile = useCallback((body: ProfileUpdate) => profileRequest(body), [profileRequest]);
-  const invalidateRequests = useCallback(() => { ++requestVersion.current; }, []);
+
+  // Khi mở ứng dụng: nếu có token thì kết nối WebSocket và nạp hồ sơ
   useEffect(() => {
-    void loadProfile().catch(() => {  });
-    return invalidateRequests;
-  }, [loadProfile, invalidateRequests]);
+    const token = localStorage.getItem('token');
+    if (token) {
+      websocketService.connect(token);
+      void loadProfile();
+    }
+  }, [loadProfile]);
+
+  // Đồng bộ đa tab: khi đăng nhập/đăng xuất ở tab khác thì tự cập nhật giao diện
   useEffect(() => {
-    const changed = (event: StorageEvent) => {
-      if (event.storageArea !== localStorage || (event.key !== 'token' && event.key !== null)) return;
-      authSessionGuard.advance();
-      invalidateRequests();
-      const token = localStorage.getItem('token');
-      const identity = decodeUser(token);
-      setUser(identity);
-      setSession(token && identity ? { token, generation: authSessionGuard.capture() } : null);
-      if (identity) void loadProfile().catch(() => {  });
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'token') {
+        const token = localStorage.getItem('token');
+        const identity = decodeUser(token);
+        setUser(identity);
+        setSession(token ? { token } : null);
+        if (token) {
+          websocketService.connect(token);
+          void loadProfile();
+        } else {
+          websocketService.disconnect();
+        }
+      }
     };
-    window.addEventListener('storage', changed);
-    return () => window.removeEventListener('storage', changed);
-  }, [loadProfile, invalidateRequests]);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [loadProfile]);
+
+  // Hàm đăng nhập: Lưu token, set user, kết nối WebSocket và nạp profile
   const login = (token: string) => {
-    authSessionGuard.advance();
     localStorage.setItem('token', token);
-    setUser(decodeUser(token));
-    setSession(decodeUser(token) ? { token, generation: authSessionGuard.capture() } : null);
-    void loadProfile().catch(() => {  });
+    const identity = decodeUser(token);
+    setUser(identity);
+    setSession({ token });
+    websocketService.connect(token);
+    void loadProfile();
   };
+
+  // Hàm đăng xuất: Xóa token, reset user và ngắt kết nối WebSocket
   const logout = () => {
-    authSessionGuard.advance();
-    ++requestVersion.current;
     localStorage.removeItem('token');
     setUser(null);
     setSession(null);
+    websocketService.disconnect();
   };
-  return <AuthContext.Provider value={{ session, user, isAuthenticated: user !== null,
-    isAdmin: user?.roles.includes('ROLE_ADMIN') ?? false,
-    isVendor: user?.roles.some(role => role === 'ROLE_VENDOR' || role === 'ROLE_ADMIN') ?? false,
-    loading: false, login, logout, loadProfile, saveProfile }}>{children}</AuthContext.Provider>;
+
+  const isAuthenticated = user !== null;
+  const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
+  const isVendor = user?.roles?.some((r) => r === 'ROLE_VENDOR' || r === 'ROLE_ADMIN') ?? false;
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        isAuthenticated,
+        isAdmin,
+        isVendor,
+        user,
+        loading,
+        login,
+        logout,
+        loadProfile,
+        saveProfile,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };

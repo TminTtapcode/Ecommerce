@@ -1,70 +1,94 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { authSessionGuard } from './authSession';
 import { websocketService } from '../services/websocket';
 import { notificationApi } from '../api/notificationApi';
-import { NotificationContext as Context, type NotificationView as View } from '../hooks/useNotifications';
-const empty: View = { notifications: [], unreadCount: 0, isLoading: false, error: '' };
-type Actions = { refresh: () => void; read: (id?: number) => Promise<boolean> };
+import type { NotificationResponse } from '../api/types/notification.types';
+import { NotificationContext as Context } from '../hooks/useNotifications';
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { session } = useAuth();
-  return <NotificationSessionProvider key={session?.generation ?? 'anonymous'}>{children}</NotificationSessionProvider>;
-}
-function NotificationSessionProvider({ children }: { children: ReactNode }) {
-  const { session } = useAuth();
-  const [view, setView] = useState<View>(empty);
-  const actions = useRef<Actions>({ refresh: () => {}, read: async () => false });
-  useEffect(() => {
-    setView(empty);
-    if (!session) { actions.current = { refresh: () => {}, read: async () => false }; return; }
-    let alive = true, running = false, dirty = false, revision = 0, writing = 0;
-    const seen = new Set<number>();
-    const valid = () => alive && authSessionGuard.accepts(session.generation) && localStorage.getItem('token') === session.token;
-    const refresh = () => { if (!valid()) return; dirty = true; revision++; void drain(); };
-    async function drain() {
-      if (running || writing || !valid()) return;
-      running = true; setView(v => ({ ...v, isLoading: true }));
-      try {
-        while (dirty && valid() && !writing) {
-          dirty = false; const captured = revision;
-          try {
-            const [list, count] = await Promise.all([notificationApi.getNotifications(session!), notificationApi.getUnreadCount(session!)]);
-            if (!valid()) return;
-            if (captured !== revision || writing) { dirty = true; continue; }
-            setView({ notifications: list.data.data?.content ?? [], unreadCount: count.data.data?.unreadCount ?? 0, isLoading: true, error: '' });
-          } catch {
-            if (valid()) setView(v => ({ ...v, error: 'Không tải được thông báo. Vui lòng thử lại.' }));
-            if (captured === revision) dirty = false;
-            break;
-          }
-        }
-      } finally {
-        running = false;
-        if (valid()) {
-          setView(v => ({ ...v, isLoading: false }));
-          if (dirty && !writing) queueMicrotask(() => { void drain(); });
-        }
-      }
+  const { isAuthenticated } = useAuth();
+  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+
+  // Tải danh sách thông báo và số lượng chưa đọc từ API
+  const refresh = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      const [listRes, countRes] = await Promise.all([
+        notificationApi.getNotifications(0, 10),
+        notificationApi.getUnreadCount(),
+      ]);
+      setNotifications(listRes.data.data?.content ?? []);
+      setUnreadCount(countRes.data.data?.unreadCount ?? 0);
+    } catch (err) {
+      console.error('Lỗi khi tải thông báo:', err);
+      setError('Không tải được thông báo. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
     }
-    actions.current = { refresh, read: async id => {
-      if (!valid()) return false;
-      writing++; revision++; dirty = true;
+  }, [isAuthenticated]);
+
+  // Đánh dấu đã đọc thông báo (nếu không truyền id -> đánh dấu đọc tất cả)
+  const read = useCallback(
+    async (id?: number): Promise<boolean> => {
       try {
-        if (id === undefined) await notificationApi.markAllAsRead(session); else await notificationApi.markAsRead(session, id);
-        return valid();
-      } catch { if (valid()) setView(v => ({ ...v, error: 'Không đánh dấu đọc được. Vui lòng thử lại.' })); return false;
-      } finally { writing--; if (valid()) refresh(); }
-    } };
-    const offPush = websocketService.subscribeNotifications(n => {
-      if (seen.has(n.id)) return;
-      seen.add(n.id); if (seen.size > 500) seen.delete(seen.values().next().value!);
-      refresh();
+        if (id === undefined) {
+          await notificationApi.markAllAsRead();
+          setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+          setUnreadCount(0);
+        } else {
+          await notificationApi.markAsRead(id);
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+          );
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+        return true;
+      } catch (err) {
+        console.error('Lỗi khi đánh dấu đã đọc:', err);
+        return false;
+      }
+    },
+    []
+  );
+
+  // Khi đăng nhập: tự động tải thông báo và đăng ký nhận thông báo realtime qua WebSocket
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    void refresh();
+
+    // Lắng nghe thông báo đẩy từ WebSocket STOMP
+    const unsubscribe = websocketService.subscribeNotifications((newNotification) => {
+      setNotifications((prev) => [newNotification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
     });
-    const offStatus = websocketService.onStatusChange(connected => { if (connected) refresh(); });
-    const interval = setInterval(() => { if (!websocketService.isConnected()) refresh(); }, 60000);
-    const focus = () => { if (document.visibilityState === 'visible') refresh(); };
-    window.addEventListener('focus', focus); document.addEventListener('visibilitychange', focus); refresh();
-    return () => { alive = false; offPush(); offStatus(); clearInterval(interval); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus); };
-  }, [session]);
-  return <Context.Provider value={{ ...view, refresh: () => actions.current.refresh(), read: id => actions.current.read(id) }}>{children}</Context.Provider>;
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isAuthenticated, refresh]);
+
+  return (
+    <Context.Provider
+      value={{
+        notifications,
+        unreadCount,
+        isLoading,
+        error,
+        refresh,
+        read,
+      }}
+    >
+      {children}
+    </Context.Provider>
+  );
 }
