@@ -26,7 +26,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    // SỬA Ở ĐÂY: Dùng Interface
     private final OrderInternalService orderInternalService;
     private final PaymentGatewayService paymentGatewayService;
 
@@ -38,7 +37,6 @@ public class PaymentController {
 
         String clientIp = getClientIp(httpRequest);
 
-        // Gọi qua Interface để validate quyền và trạng thái nhóm đơn hàng
         orderInternalService.validateGroupOwnershipAndStatus(request.paymentGroupId(), userId);
         OrderPaymentDto orderData = orderInternalService.getPaymentDataForGroup(request.paymentGroupId());
 
@@ -74,16 +72,15 @@ public class PaymentController {
     @GetMapping("/vnpay/ipn")
     public ResponseEntity<?> vnpayIpn(@RequestParam Map<String, String> queryParams) {
         try {
-            // 1. Pass toàn bộ tham số vào Service để xử lý nghiệp vụ
+
             paymentGatewayService.processVnPayIpn(queryParams);
 
-            // 2. Trả về format chuẩn VNPAY yêu cầu để họ biết mình đã nhận được
             return ResponseEntity.ok(Map.of(
                     "RspCode", "00",
                     "Message", "Confirm Success"
             ));
         } catch (Exception e) {
-            // Log lỗi và báo cho VNPAY biết hệ thống đang lỗi
+
             return ResponseEntity.ok(Map.of(
                     "RspCode", "99",
                     "Message", "Unknown error"

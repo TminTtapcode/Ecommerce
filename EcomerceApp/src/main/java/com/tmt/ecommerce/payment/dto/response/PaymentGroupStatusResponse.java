@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PaymentGroupStatusResponse {
     private String paymentGroupId;
-    private String status; // PENDING, SUCCESS, FAILED
+    private String status;
 }

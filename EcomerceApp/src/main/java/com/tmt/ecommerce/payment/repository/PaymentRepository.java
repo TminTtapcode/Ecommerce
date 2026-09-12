@@ -16,14 +16,25 @@ import java.util.Optional;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
-    // Tìm giao dịch dựa trên mã nội bộ của hệ thống
+    boolean existsByPaymentGroupIdAndMethodAndStatus(String paymentGroupId,
+            com.tmt.ecommerce.payment.enums.PaymentMethod method,
+            com.tmt.ecommerce.payment.enums.PaymentStatus status);
+
     Optional<Payment> findByTransactionId(String transactionId);
 
-    // Khóa dòng giao dịch khi xử lý Webhook IPN để tránh xung đột Concurrency
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Payment p WHERE p.transactionId = :transactionId")
     Optional<Payment> findByTransactionIdForUpdate(@Param("transactionId") String transactionId);
 
-    // Lấy tất cả lịch sử thử thanh toán của một nhóm đơn hàng (mới nhất xếp trước)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payment p WHERE p.id = :id")
+    Optional<Payment> findByIdForUpdate(@Param("id") Long id);
+
     List<Payment> findByPaymentGroupIdOrderByCreatedAtDesc(String paymentGroupId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payment p WHERE p.paymentGroupId = :paymentGroupId " +
+            "AND p.method = com.tmt.ecommerce.payment.enums.PaymentMethod.VNPAY " +
+            "AND p.status = com.tmt.ecommerce.payment.enums.PaymentStatus.SUCCESS ORDER BY p.id")
+    List<Payment> findSuccessfulVnpayByGroupForUpdate(@Param("paymentGroupId") String paymentGroupId);
 }

@@ -16,5 +16,7 @@ public record OrderResponse(
         String shippingAddress,
         String paymentMethod,
         LocalDateTime createdAt,
+        LocalDateTime deliveredAt,
+        String deliveryConfirmationSource,
         List<OrderItemResponse> items
 ) {}

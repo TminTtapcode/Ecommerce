@@ -6,7 +6,6 @@ import java.util.Map;
 
 public interface PaymentStrategy {
 
-    // Đã thêm tham số txnRef
     String createPaymentUrl(PaymentOrderData orderData, String ipAddress, String txnRef);
 
     boolean verifyIpnSignature(Map<String, String> params);

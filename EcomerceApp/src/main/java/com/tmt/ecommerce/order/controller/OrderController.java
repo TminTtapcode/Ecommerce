@@ -27,7 +27,6 @@ public class OrderController {
             @CurrentUserId Long userId,
             @Valid @RequestBody CheckoutRequest request) {
 
-        // Gọi xuống Service để xử lý logic tách đơn
         CheckoutResponse checkoutResponse = orderService.checkout(userId, request);
 
         ApiResponse<CheckoutResponse> response = ApiResponse.<CheckoutResponse>builder()
@@ -36,7 +35,6 @@ public class OrderController {
                 .data(checkoutResponse)
                 .build();
 
-        // Trả về HTTP Status 201 (Created) cùng với kết quả checkout
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -86,5 +84,29 @@ public class OrderController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
+            @CurrentUserId Long userId,
+            @PathVariable Long id) {
+        OrderResponse updated = orderService.cancelOrder(userId, id);
+        return ResponseEntity.ok(ApiResponse.<OrderResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Hủy đơn hàng thành công")
+                .data(updated)
+                .build());
+    }
+
+    @PatchMapping("/{id}/confirm-delivery")
+    public ResponseEntity<ApiResponse<OrderResponse>> confirmDelivery(
+            @CurrentUserId Long userId,
+            @PathVariable Long id) {
+        OrderResponse updated = orderService.confirmDelivery(userId, id);
+        return ResponseEntity.ok(ApiResponse.<OrderResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Xác nhận đã nhận hàng thành công")
+                .data(updated)
+                .build());
     }
 }

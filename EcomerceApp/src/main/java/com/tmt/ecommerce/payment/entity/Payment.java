@@ -11,7 +11,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", indexes = {
+    @Index(name = "idx_payment_group_created", columnList = "payment_group_id, created_at")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,28 +28,31 @@ public class Payment {
     @Column(name = "payment_group_id", nullable = false)
     private String paymentGroupId;
 
-    @Column(name = "order_id", nullable = true)
-    private Long orderId;
-
     @Column(nullable = false)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentMethod method; // VNPAY, MOMO, COD
+    private PaymentMethod method;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
 
     @Column(name = "transaction_id", unique = true, nullable = false)
-    private String transactionId; // Mã giao dịch nội bộ sinh ra (VD: PAY_123456)
+    private String transactionId;
 
     @Column(name = "gateway_transaction_id")
-    private String gatewayTransactionId; // Mã giao dịch phía đối tác (VD: Mã chuẩn chi của VNPAY)
+    private String gatewayTransactionId;
+
+    @Column(name = "vnpay_transaction_date")
+    private String vnpayTransactionDate;
+
+    @Column(name = "gateway_bank_code")
+    private String gatewayBankCode;
 
     @Column(columnDefinition = "TEXT")
-    private String rawData; // Cực kỳ quan trọng: Lưu lại toàn bộ response của VNPAY để đối soát
+    private String rawData;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

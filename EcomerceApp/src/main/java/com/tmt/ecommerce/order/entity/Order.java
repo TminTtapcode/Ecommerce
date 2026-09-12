@@ -11,7 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "orders") // Bắt buộc phải là "orders" để tránh lỗi SQL keyword
+@Table(name = "orders", indexes = {
+    @Index(name = "idx_order_user_status_created", columnList = "user_id, status, created_at"),
+    @Index(name = "idx_order_user_created", columnList = "user_id, created_at"),
+    @Index(name = "idx_order_shop_status_created", columnList = "shop_id, status, created_at"),
+    @Index(name = "idx_order_shop_created", columnList = "shop_id, created_at"),
+    @Index(name = "idx_order_payment_group", columnList = "payment_group_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -59,8 +65,7 @@ public class Order {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    // Quan hệ 1-N với OrderItem.
-    // Dùng cascade = ALL để khi lưu Order sẽ tự động lưu luôn các OrderItem bên trong.
+    @org.hibernate.annotations.BatchSize(size = 50)
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
@@ -73,7 +78,16 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Helper method: Tiện ích để thêm item vào đơn hàng hai chiều cho chuẩn JPA
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Column(name = "delivery_confirmed_by_user_id")
+    private Long deliveryConfirmedByUserId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_confirmation_source")
+    private DeliveryConfirmationSource deliveryConfirmationSource;
+
     public void addOrderItem(OrderItem item) {
         items.add(item);
         item.setOrder(this);
