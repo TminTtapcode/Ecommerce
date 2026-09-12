@@ -7,15 +7,11 @@ export interface UserRegisterRequest {
   email: string;
   password: string;
   fullName: string;
-  phone?: string; // Optional since it's not supported by backend yet
+  phone?: string;
 }
 
 export interface AuthResponse {
   token: string;
 }
 
-export interface ApiResponse<T> {
-  status: number;
-  message: string;
-  data?: T;
-}
+export type { ApiResponse } from './common.types';

@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productApi } from '../../api/productApi';
 import type { ProductResponse, ProductVariantResponse } from '../../api/types/product.types';
 import { useCart } from '../../contexts/CartContext';
+import { useChatContext } from '../../contexts/ChatContext';
+import { cartApi } from '../../api/cartApi';
 import { ProductReviewSection } from '../../components/reviews/ProductReviewSection';
+import { RelatedProductsSection } from '../../components/products/RelatedProductsSection';
+import { ShopInfoSection } from '../../components/shop/ShopInfoSection';
+import { MessageSquare } from 'lucide-react';
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<ProductResponse | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariantResponse | null>(null);
   const [activeImage, setActiveImage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { addToCart } = useCart();
+  const { addToCart, fetchCart } = useCart();
+  const { openChatWithShop } = useChatContext();
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
@@ -24,12 +31,13 @@ export const ProductDetailPage: React.FC = () => {
         const response = await productApi.getProductById(parseInt(id, 10));
         const p = response.data.data;
         setProduct(p || null);
-        
+
         if (p?.variants && p.variants.length > 0) {
           setSelectedVariant(p.variants[0]);
         }
-        
-        const thumbnail = p?.imageResponses?.find(img => img.isThumbnail) || p?.imageResponses?.[0];
+
+        const allImages = p?.images || p?.imageResponses || [];
+        const thumbnail = allImages.find(img => img.isThumbnail) || allImages[0];
         if (thumbnail) {
           setActiveImage(thumbnail.imageUrl);
         } else {
@@ -51,7 +59,13 @@ export const ProductDetailPage: React.FC = () => {
     currency: 'VND',
   });
 
-  const displayPrice = selectedVariant ? selectedVariant.price : product?.price || 0;
+  const displayPrice = selectedVariant
+    ? (selectedVariant.salePrice ?? selectedVariant.price ?? selectedVariant.originalPrice ?? 0)
+    : (product?.salePrice ?? product?.price ?? product?.originalPrice ?? 0);
+  const displayOriginalPrice = selectedVariant
+    ? selectedVariant.originalPrice
+    : product?.originalPrice;
+  const hasDiscount = displayOriginalPrice && displayPrice && displayOriginalPrice > displayPrice;
   const displayStock = selectedVariant ? selectedVariant.stockQuantity : product?.stockQuantity || 0;
 
   if (isLoading) {
@@ -93,8 +107,7 @@ export const ProductDetailPage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Breadcrumb */}
+
         <nav className="flex text-sm text-gray-500 mb-8" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-3">
             <li className="inline-flex items-center">
@@ -123,66 +136,63 @@ export const ProductDetailPage: React.FC = () => {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex flex-col md:flex-row">
-            
-            {/* Image Gallery */}
+
             <div className="md:w-1/2 p-6 border-b md:border-b-0 md:border-r border-gray-100">
               <div className="aspect-w-1 aspect-h-1 rounded-xl overflow-hidden bg-gray-100 mb-4 h-80 sm:h-96 relative">
-                <img 
-                  src={activeImage} 
-                  alt={product.name} 
+                <img
+                  src={activeImage}
+                  alt={product.name}
                   className="w-full h-full object-contain"
                 />
               </div>
-              
-              {product.imageResponses && product.imageResponses.length > 0 && (
-                <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                  {product.imageResponses.map((img) => (
-                    <button
-                      key={img.id}
-                      onClick={() => setActiveImage(img.imageUrl)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                        activeImage === img.imageUrl ? 'border-orange-500' : 'border-transparent hover:border-gray-300'
-                      }`}
-                    >
-                      <img src={img.imageUrl} alt="Thumbnail" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
+
+              {(() => {
+                const galleryImages = product.images || product.imageResponses || [];
+                return galleryImages.length > 0 ? (
+                  <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                    {galleryImages.map((img) => (
+                      <button
+                        key={img.id}
+                        onClick={() => setActiveImage(img.imageUrl)}
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                          activeImage === img.imageUrl ? 'border-orange-500' : 'border-transparent hover:border-gray-300'
+                        }`}
+                      >
+                        <img src={img.imageUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </div>
 
-            {/* Product Info */}
             <div className="md:w-1/2 p-6 md:p-10 flex flex-col">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-              
+
               <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
                 <span className="text-3xl font-bold text-orange-600">
                   {formatter.format(displayPrice)}
                 </span>
+                {hasDiscount && (
+                  <span className="text-base text-gray-400 line-through">
+                    {formatter.format(displayOriginalPrice!)}
+                  </span>
+                )}
                 <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                   Kho: {displayStock}
                 </span>
               </div>
 
-              {/* Variants */}
               {product.variants && product.variants.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Tùy chọn sản phẩm</h3>
                   <div className="flex flex-wrap gap-2">
                     {product.variants.map(variant => {
-                      // Attempt to format variant attributes
-                      let variantLabel = variant.sku;
-                      try {
-                        if (typeof variant.attributes === 'string') {
-                          const attrObj = JSON.parse(variant.attributes);
-                          variantLabel = Object.values(attrObj).join(' - ');
-                        } else if (typeof variant.attributes === 'object') {
-                          variantLabel = Object.values(variant.attributes).join(' - ');
-                        }
-                      } catch (e) {
-                        // ignore and use SKU
-                      }
-
+                      const formatAttributes = (attrs?: Record<string, any>) => {
+                        if (!attrs || Object.keys(attrs).length === 0) return null;
+                        return Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ');
+                      };
+                      let variantLabel = formatAttributes(variant.attributes) || variant.name || variant.sku;
                       return (
                         <button
                           key={variant.id}
@@ -193,7 +203,7 @@ export const ProductDetailPage: React.FC = () => {
                               : 'border-gray-300 text-gray-700 hover:border-gray-400'
                           }`}
                         >
-                          {variantLabel || variant.sku}
+                          {variantLabel}
                         </button>
                       );
                     })}
@@ -201,7 +211,6 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Description */}
               <div className="mb-8 flex-1">
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Mô tả sản phẩm</h3>
                 <div className="text-gray-600 text-sm leading-relaxed prose prose-sm max-w-none">
@@ -213,24 +222,23 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="pt-6 border-t border-gray-100 mt-auto">
                 <div className="flex items-center gap-4 mb-4">
                   <span className="text-sm font-medium text-gray-700">Số lượng:</span>
                   <div className="flex items-center border border-gray-300 rounded-md">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
                       disabled={displayStock <= 0}
                     >-</button>
-                    <input 
-                      type="number" 
-                      value={quantity} 
-                      readOnly 
+                    <input
+                      type="number"
+                      value={quantity}
+                      readOnly
                       className="w-12 text-center text-sm font-medium border-x border-gray-300 py-1.5 focus:outline-none"
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setQuantity(Math.min(displayStock, quantity + 1))}
                       className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
@@ -240,15 +248,57 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <button 
+                  <button
+                    type="button"
+                    onClick={() => product.shopId && openChatWithShop(product.shopId)}
+                    className="border-2 border-[#ee4d2d] bg-orange-50 hover:bg-orange-100 text-[#ee4d2d] font-semibold py-3 px-6 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    Chat ngay
+                  </button>
+                  <button
                     disabled={displayStock <= 0 || !selectedVariant}
                     onClick={() => selectedVariant && addToCart(selectedVariant.id, quantity)}
-                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="bg-orange-100 hover:bg-orange-200 text-orange-600 border border-orange-500 font-medium py-3 px-6 rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    {displayStock > 0 ? 'Thêm vào giỏ' : 'Hết hàng'}
+                    Thêm vào giỏ
+                  </button>
+                  <button
+                    disabled={displayStock <= 0 || !selectedVariant}
+                    onClick={async () => {
+                      if (!selectedVariant) return;
+                      const token = localStorage.getItem('token');
+                      if (!token) {
+                        alert("Vui lòng đăng nhập để tiếp tục thanh toán");
+                        navigate('/login');
+                        return;
+                      }
+                      try {
+                        await cartApi.addToCart({ productVariantId: selectedVariant.id, quantity });
+                        await fetchCart();
+                        const response = await cartApi.getCart();
+                        const rawData = response.data.data;
+                        if (rawData && rawData.items) {
+                          const addedItem = rawData.items.find(
+                            (item: any) => (item.productVariantId ?? item.variantId) === selectedVariant.id
+                          );
+                          if (addedItem) {
+                             navigate('/checkout', { state: { selectedItemIds: [addedItem.cartItemId ?? addedItem.id] } });
+                             return;
+                          }
+                        }
+                        navigate('/cart');
+                      } catch (err: any) {
+                        console.error('Failed to buy now', err);
+                        alert(err.response?.data?.message || 'Có lỗi xảy ra khi xử lý mua ngay');
+                      }
+                    }}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {displayStock > 0 ? 'Mua Ngay' : 'Hết hàng'}
                   </button>
                 </div>
               </div>
@@ -257,8 +307,11 @@ export const ProductDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Reviews Section */}
+        {product?.shopId && <ShopInfoSection shopId={product.shopId} />}
+
         {product && <ProductReviewSection productId={product.id} />}
+
+        {product && <RelatedProductsSection productId={product.id} />}
       </div>
     </div>
   );

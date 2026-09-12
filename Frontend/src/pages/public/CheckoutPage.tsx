@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { orderApi } from '../../api/orderApi';
@@ -18,25 +18,33 @@ export const CheckoutPage: React.FC = () => {
     const [voucherError, setVoucherError] = useState<string | null>(null);
     const [applyingVoucher, setApplyingVoucher] = useState(false);
 
-    const state = location.state as { selectedItemIds?: number[] };
-    const selectedItemIds = state?.selectedItemIds || [];
+    const state = location.state as { selectedItemIds?: number[] } | undefined;
+    const selectedItemIds = useMemo(() => {
+        if (state?.selectedItemIds && state.selectedItemIds.length > 0) {
+            sessionStorage.setItem('checkoutItemIds', JSON.stringify(state.selectedItemIds));
+            return state.selectedItemIds;
+        }
+        const saved = sessionStorage.getItem('checkoutItemIds');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            } catch (e) {}
+        }
+        return [];
+    }, [state?.selectedItemIds]);
 
     useEffect(() => {
-        if (selectedItemIds.length === 0) {
+        fetchCart();
+    }, [fetchCart]);
+
+    useEffect(() => {
+        if (!cartLoading && selectedItemIds.length === 0) {
             navigate('/cart');
         }
-    }, [selectedItemIds, navigate]);
+    }, [selectedItemIds.length, cartLoading, navigate]);
 
-    if (cartLoading) {
-        return <div className="p-8 text-center text-gray-500">Đang tải thông tin...</div>;
-    }
-
-    const itemsToCheckout: CartItemResponse[] = cart?.items.filter(item => selectedItemIds.includes(item.cartItemId)) || [];
-    
-    // Default fallback calculate in frontend if API fails
-    const fallbackTotalAmount = itemsToCheckout.reduce((sum, item) => sum + item.subTotal, 0);
-
-    const fetchPreview = async (code: string = '') => {
+    const fetchPreview = useCallback(async (code: string = '') => {
         if (selectedItemIds.length === 0) return;
         setApplyingVoucher(true);
         setVoucherError(null);
@@ -50,19 +58,24 @@ export const CheckoutPage: React.FC = () => {
             }
         } catch (err: any) {
             setVoucherError(err.response?.data?.message || 'Không thể tính toán giỏ hàng hoặc mã giảm giá không hợp lệ');
-            if (code) {
-                setVoucherCode(''); // Reset if invalid
-            }
         } finally {
             setApplyingVoucher(false);
         }
-    };
+    }, [selectedItemIds]);
 
     useEffect(() => {
-        if (!cartLoading && selectedItemIds.length > 0) {
-            fetchPreview(voucherCode);
+        if (selectedItemIds.length > 0) {
+            fetchPreview();
         }
-    }, [cartLoading, selectedItemIds]);
+    }, [selectedItemIds, fetchPreview]);
+
+    const itemsToCheckout: CartItemResponse[] = cart?.items.filter(item => selectedItemIds.includes(item.cartItemId ?? item.id!)) || [];
+
+    if (!cart && cartLoading) {
+        return <div className="p-8 text-center text-gray-500">Đang tải thông tin đơn hàng...</div>;
+    }
+
+    const fallbackTotalAmount = itemsToCheckout.reduce((sum, item) => sum + item.subTotal, 0);
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
@@ -84,8 +97,9 @@ export const CheckoutPage: React.FC = () => {
                 cartItemIds: selectedItemIds,
                 voucherCode: voucherCode.trim() || undefined
             });
-            await fetchCart(); // Refresh cart to reflect removed items
-            
+            await fetchCart();
+
+            sessionStorage.removeItem('checkoutItemIds');
             if (paymentMethod === 'VNPAY' && result.data && result.data.paymentGroupId) {
                 try {
                     const paymentGroupId = result.data.paymentGroupId;
@@ -112,17 +126,16 @@ export const CheckoutPage: React.FC = () => {
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Thanh Toán</h1>
-            
+
             <form onSubmit={handleCheckout}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Left Column - Form inputs */}
                     <div className="md:col-span-2 space-y-6">
                         {error && (
                             <div className="bg-red-50 text-red-500 p-3 rounded text-sm">
                                 {error}
                             </div>
                         )}
-                        
+
                         <div className="bg-white p-6 rounded shadow-sm">
                             <h2 className="text-lg font-medium mb-4 flex items-center text-gray-800">
                                 <svg className="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -130,8 +143,8 @@ export const CheckoutPage: React.FC = () => {
                             </h2>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ nhận hàng</label>
-                                <textarea 
-                                    className="w-full border border-gray-300 rounded p-2 focus:ring-orange-500 focus:border-orange-500 outline-none" 
+                                <textarea
+                                    className="w-full border border-gray-300 rounded p-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                                     rows={3}
                                     placeholder="Nhập địa chỉ chi tiết (VD: Số 1, Đường 2, Phường 3, Quận 4, TP.HCM)"
                                     value={shippingAddress}
@@ -148,24 +161,24 @@ export const CheckoutPage: React.FC = () => {
                             </h2>
                             <div className="space-y-3">
                                 <label className="flex items-center p-3 border border-gray-200 rounded cursor-pointer hover:bg-orange-50">
-                                    <input 
-                                        type="radio" 
-                                        name="paymentMethod" 
-                                        value="COD" 
-                                        className="w-4 h-4 accent-orange-500" 
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="COD"
+                                        className="w-4 h-4 accent-orange-500"
                                         checked={paymentMethod === 'COD'}
                                         onChange={() => setPaymentMethod('COD')}
                                     />
                                     <span className="ml-3 font-medium text-gray-700">Thanh toán khi nhận hàng (COD)</span>
                                 </label>
                                 <label className="flex items-center p-3 border border-gray-200 rounded cursor-pointer hover:bg-orange-50">
-                                    <input 
-                                        type="radio" 
-                                        name="paymentMethod" 
-                                        value="VNPAY" 
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="VNPAY"
                                         className="w-4 h-4 accent-orange-500"
                                         checked={paymentMethod === 'VNPAY'}
-                                        onChange={() => setPaymentMethod('VNPAY')} 
+                                        onChange={() => setPaymentMethod('VNPAY')}
                                     />
                                     <span className="ml-3 font-medium text-gray-700">Thanh toán qua VNPAY</span>
                                 </label>
@@ -173,19 +186,25 @@ export const CheckoutPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Right Column - Order Summary */}
                     <div className="md:col-span-1">
                         <div className="bg-white p-6 rounded shadow-sm sticky top-24">
                             <h2 className="text-lg font-medium mb-4 text-gray-800 border-b pb-2">Đơn Hàng Của Bạn</h2>
-                            
+
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-3 pr-2">
                                 {itemsToCheckout.map(item => (
-                                    <div key={item.cartItemId} className="flex justify-between items-start text-sm border-b border-gray-100 pb-2 last:border-0">
-                                        <div className="flex-1 pr-2">
-                                            <div className="text-gray-800 line-clamp-2">{item.productName}</div>
-                                            <div className="text-gray-500 text-xs mt-1">SL: {item.quantity}</div>
+                                    <div key={item.cartItemId} className="flex items-center gap-3 text-sm border-b border-gray-100 pb-2.5 last:border-0">
+                                        <div className="w-12 h-12 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+                                            {item.thumbnailUrl ? (
+                                                <img src={item.thumbnailUrl} alt={item.productName} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-xs text-gray-400">📦</span>
+                                            )}
                                         </div>
-                                        <div className="font-medium text-gray-700 whitespace-nowrap">
+                                        <div className="flex-1 min-w-0 pr-2">
+                                            <div className="text-gray-800 line-clamp-1 font-medium">{item.productName}</div>
+                                            <div className="text-gray-500 text-xs mt-0.5">SL: {item.quantity}</div>
+                                        </div>
+                                        <div className="font-semibold text-gray-800 whitespace-nowrap text-sm">
                                             {formatPrice(item.subTotal)}
                                         </div>
                                     </div>
@@ -196,14 +215,14 @@ export const CheckoutPage: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Mã Giảm Giá</label>
                                     <div className="flex">
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             placeholder="Nhập mã giảm giá..."
                                             value={voucherCode}
                                             onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                                             className="flex-1 border border-gray-300 rounded-l p-2 text-sm focus:outline-none focus:border-orange-500 uppercase"
                                         />
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => fetchPreview(voucherCode)}
                                             disabled={applyingVoucher || !voucherCode.trim()}
@@ -221,26 +240,26 @@ export const CheckoutPage: React.FC = () => {
                             <div className="border-t pt-4 mt-4 space-y-2 text-sm">
                                 <div className="flex justify-between text-gray-600">
                                     <span>Tạm tính</span>
-                                    <span>{formatPrice(previewData ? previewData.subtotal : fallbackTotalAmount)}</span>
+                                    <span>{formatPrice((previewData ? (previewData.subtotal ?? previewData.totalOriginalPrice) : fallbackTotalAmount) ?? 0)}</span>
                                 </div>
                                 <div className="flex justify-between text-gray-600">
                                     <span>Phí vận chuyển</span>
                                     <span>Miễn phí</span>
                                 </div>
-                                {previewData && previewData.discount > 0 && (
+                                {previewData && ((previewData.discount ?? previewData.totalDiscount ?? 0) > 0) && (
                                     <div className="flex justify-between text-green-600">
                                         <span>Giảm giá</span>
-                                        <span>- {formatPrice(previewData.discount)}</span>
+                                        <span>- {formatPrice((previewData.discount ?? previewData.totalDiscount) ?? 0)}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center text-lg font-bold text-gray-800 pt-2 border-t mt-2">
                                     <span>Tổng cộng</span>
-                                    <span className="text-orange-500">{formatPrice(previewData ? previewData.total : fallbackTotalAmount)}</span>
+                                    <span className="text-orange-500">{formatPrice((previewData ? (previewData.total ?? previewData.finalTotal) : fallbackTotalAmount) ?? 0)}</span>
                                 </div>
                             </div>
 
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 disabled={submitting || itemsToCheckout.length === 0 || applyingVoucher}
                                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded mt-6 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                             >

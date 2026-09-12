@@ -15,7 +15,7 @@ export const mediaApi = {
   uploadImage: async (file: File): Promise<ApiResponse<UploadResponse>> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await apiClient.post<ApiResponse<UploadResponse>>('/api/v1/media/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

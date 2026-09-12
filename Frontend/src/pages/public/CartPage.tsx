@@ -10,7 +10,6 @@ export const CartPage: React.FC = () => {
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const navigate = useNavigate();
 
-  // Group items by shopId
   const groupedItems = cart?.items.reduce((acc, item) => {
     if (!acc[item.shopId]) {
       acc[item.shopId] = [];
@@ -21,7 +20,7 @@ export const CartPage: React.FC = () => {
 
   const allAvailableItems = cart?.items.filter(item => item.isAvailable) || [];
   const allAvailableIds = allAvailableItems.map(item => item.cartItemId);
-  
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedItemIds(allAvailableIds);
@@ -68,7 +67,7 @@ export const CartPage: React.FC = () => {
     setUpdatingItemId(itemId);
     try {
       await cartApi.removeCartItem(itemId);
-      setSelectedItemIds(prev => prev.filter(id => id !== itemId)); // Remove from selected
+      setSelectedItemIds(prev => prev.filter(id => id !== itemId));
       await fetchCart();
     } catch (error: any) {
       alert('Có lỗi xảy ra khi xóa sản phẩm');
@@ -80,10 +79,10 @@ export const CartPage: React.FC = () => {
   const handleBulkRemove = async () => {
     if (selectedItemIds.length === 0) return;
     if (!window.confirm(`Bạn có chắc muốn xóa ${selectedItemIds.length} sản phẩm đã chọn?`)) return;
-    
-    setUpdatingItemId(-1); // -1 indicates bulk update
+
+    setUpdatingItemId(-1);
     try {
-      // Execute all delete requests in parallel
+
       await Promise.all(selectedItemIds.map(id => cartApi.removeCartItem(id)));
       setSelectedItemIds([]);
       await fetchCart();
@@ -97,8 +96,8 @@ export const CartPage: React.FC = () => {
   const handleClearCart = async () => {
     if (!cart || cart.items.length === 0) return;
     if (!window.confirm("Bạn có chắc muốn dọn sạch toàn bộ giỏ hàng? Hành động này không thể hoàn tác.")) return;
-    
-    setUpdatingItemId(-2); // -2 indicates clear cart
+
+    setUpdatingItemId(-2);
     try {
       await cartApi.clearCart();
       setSelectedItemIds([]);
@@ -110,7 +109,6 @@ export const CartPage: React.FC = () => {
     }
   };
 
-  // Calculate selected total
   const selectedTotal = allAvailableItems
     .filter(item => selectedItemIds.includes(item.cartItemId))
     .reduce((sum, item) => sum + item.subTotal, 0);
@@ -143,11 +141,10 @@ export const CartPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 pb-32">
-      {/* Header Row */}
       <div className="grid grid-cols-12 gap-4 bg-white p-4 rounded-sm shadow-sm text-sm text-gray-500 mb-4">
         <div className="col-span-6 flex items-center gap-4">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             className="w-4 h-4 accent-orange-500"
             checked={isAllSelected}
             onChange={(e) => handleSelectAll(e.target.checked)}
@@ -160,17 +157,15 @@ export const CartPage: React.FC = () => {
         <div className="col-span-1 text-center">Thao Tác</div>
       </div>
 
-      {/* Shop Groups */}
       {Object.entries(groupedItems).map(([shopId, items]) => {
         const shopAvailableIds = items.filter(item => item.isAvailable).map(item => item.cartItemId);
         const isShopAllSelected = shopAvailableIds.length > 0 && shopAvailableIds.every(id => selectedItemIds.includes(id));
 
         return (
           <div key={shopId} className="bg-white rounded-sm shadow-sm mb-4">
-            {/* Shop Header */}
             <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 className="w-4 h-4 accent-orange-500"
                 checked={isShopAllSelected}
                 onChange={(e) => handleSelectShop(Number(shopId), e.target.checked)}
@@ -179,19 +174,18 @@ export const CartPage: React.FC = () => {
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             </div>
 
-            {/* Shop Items */}
             <div>
               {items.map((item) => (
                 <div key={item.cartItemId} className="grid grid-cols-12 gap-4 p-4 border-b border-gray-50 items-center last:border-0 relative">
                   {!item.isAvailable && (
-                    <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center pointer-events-none">
                       <span className="bg-gray-800 text-white px-3 py-1 text-xs rounded uppercase font-bold">Ngừng kinh doanh / Hết hàng</span>
                     </div>
                   )}
-                  
+
                   <div className="col-span-6 flex items-start gap-4">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 mt-1 accent-orange-500"
                       checked={selectedItemIds.includes(item.cartItemId)}
                       onChange={(e) => handleSelectItem(item.cartItemId, e.target.checked)}
@@ -199,7 +193,7 @@ export const CartPage: React.FC = () => {
                     />
                     <img src={item.thumbnailUrl} alt={item.productName} className="w-20 h-20 object-cover border" />
                     <div className="flex-1">
-                      <Link to={`/product/${item.productVariantId}`} className="text-sm text-gray-800 line-clamp-2 hover:text-orange-500 mb-1">
+                      <Link to={`/products/${item.productId || item.productVariantId}`} className="text-sm text-gray-800 line-clamp-2 hover:text-orange-500 mb-1">
                         {item.productName}
                       </Link>
                       {item.attributes && Object.keys(item.attributes).length > 0 && (
@@ -209,27 +203,27 @@ export const CartPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="col-span-2 text-center text-sm">
                     {formatPrice(item.unitPrice)}
                   </div>
-                  
+
                   <div className="col-span-2 flex justify-center">
                     <div className="flex items-center border border-gray-300 rounded overflow-hidden h-8 w-24">
-                      <button 
+                      <button
                         onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}
-                        disabled={updatingItemId === item.cartItemId || !item.isAvailable}
+                        disabled={updatingItemId === item.cartItemId || item.quantity <= 1}
                         className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border-r disabled:opacity-50"
                       >
                         -
                       </button>
-                      <input 
-                        type="text" 
-                        value={item.quantity} 
-                        readOnly 
+                      <input
+                        type="text"
+                        value={item.quantity}
+                        readOnly
                         className="w-10 text-center text-sm outline-none bg-white"
                       />
-                      <button 
+                      <button
                         onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}
                         disabled={updatingItemId === item.cartItemId || !item.isAvailable}
                         className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border-l disabled:opacity-50"
@@ -238,13 +232,13 @@ export const CartPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="col-span-1 text-center text-sm text-orange-500 font-medium">
                     {formatPrice(item.subTotal)}
                   </div>
-                  
+
                   <div className="col-span-1 text-center">
-                    <button 
+                    <button
                       onClick={() => handleRemoveItem(item.cartItemId)}
                       className="text-gray-500 hover:text-red-500 text-sm relative z-20"
                     >
@@ -258,27 +252,26 @@ export const CartPage: React.FC = () => {
         );
       })}
 
-      {/* Sticky Footer for Checkout */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40 py-4">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 cursor-pointer text-gray-700">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 className="w-4 h-4 accent-orange-500"
                 checked={isAllSelected}
                 onChange={(e) => handleSelectAll(e.target.checked)}
               />
               <span>Chọn Tất Cả ({allAvailableIds.length})</span>
             </label>
-            <button 
+            <button
               className="text-gray-500 hover:text-red-500"
               disabled={selectedItemIds.length === 0 || updatingItemId === -1}
               onClick={handleBulkRemove}
             >
               Xóa Đã Chọn
             </button>
-            <button 
+            <button
               className="text-gray-500 hover:text-red-500 ml-4 border-l border-gray-300 pl-4"
               disabled={updatingItemId === -2}
               onClick={handleClearCart}
@@ -286,14 +279,14 @@ export const CartPage: React.FC = () => {
               Dọn Sạch Giỏ Hàng
             </button>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="text-right">
               <div className="text-gray-700">
                 Tổng thanh toán ({selectedItemIds.length} Sản phẩm): <span className="text-2xl text-orange-500 font-medium ml-2">{formatPrice(selectedTotal)}</span>
               </div>
             </div>
-            <button 
+            <button
               className={`px-10 py-3 text-white rounded-sm text-lg shadow-sm transition-colors ${selectedItemIds.length > 0 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-300 cursor-not-allowed'}`}
               disabled={selectedItemIds.length === 0}
               onClick={() => navigate('/checkout', { state: { selectedItemIds } })}

@@ -1,7 +1,10 @@
 export interface ApiResponse<T> {
+  success: boolean;
   status: number;
+  errorCode?: string;
+  fieldErrors?: Record<string, string>;
   message: string;
-  data: T;
+  data: T | null;
 }
 
 export interface PageResponse<T> {

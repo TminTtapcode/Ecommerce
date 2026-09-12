@@ -1,13 +1,14 @@
+import { getApiError } from '../../api/apiError';
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productApi } from '../../api/productApi';
 import { mediaApi } from '../../api/mediaApi';
-import type { 
-  ProductResponse, 
-  ProductCreateRequest, 
-  ProductUpdateRequest, 
+import { categoryApi, type CategoryResponse } from '../../api/categoryApi';
+import type {
+  ProductCreateRequest,
+  ProductUpdateRequest,
   ProductImageRequest,
-  ProductVariantRequest 
+  ProductVariantRequest
 } from '../../api/types/product.types';
 
 export const AdminProductFormPage: React.FC = () => {
@@ -20,66 +21,78 @@ export const AdminProductFormPage: React.FC = () => {
   const [globalError, setGlobalError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Form states
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState(0);
   const [stockQuantity, setStockQuantity] = useState(0);
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [images, setImages] = useState<ProductImageRequest[]>([]);
   const [variants, setVariants] = useState<ProductVariantRequest[]>([]);
 
-  // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isEdit) return;
-    const fetchProduct = async () => {
+    const initData = async () => {
       try {
-        const response = await productApi.getProductById(Number(id));
-        const data = response.data.data;
-        setName(data.name);
-        setDescription(data.description || '');
-        setPrice(data.price);
-        setStockQuantity(data.stockQuantity);
-        
-        // Map images
-        if (data.imageResponses) {
-          setImages(data.imageResponses.map(img => ({
-            id: img.id,
-            imageUrl: img.imageUrl,
-            publicId: img.publicId,
-            isThumbnail: img.isThumbnail,
-            sortOrder: img.sortOrder
-          })));
-        }
+        const catRes = await categoryApi.getAllCategories();
+        const loadedCategories = catRes.data.data || [];
+        setCategories(loadedCategories);
 
-        // Map variants
-        if (data.variants) {
-          setVariants(data.variants.map(v => ({
-            id: v.id,
-            sku: v.sku,
-            price: v.price,
-            stockQuantity: v.stockQuantity,
-            attributes: v.attributes
-          })));
+        if (isEdit && id) {
+          const response = await productApi.getProductById(Number(id));
+          const data = response.data.data;
+          if (data) {
+            setName(data.name || '');
+            setDescription(data.description || '');
+            setPrice(data.price ?? data.salePrice ?? data.originalPrice ?? 0);
+            setStockQuantity(data.stockQuantity ?? 0);
+
+            if (data.categoryId) {
+              setCategoryId(data.categoryId);
+            } else if (data.categoryName && loadedCategories.length > 0) {
+              const matched = loadedCategories.find(c => c.name === data.categoryName);
+              if (matched) setCategoryId(matched.id);
+            }
+
+            const rawImages = data.imageResponses || data.images || [];
+            setImages(rawImages.map(img => ({
+              id: img.id,
+              imageUrl: img.imageUrl,
+              publicId: img.publicId,
+              isThumbnail: img.isThumbnail,
+              sortOrder: img.sortOrder
+            })));
+
+            if (data.variants && data.variants.length > 0) {
+              setVariants(data.variants.map(v => ({
+                id: v.id,
+                sku: v.sku,
+                price: v.price,
+                stockQuantity: v.stockQuantity,
+                attributes: v.attributes
+              })));
+            }
+          }
+        } else if (loadedCategories.length > 0) {
+          setCategoryId(loadedCategories[0].id);
         }
       } catch (err: any) {
-        setGlobalError('Lỗi tải thông tin sản phẩm.');
+        setGlobalError(err.response?.data?.message || 'Lỗi tải dữ liệu sản phẩm.');
       } finally {
         setLoading(false);
       }
     };
-    fetchProduct();
+
+    initData();
   }, [id, isEdit]);
 
-  // Handle Image Upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     setIsUploading(true);
     const files = Array.from(e.target.files);
-    
+
     try {
       const newImages: ProductImageRequest[] = [];
       for (const file of files) {
@@ -115,7 +128,6 @@ export const AdminProductFormPage: React.FC = () => {
     setImages(updated.map((img, i) => ({ ...img, sortOrder: i })));
   };
 
-  // Handle Variants
   const handleAddVariant = () => {
     setVariants([...variants, { sku: '', price: 0, stockQuantity: 0, attributes: {} }]);
   };
@@ -145,8 +157,8 @@ export const AdminProductFormPage: React.FC = () => {
         alert('Cập nhật sản phẩm thành công!');
       } else {
         const createData: ProductCreateRequest = {
-          shopId: 1, // HARDCODED for now until Shop context is fully integrated in frontend
-          categoryId: categoryId || 1, // HARDCODED 1 if empty for safety
+          shopId: 1,
+          categoryId: categoryId || 1,
           name, description, price, stockQuantity, images, variants
         };
         await productApi.createProduct(createData);
@@ -154,12 +166,13 @@ export const AdminProductFormPage: React.FC = () => {
       }
       navigate('/admin/products');
     } catch (err: any) {
-      if (err.response?.status === 400 && err.response?.data?.data) {
-        // Validation errors
-        setFieldErrors(err.response.data.data);
+      const details = getApiError(err);
+      if (details.fieldErrors) {
+
+        setFieldErrors(details.fieldErrors);
         setGlobalError('Vui lòng kiểm tra lại thông tin nhập.');
       } else {
-        setGlobalError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu sản phẩm.');
+        setGlobalError(details.message);
       }
     } finally {
       setSaving(false);
@@ -189,10 +202,9 @@ export const AdminProductFormPage: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Thông tin cơ bản</h2>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tên sản phẩm *</label>
@@ -242,24 +254,27 @@ export const AdminProductFormPage: React.FC = () => {
                 {fieldErrors.stockQuantity && <p className="mt-1 text-sm text-red-500">{fieldErrors.stockQuantity}</p>}
               </div>
             </div>
-            
-            {!isEdit && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category ID (Tạm thời)</label>
-                <input
-                  type="number"
-                  value={categoryId || ''}
-                  onChange={(e) => setCategoryId(Number(e.target.value))}
-                  placeholder="Nhập ID danh mục"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors"
-                />
-                {fieldErrors.categoryId && <p className="mt-1 text-sm text-red-500">{fieldErrors.categoryId}</p>}
-              </div>
-            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục ngành hàng *</label>
+              <select
+                required
+                value={categoryId || ''}
+                onChange={(e) => setCategoryId(Number(e.target.value))}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white ${fieldErrors.categoryId ? 'border-red-500' : 'border-gray-300'}`}
+              >
+                {categories.length === 0 && <option value="">Đang tải danh mục...</option>}
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.categoryId && <p className="mt-1 text-sm text-red-500">{fieldErrors.categoryId}</p>}
+            </div>
           </div>
         </div>
 
-        {/* Images Manager */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -361,7 +376,6 @@ export const AdminProductFormPage: React.FC = () => {
           )}
         </div>
 
-        {/* Variants */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h2 className="text-lg font-semibold text-gray-900">Phân loại hàng (Variants)</h2>
@@ -395,21 +409,20 @@ export const AdminProductFormPage: React.FC = () => {
                     <label className="block text-xs font-medium text-gray-700 mb-1">Tồn kho</label>
                     <input type="number" min="0" value={variant.stockQuantity} onChange={(e) => handleVariantChange(index, 'stockQuantity', Number(e.target.value))} required className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-500" />
                   </div>
-                  {/* Simplification: Just storing raw JSON string in attributes for this UI MVP */}
                   <div className="w-full mt-2">
                     <label className="block text-xs font-medium text-gray-700 mb-1">Thuộc tính (JSON format, vd: {`{"Color":"Red"}`})</label>
-                    <input 
-                      type="text" 
-                      value={typeof variant.attributes === 'string' ? variant.attributes : JSON.stringify(variant.attributes || {})} 
+                    <input
+                      type="text"
+                      value={typeof variant.attributes === 'string' ? variant.attributes : JSON.stringify(variant.attributes || {})}
                       onChange={(e) => {
                         try {
                           handleVariantChange(index, 'attributes', JSON.parse(e.target.value));
                         } catch(err) {
-                          // Allow typing invalid json temporarily
+
                           handleVariantChange(index, 'attributes', e.target.value as any);
                         }
-                      }} 
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-500 font-mono" 
+                      }}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-500 font-mono"
                     />
                   </div>
                 </div>
@@ -418,7 +431,6 @@ export const AdminProductFormPage: React.FC = () => {
           )}
         </div>
 
-        {/* Submit */}
         <div className="flex justify-end gap-4 pt-4">
           <button
             type="button"

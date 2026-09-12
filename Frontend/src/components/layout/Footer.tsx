@@ -46,7 +46,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-200 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
           <p>© 2026 MintMark. Tất cả các quyền được bảo lưu.</p>
           <div className="flex space-x-4 mt-4 md:mt-0">

@@ -9,9 +9,14 @@ export interface ProductImageResponse {
 export interface ProductVariantResponse {
   id: number;
   sku: string;
-  price: number;
+  name: string;
+  originalPrice: number;
+  salePrice: number;
   stockQuantity: number;
-  attributes: Record<string, any>;
+  imageUrl?: string;
+
+  price?: number;
+  attributes?: Record<string, any>;
 }
 
 export interface ProductResponse {
@@ -19,23 +24,35 @@ export interface ProductResponse {
   shopId: number;
   name: string;
   description: string;
-  price: number;
+  originalPrice: number;
+  salePrice: number;
   stockQuantity: number;
   categoryName: string | null;
+  categoryId?: number | null;
+  brandName?: string | null;
+  status?: string;
+  images: ProductImageResponse[];
   variants: ProductVariantResponse[];
-  imageResponses: ProductImageResponse[];
+
+  price?: number;
+  thumbnailUrl?: string;
+  imageResponses?: ProductImageResponse[];
 }
 
 export interface ProductVariantRequest {
-  id?: number; // Optional for new variants
+  id?: number;
   sku: string;
-  price: number;
+  name?: string;
+  originalPrice?: number;
+  salePrice?: number;
+  price?: number;
   stockQuantity: number;
-  attributes: Record<string, any>;
+  imageUrl?: string;
+  attributes?: Record<string, any>;
 }
 
 export interface ProductImageRequest {
-  id?: number; // Optional for new images
+  id?: number;
   imageUrl: string;
   publicId?: string;
   isThumbnail: boolean;
@@ -43,33 +60,39 @@ export interface ProductImageRequest {
 }
 
 export interface ProductCreateRequest {
-  shopId: number;
   name: string;
   description?: string;
-  price: number;
-  stockQuantity: number;
   categoryId: number;
   brandId?: number;
-  variants: ProductVariantRequest[];
+  price: number;
+  stockQuantity: number;
   images: ProductImageRequest[];
+  variants: ProductVariantRequest[];
+
+  shopId?: number;
+  originalPrice?: number;
+  salePrice?: number;
 }
 
 export interface ProductUpdateRequest {
   name: string;
   description?: string;
+  categoryId?: number;
+  brandId?: number;
   price: number;
   stockQuantity: number;
-  categoryId?: number;
-  variants: ProductVariantRequest[]; 
-  images: ProductImageRequest[]; 
+  images: ProductImageRequest[];
+  variants: ProductVariantRequest[];
+
+  originalPrice?: number;
+  salePrice?: number;
 }
 
 export interface PageResponse<T> {
   content: T[];
-  pageable: {
+  pageable?: {
     pageNumber: number;
     pageSize: number;
-    sort: { empty: boolean; sorted: boolean; unsorted: boolean };
     offset: number;
     paged: boolean;
     unpaged: boolean;
@@ -79,7 +102,6 @@ export interface PageResponse<T> {
   totalElements: number;
   size: number;
   number: number;
-  sort: { empty: boolean; sorted: boolean; unsorted: boolean };
   first: boolean;
   numberOfElements: number;
   empty: boolean;

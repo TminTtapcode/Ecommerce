@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { cartApi } from '../api/cartApi';
 import { useAuth } from './AuthContext';
 import type { CartResponse } from '../api/types/cart.types';
@@ -8,7 +8,7 @@ interface CartContextType {
   cartItemCount: number;
   loading: boolean;
   fetchCart: () => Promise<void>;
-  addToCart: (productVariantId: number, quantity: number) => Promise<void>;
+  addToCart: (variantId: number, quantity: number) => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -18,36 +18,57 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     if (!isAuthenticated) {
       setCart(null);
       return;
     }
-    
+
     setLoading(true);
     try {
       const response = await cartApi.getCart();
-      setCart(response.data.data || null);
+      const rawData = response.data.data;
+      if (rawData && rawData.items) {
+        const normalizedItems = rawData.items.map((item) => ({
+          ...item,
+          id: item.cartItemId ?? item.id,
+          cartItemId: item.cartItemId ?? item.id,
+          variantId: item.productVariantId ?? item.variantId,
+          productVariantId: item.productVariantId ?? item.variantId,
+          unitPrice: item.unitPrice,
+          subTotal: item.subTotal ?? item.subtotal,
+          thumbnailUrl: item.thumbnailUrl ?? item.imageUrl,
+          isAvailable: item.isAvailable ?? item.available ?? true,
+        }));
+
+        setCart({
+          ...rawData,
+          items: normalizedItems,
+          totalAmount: rawData.totalAmount ?? rawData.totalPrice ?? 0,
+        });
+      } else {
+        setCart(null);
+      }
     } catch (error) {
       console.error('Failed to fetch cart', error);
+      setCart(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     fetchCart();
-  }, [isAuthenticated]);
+  }, [fetchCart]);
 
-  const addToCart = async (productVariantId: number, quantity: number) => {
+  const addToCart = useCallback(async (variantId: number, quantity: number) => {
     if (!isAuthenticated) {
       alert("Vui lòng đăng nhập để thêm vào giỏ hàng");
       return;
     }
-    
+
     try {
-      await cartApi.addToCart({ productVariantId, quantity });
-      // Refresh cart after adding
+      await cartApi.addToCart({ variantId, quantity });
       await fetchCart();
       alert("Đã thêm vào giỏ hàng");
     } catch (error: any) {
@@ -55,16 +76,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       alert(error.response?.data?.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');
       throw error;
     }
-  };
+  }, [isAuthenticated, fetchCart]);
 
-  // We consider item count as total quantity of all items or number of unique items?
-  // Usually it's the total quantity, but number of unique items is also fine.
-  // Let's use number of unique items to be simple, or sum of quantities. 
-  // Let's use sum of quantities for accuracy.
-  const cartItemCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const cartItemCount = useMemo(() => cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0, [cart]);
+
+  const contextValue = useMemo(() => ({
+    cart,
+    cartItemCount,
+    loading,
+    fetchCart,
+    addToCart,
+  }), [cart, cartItemCount, loading, fetchCart, addToCart]);
 
   return (
-    <CartContext.Provider value={{ cart, cartItemCount, loading, fetchCart, addToCart }}>
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   );

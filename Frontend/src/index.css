@@ -3,10 +3,10 @@
 
 @layer base {
   :root {
-    --background: 216 100% 98%; /* Soft light blue/lavender background */
+    --background: 216 100% 98%;
     --foreground: 222.2 84% 4.9%;
-    /* Primary: Soft but vibrant Orange */
-    --primary: 24 90% 55%; 
+
+    --primary: 24 90% 55%;
     --primary-foreground: 0 0% 100%;
   }
 
@@ -33,7 +33,7 @@
   .card-gradient {
     background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
   }
-  
+
   @keyframes twinkle {
     0%, 100% { opacity: 0.2; transform: scale(0.6); }
     50% { opacity: 1; transform: scale(1.1) rotate(15deg); }
@@ -45,4 +45,3 @@
   .delay-2000 { animation-delay: 2s; }
   .delay-1500 { animation-delay: 1.5s; }
 }
-

@@ -23,7 +23,15 @@ export const orderApi = {
         return response.data;
     },
 
-    // === VENDOR ORDER MANAGEMENT ===
+    confirmDelivery: async (id: number): Promise<ApiResponse<OrderResponse>> => {
+        const response = await apiClient.patch<ApiResponse<OrderResponse>>(`/api/v1/orders/${id}/confirm-delivery`);
+        return response.data;
+    },
+
+    cancelOrder: async (id: number): Promise<ApiResponse<OrderResponse>> => {
+        const response = await apiClient.patch<ApiResponse<OrderResponse>>(`/api/v1/orders/${id}/cancel`);
+        return response.data;
+    },
 
     getVendorOrders: async (params?: { page?: number; size?: number; status?: string }): Promise<ApiResponse<PageResponse<OrderResponse>>> => {
         const response = await apiClient.get<ApiResponse<PageResponse<OrderResponse>>>('/api/v1/vendor/orders', { params });

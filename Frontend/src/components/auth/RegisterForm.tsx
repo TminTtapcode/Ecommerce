@@ -4,8 +4,8 @@ import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../contexts/AuthContext';
-import { AxiosError } from 'axios';
-import type { ApiResponse } from '../../api/types/auth.types';
+import { getApiError } from '../../api/apiError';
+import { ERROR_CODES } from '../../api/types/errorCodes';
 
 export const RegisterForm: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -13,7 +13,7 @@ export const RegisterForm: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; fullName?: string; confirmPassword?: string; phone?: string }>({});
@@ -72,25 +72,13 @@ export const RegisterForm: React.FC = () => {
         navigate('/');
       }
     } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse<any>>;
-      if (axiosError.response) {
-        const responseData = axiosError.response.data;
-        if (axiosError.response.status === 400) {
-          if (responseData?.data && typeof responseData.data === 'object') {
-            // Lỗi Validation chi tiết từ backend (@Valid)
-            setFieldErrors(responseData.data);
-          } else if (responseData?.message && responseData.message.toLowerCase().includes('email')) {
-            // Lỗi Business logic liên quan tới email (như trùng email)
-            setFieldErrors({ email: responseData.message });
-          } else {
-            // Các lỗi Business logic khác
-            setGlobalError(responseData?.message || 'Đăng ký thất bại');
-          }
-        } else {
-          setGlobalError(responseData?.message || 'Đăng ký thất bại');
-        }
+      const details = getApiError(error, 'Không thể đăng nhập hoặc đăng ký. Vui lòng thử lại.');
+      if (details.fieldErrors) {
+        setFieldErrors(details.fieldErrors);
+      } else if (details.errorCode === ERROR_CODES.EMAIL_ALREADY_EXISTS) {
+        setFieldErrors({ email: details.message });
       } else {
-        setGlobalError('Lỗi kết nối máy chủ, vui lòng thử lại sau');
+        setGlobalError(details.message);
       }
     } finally {
       setIsLoading(false);
@@ -105,7 +93,7 @@ export const RegisterForm: React.FC = () => {
             {globalError}
           </div>
         )}
-        
+
         <Input
           label="Họ và tên"
           type="text"
@@ -115,7 +103,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.fullName}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Email"
           type="email"
@@ -125,7 +113,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.email}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Số điện thoại"
           type="tel"
@@ -135,7 +123,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.phone}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Mật khẩu"
           type="password"
@@ -145,7 +133,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.password}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Xác nhận mật khẩu"
           type="password"
@@ -155,7 +143,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.confirmPassword}
           disabled={isLoading}
         />
-        
+
         <Button type="submit" loading={isLoading}>
           Đăng ký tài khoản
         </Button>

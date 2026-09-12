@@ -1,5 +1,6 @@
 export interface CartItemRequest {
-  productVariantId: number;
+  variantId?: number;
+  productVariantId?: number;
   quantity: number;
 }
 
@@ -17,13 +18,22 @@ export interface CartItemResponse {
   quantity: number;
   subTotal: number;
   thumbnailUrl: string;
-  attributes: Record<string, any>;
+  attributes?: Record<string, any>;
   isAvailable: boolean;
+
+  id?: number;
+  productId?: number;
+  variantId?: number;
+  subtotal?: number;
+  imageUrl?: string;
+  available?: boolean;
 }
 
 export interface CartResponse {
   cartId: number;
   items: CartItemResponse[];
   totalAmount: number;
-}
 
+  totalPrice?: number;
+  totalItems?: number;
+}

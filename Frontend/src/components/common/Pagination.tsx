@@ -18,7 +18,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
       >
         Trước
       </button>
-      
+
       <div className="flex items-center space-x-1">
         {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
           <button

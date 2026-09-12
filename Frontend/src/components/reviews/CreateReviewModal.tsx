@@ -6,6 +6,8 @@ import type { ReviewResponse } from '../../api/types/review.types';
 interface CreateReviewModalProps {
   productId: number;
   orderId: number;
+  variantId?: number;
+  productName?: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -15,6 +17,8 @@ interface CreateReviewModalProps {
 export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
   productId,
   orderId,
+  variantId,
+  productName,
   isOpen,
   onClose,
   onSuccess,
@@ -36,7 +40,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
         setComment(initialData.comment);
         setImageUrls(initialData.imageUrls || []);
       } else {
-        setRating(0);
+        setRating(5);
         setComment('');
         setImageUrls([]);
       }
@@ -50,7 +54,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       setImageFiles((prev) => [...prev, ...filesArray]);
-      
+
       const newPreviews = filesArray.map(file => URL.createObjectURL(file));
       setImagePreviews((prev) => [...prev, ...newPreviews]);
     }
@@ -80,11 +84,11 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
       setError('Vui lòng nhập nội dung đánh giá');
       return;
     }
-    
+
     setIsSubmitting(true);
     setError(null);
     try {
-      // 1. Upload new images if any
+
       const newUploadedUrls: string[] = [];
       for (const file of imageFiles) {
         const uploadRes = await mediaApi.uploadImage(file);
@@ -94,23 +98,24 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
       const finalImageUrls = [...imageUrls, ...newUploadedUrls];
 
       if (initialData) {
-        // Edit mode
+
         await reviewApi.updateReview(initialData.id, {
           rating,
           comment,
           imageUrls: finalImageUrls,
         });
       } else {
-        // Create mode
+
         await reviewApi.createReview({
           productId,
           orderId,
+          variantId,
           rating,
           comment,
           imageUrls: finalImageUrls,
         });
       }
-      
+
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -123,11 +128,16 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">{initialData ? 'Sửa đánh giá' : 'Đánh giá sản phẩm'}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto border border-gray-100">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{initialData ? 'Sửa đánh giá' : 'Đánh giá sản phẩm'}</h2>
+            {productName && (
+              <p className="text-sm text-gray-500 font-medium truncate max-w-sm mt-0.5">{productName}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -135,15 +145,15 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
         </div>
 
         {error && (
-          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4 flex flex-col items-center">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Chất lượng sản phẩm</label>
-            <div className="flex space-x-1">
+          <div className="mb-5 flex flex-col items-center py-2 bg-gray-50/60 rounded-xl border border-gray-100">
+            <label className="block text-gray-700 text-xs font-bold uppercase tracking-wider mb-2">Chất lượng sản phẩm</label>
+            <div className="flex space-x-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   type="button"
@@ -151,10 +161,10 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(0)}
-                  className="focus:outline-none transition-colors duration-200"
+                  className="focus:outline-none transition-transform hover:scale-110 active:scale-95 duration-150 cursor-pointer"
                 >
                   <svg
-                    className={`w-10 h-10 ${(hoverRating || rating) >= star ? 'text-yellow-400' : 'text-gray-300'}`}
+                    className={`w-9 h-9 ${(hoverRating || rating) >= star ? 'text-amber-400' : 'text-gray-300'}`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -163,7 +173,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
                 </button>
               ))}
             </div>
-            <div className="text-sm text-gray-500 mt-2">
+            <div className="text-xs font-semibold text-orange-600 mt-2">
               {rating === 1 && 'Tệ'}
               {rating === 2 && 'Không hài lòng'}
               {rating === 3 && 'Bình thường'}
@@ -173,56 +183,54 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Nhận xét của bạn</label>
+            <label className="block text-gray-700 text-sm font-semibold mb-1.5">Nhận xét của bạn</label>
             <textarea
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-xl w-full py-2.5 px-3 text-gray-700 leading-relaxed focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
               rows={4}
               placeholder="Hãy chia sẻ những điều bạn thích về sản phẩm này nhé"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               maxLength={1000}
             ></textarea>
-            <div className="text-right text-xs text-gray-500 mt-1">
+            <div className="text-right text-xs text-gray-400 mt-1">
               {comment.length}/1000
             </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Thêm hình ảnh (Tuỳ chọn)</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {/* Existing Images */}
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-semibold mb-1.5">Thêm hình ảnh (Tuỳ chọn)</label>
+            <div className="flex flex-wrap gap-2.5 mb-2">
               {imageUrls.map((url, index) => (
-                <div key={`existing-${index}`} className="relative">
-                  <img src={url} alt="Review" className="w-16 h-16 object-cover rounded border" />
+                <div key={`existing-${index}`} className="relative group">
+                  <img src={url} alt="Review" className="w-16 h-16 object-cover rounded-xl border border-gray-200" />
                   <button
                     type="button"
                     onClick={() => removeExistingImage(index)}
-                    className="absolute -top-2 -right-2 bg-white rounded-full text-red-500 hover:text-red-700 shadow-sm"
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm transition-colors"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
               ))}
-              
-              {/* New Previews */}
+
               {imagePreviews.map((preview, index) => (
-                <div key={`new-${index}`} className="relative">
-                  <img src={preview} alt="Preview" className="w-16 h-16 object-cover rounded border" />
+                <div key={`new-${index}`} className="relative group">
+                  <img src={preview} alt="Preview" className="w-16 h-16 object-cover rounded-xl border border-gray-200" />
                   <button
                     type="button"
                     onClick={() => removeImagePreview(index)}
-                    className="absolute -top-2 -right-2 bg-white rounded-full text-red-500 hover:text-red-700 shadow-sm"
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm transition-colors"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
               ))}
-              
-              <label className="w-16 h-16 flex items-center justify-center border-2 border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 transition-colors">
+
+              <label className="w-16 h-16 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-500 hover:bg-orange-50/30 transition-colors">
                 <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
                 <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -231,27 +239,27 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded shadow-sm hover:bg-gray-50 focus:outline-none"
+              className="bg-white border border-gray-300 text-gray-700 px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50 focus:outline-none transition-colors cursor-pointer"
               disabled={isSubmitting}
             >
               Trở lại
             </button>
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 flex items-center gap-2 text-sm transition-all cursor-pointer"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Đang xử lý...
+                  <span>Đang xử lý...</span>
                 </>
               ) : (
                 'Hoàn thành'

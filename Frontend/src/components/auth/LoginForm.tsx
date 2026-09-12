@@ -4,8 +4,7 @@ import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../contexts/AuthContext';
-import { AxiosError } from 'axios';
-import type { ApiResponse } from '../../api/types/auth.types';
+import { getApiError } from '../../api/apiError';
 
 export const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -57,22 +56,11 @@ export const LoginForm: React.FC = () => {
         navigate(from, { replace: true });
       }
     } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse<any>>;
-      if (axiosError.response) {
-        const responseData = axiosError.response.data;
-        if (axiosError.response.status === 400) {
-          if (responseData?.data && typeof responseData.data === 'object') {
-            // Lỗi Validation chi tiết từ backend (@Valid)
-            setFieldErrors(responseData.data);
-          } else {
-            // Các lỗi Business logic khác (như sai tài khoản mật khẩu)
-            setGlobalError(responseData?.message || 'Đăng nhập thất bại');
-          }
-        } else {
-          setGlobalError(responseData?.message || 'Đăng nhập thất bại');
-        }
+      const details = getApiError(error, 'Không thể đăng nhập hoặc đăng ký. Vui lòng thử lại.');
+      if (details.fieldErrors) {
+        setFieldErrors(details.fieldErrors);
       } else {
-        setGlobalError('Lỗi kết nối máy chủ, vui lòng thử lại sau');
+        setGlobalError(details.message);
       }
     } finally {
       setIsLoading(false);
@@ -131,7 +119,7 @@ export const LoginForm: React.FC = () => {
           Google
         </button>
       </div>
-      
+
       <p className="text-xs text-center text-gray-400 mt-6 font-medium">
         Bằng việc đăng nhập, bạn đồng ý với <a href="#" className="text-gray-600 hover:text-orange-500 transition-colors">Điều khoản dịch vụ</a> & <a href="#" className="text-gray-600 hover:text-orange-500 transition-colors">Chính sách bảo mật</a>
       </p>
