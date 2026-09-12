@@ -52,9 +52,17 @@
 
 *Vị trí file:* [frontend/src/api/apiClient.ts](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/api/apiClient.ts)
 
-### 📌 Đoạn mã nguồn thực tế:
+### 📌 Đoạn mã nguồn thực tế trong dự án:
 ```typescript
 import axios from 'axios';
+import type { AxiosRequestConfig } from 'axios';
+import { getApiError } from './apiError';
+import { ERROR_CODES } from './types/errorCodes';
+import { authSessionGuard } from '../contexts/authSession';
+
+// WeakMap lưu trữ thế hệ phiên (generation) và token cho từng request
+const requestSessions = new WeakMap<object, { generation: number; token: string | null }>();
+export type SessionRequestConfig = AxiosRequestConfig & { authSessionGeneration?: number };
 
 // 1. Tạo một Axios instance dùng chung cho toàn bộ ứng dụng
 const apiClient = axios.create({
@@ -67,10 +75,18 @@ const apiClient = axios.create({
 // 2. REQUEST INTERCEPTOR: Chạy trước khi bất kỳ request nào bay ra mạng
 apiClient.interceptors.request.use(
   (config) => {
-    // Lấy token JWT từ LocalStorage của trình duyệt
-    const token = localStorage.getItem('token');
+    const explicit = config.headers?.Authorization;
+    const token = typeof explicit === 'string' && explicit.startsWith('Bearer ') 
+      ? explicit.slice(7) 
+      : localStorage.getItem('token');
+    
+    // Đóng dấu thế hệ phiên (Session Generation) để chống rò rỉ dữ liệu khi đổi tài khoản
+    requestSessions.set(config, { 
+      generation: (config as SessionRequestConfig).authSessionGeneration ?? authSessionGuard.capture(), 
+      token 
+    });
+
     if (token && config.headers) {
-      // Tự động gắn Bearer Token vào Header Authorization
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -82,9 +98,16 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const session = error.config && requestSessions.get(error.config);
+    // Bỏ qua lỗi nếu request này thuộc về phiên cũ đã hết hạn hoặc người dùng đã đăng xuất
+    if (session && (!authSessionGuard.accepts(session.generation) || session.token !== localStorage.getItem('token'))) {
+      return Promise.reject(error);
+    }
+
+    const details = getApiError(error);
     // Nếu Backend trả về 401 Unauthorized (Token hết hạn hoặc không hợp lệ)
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token'); // Xóa token cũ
+    if (details.status === 401 || details.errorCode === ERROR_CODES.UNAUTHORIZED) {
+      localStorage.removeItem('token');
       // Tự động chuyển hướng về trang đăng nhập
       if (!error.config?.url?.startsWith('/api/v1/auth/')) {
         window.location.href = '/login';
@@ -98,16 +121,12 @@ export default apiClient;
 ```
 
 ### 💡 Giải thích từng cú pháp & Bản chất kỹ thuật:
-1. **`import.meta.env.VITE_API_URL || 'http://localhost:8080'`:**
-   - `import.meta.env`: Cú pháp của công cụ Vite để đọc biến môi trường từ file `.env`.
-   - `||` (Toán tử OR): Nếu không tìm thấy biến môi trường, tự động fallback về URL mặc định `http://localhost:8080`.
-2. **`apiClient.interceptors.request.use(...)` (Interceptor là gì?):**
-   - Giống như một **"trạm kiểm soát vé"**. Mỗi khi một component (như `CartPage`, `OrderPage`) gọi `apiClient.get(...)`, interceptor này tự động chèn thêm `Authorization: Bearer <jwt>` vào Header. Lợi ích: Lập trình viên không cần viết thủ công việc lấy token ở hàng trăm hàm gọi API.
-3. **`apiClient.interceptors.response.use(...)`:**
-   - Xử lý lỗi tập trung (Global Error Handler). Nếu token JWT hết hạn (sau 24h), backend trả về mã `401 Unauthorized`, interceptor lập tức xóa token khỏi máy khách và điều hướng người dùng về trang `/login`.
-
-> **Hội đồng sẽ hỏi:** *"Tại sao em không dùng hàm `fetch()` mặc định của trình duyệt mà lại dùng thư viện `axios`?"*  
-> **Trả lời:** *"Dạ thưa thầy/cô, `axios` cung cấp tính năng **Interceptors** cực kỳ mạnh mẽ giúp em tự động đính kèm JWT token vào mọi request và tự động bắt lỗi 401 tập trung tại 1 nơi duy nhất. Ngoài ra, `axios` tự động parse dữ liệu JSON và có cơ chế thiết lập timeout, giúp code ngắn gọn và dễ bảo trì hơn `fetch` thuần rất nhiều."*
+1. **`requestSessions = new WeakMap<object, ...>()`:**
+   - Sử dụng `WeakMap` với key là đối tượng `config` của Axios. `WeakMap` có cơ chế tự động dọn rác bộ nhớ (Garbage Collection) khi request hoàn tất, không gây rò rỉ RAM (Memory Leak).
+2. **`authSessionGuard.capture()` & `accepts(generation)` (Cơ chế Chống Race Condition giữa các phiên):**
+   - Giả sử người dùng đang gọi một API mất 2 giây để tải. Trong lúc đang tải, người dùng bấm "Đăng xuất" rồi đăng nhập tài khoản khác. Nếu không có `authSessionGuard`, response cũ trả về lỗi 401 sẽ vô tình làm đăng xuất luôn cả tài khoản mới. Interceptor dùng `authSessionGuard` để phát hiện và phớt lờ các response "mồ côi" thuộc về phiên đăng nhập cũ.
+3. **`getApiError(error)` & `details.errorCode === ERROR_CODES.UNAUTHORIZED`:**
+   - Không chỉ dựa vào HTTP Status `401`, interceptor còn kiểm tra mã lỗi nghiệp vụ `UNAUTHORIZED` trả về từ Backend `ApiResponse` để xử lý đăng xuất an toàn và chính xác tuyệt đối.
 
 ---
 
@@ -115,67 +134,153 @@ export default apiClient;
 
 *Vị trí file:* [frontend/src/contexts/AuthContext.tsx](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/contexts/AuthContext.tsx)
 
-### 📌 Đoạn mã nguồn thực tế:
+### 📌 Đoạn mã nguồn thực tế trong dự án:
 ```tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { decodeUser } from './authSession';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { userApi } from '../api/userApi';
+import type { Profile, ProfileUpdate } from '../api/userApi';
+import { decodeUser, authSessionGuard } from './authSession';
+import type { UserPayload } from './authSession';
+export type { UserPayload } from './authSession';
 
-// 1. Định nghĩa kiểu dữ liệu (Interface) cho vùng nhớ Context
+// 1. Interface định nghĩa toàn bộ dữ liệu & hàm do AuthContext cung cấp
 interface AuthContextType {
+  session: import("../services/websocket").RealtimeSession | null; // Phiên dùng cho WebSocket
   isAuthenticated: boolean;
   isAdmin: boolean;
   isVendor: boolean;
   user: UserPayload | null;
+  loading: boolean;
   login: (token: string) => void;
   logout: () => void;
+  loadProfile: () => Promise<Profile | null>;
+  saveProfile: (body: ProfileUpdate) => Promise<Profile | null>;
 }
 
-// 2. Tạo Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 3. Provider bao bọc toàn bộ ứng dụng
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // useState khởi tạo user bằng cách giải mã token trong LocalStorage
+  // 2. Khởi tạo User và RealtimeSession từ Token trong LocalStorage
   const [user, setUser] = useState(() => decodeUser(localStorage.getItem('token')));
+  const [session, setSession] = useState(() => {
+    const token = localStorage.getItem('token');
+    return token && decodeUser(token) ? { token, generation: authSessionGuard.capture() } : null;
+  });
 
+  // 3. Request Versioning: Chống Race Condition khi người dùng bấm Lưu hồ sơ liên tục
+  const requestVersion = React.useRef(0);
+
+  // 4. Hàm gọi API Profile an toàn với cơ chế kiểm tra thế hệ (generation-safe)
+  const profileRequest = useCallback(async (body?: ProfileUpdate): Promise<Profile | null> => {
+    const generation = authSessionGuard.capture();
+    const token = localStorage.getItem('token');
+    const identity = decodeUser(token);
+    if (!identity || !token) return null;
+
+    const version = body ? ++requestVersion.current : requestVersion.current;
+    try {
+      const session = { token, generation };
+      const response = body ? await userApi.updateProfile(body, session) : await userApi.getProfile(session);
+      
+      // Chặn phản hồi muộn: Nếu user đã đổi phiên hoặc request đã bị phiên bản mới hơn ghi đè
+      if (!authSessionGuard.accepts(generation) || localStorage.getItem('token') !== token || version !== requestVersion.current) {
+        return null;
+      }
+      const profile = response.data.data;
+      if (!profile || profile.id !== identity.userId) throw new Error('Profile identity mismatch');
+
+      setUser(current => current?.userId === identity.userId ? { ...current, fullName: profile.fullName } : current);
+      return profile;
+    } catch (error) {
+      if (!authSessionGuard.accepts(generation) || localStorage.getItem('token') !== token || version !== requestVersion.current) {
+        return null;
+      }
+      throw error;
+    }
+  }, []);
+
+  const loadProfile = useCallback(() => profileRequest(), [profileRequest]);
+  const saveProfile = useCallback((body: ProfileUpdate) => profileRequest(body), [profileRequest]);
+  const invalidateRequests = useCallback(() => { ++requestVersion.current; }, []);
+
+  // 5. Tải Profile khi khởi động ứng dụng
+  useEffect(() => {
+    void loadProfile().catch(() => { });
+    return invalidateRequests;
+  }, [loadProfile, invalidateRequests]);
+
+  // 6. ĐỒNG BỘ ĐA TAB TRÌNH DUYỆT (Cross-tab Synchronization qua StorageEvent)
+  useEffect(() => {
+    const changed = (event: StorageEvent) => {
+      // Chỉ bắt sự kiện thay đổi trên key 'token' trong LocalStorage
+      if (event.storageArea !== localStorage || (event.key !== 'token' && event.key !== null)) return;
+      authSessionGuard.advance(); // Tăng thế hệ phiên để hủy bỏ các request dở dang cũ
+      invalidateRequests();
+      const token = localStorage.getItem('token');
+      const identity = decodeUser(token);
+      setUser(identity);
+      setSession(token && identity ? { token, generation: authSessionGuard.capture() } : null);
+      if (identity) void loadProfile().catch(() => { });
+    };
+    window.addEventListener('storage', changed);
+    return () => window.removeEventListener('storage', changed);
+  }, [loadProfile, invalidateRequests]);
+
+  // 7. Hàm Đăng nhập: Tăng generation, lưu token, cập nhật State & WebSocket Session
   const login = (token: string) => {
+    authSessionGuard.advance();
     localStorage.setItem('token', token);
-    setUser(decodeUser(token)); // Cập nhật state -> Giao diện tự đổi sang Đã đăng nhập
+    setUser(decodeUser(token));
+    setSession(decodeUser(token) ? { token, generation: authSessionGuard.capture() } : null);
+    void loadProfile().catch(() => { });
   };
 
+  // 8. Hàm Đăng xuất: Tăng generation, hủy request cũ, xóa sạch Token
   const logout = () => {
+    authSessionGuard.advance();
+    ++requestVersion.current;
     localStorage.removeItem('token');
-    setUser(null); // Xóa user -> Giao diện tự đổi về Chưa đăng nhập
+    setUser(null);
+    setSession(null);
   };
-
-  const isAuthenticated = !!user;
-  const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
-  const isVendor = user?.roles?.includes('ROLE_VENDOR') ?? false;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isAdmin, isVendor, user, login, logout }}>
+    <AuthContext.Provider value={{
+      session,
+      user,
+      isAuthenticated: user !== null,
+      isAdmin: user?.roles.includes('ROLE_ADMIN') ?? false,
+      // Vendor bao gồm cả người sở hữu ROLE_VENDOR lẫn Quản trị viên ROLE_ADMIN
+      isVendor: user?.roles.some(role => role === 'ROLE_VENDOR' || role === 'ROLE_ADMIN') ?? false,
+      loading: false,
+      login,
+      logout,
+      loadProfile,
+      saveProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// 4. Custom Hook để các Component khác sử dụng nhanh
+// 9. Custom Hook cho toàn bộ các Component gọi nhanh
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
 ```
 
-### 💡 Giải thích từng cú pháp & Bản chất kỹ thuật:
-1. **`createContext` & `useContext`:**
-   - Giải quyết bài toán **Prop Drilling** (truyền dữ liệu qua quá nhiều cấp component trung gian). Bất kỳ trang nào trong web chỉ cần gọi `const { isVendor, logout } = useAuth();` là có thể lấy dữ liệu ngay lập tức.
-2. **`useState(() => decodeUser(...))` (Lazy Initialization):**
-   - Thay vì truyền trực tiếp giá trị vào `useState(decodeUser(...))`, ta truyền một hàm callback `() => ...`. Cú pháp này giúp thao tác giải mã JWT chỉ chạy **đúng 1 lần duy nhất** khi web vừa tải, tránh việc giải mã lại mỗi lần component render, giúp tối ưu hiệu năng.
-3. **Toán tử `!!user`:**
-   - Ép kiểu đối tượng thành Boolean. Nếu `user` là một object có dữ liệu $\rightarrow$ `true`; nếu `user` là `null` hoặc `undefined` $\rightarrow$ `false`.
-4. **Toán tử Optional Chaining `?.` và Nullish Coalescing `??`:**
-   - `user?.roles?.includes('ROLE_ADMIN') ?? false`: Nếu `user` hoặc `roles` bị `null`, code không bị văng lỗi crash màn hình, mà trả về giá trị mặc định là `false`.
+### 💡 Giải thích từng cú pháp & Bản chất kỹ thuật đỉnh cao trong `AuthContext.tsx`:
+1. **`authSessionGuard.advance()` & `authSessionGuard.capture()`:**
+   - Được định nghĩa trong `authSession.ts` dưới dạng bộ đếm thế hệ: `let generation = 0; advance: () => ++generation`.
+   - **Tác dụng:** Giải quyết triệt để lỗi **Session Leaking / Stale Callback**. Nếu người dùng A đang gửi request `loadProfile()`, rồi lập tức ấn Logout và người dùng B đăng nhập vào; khi response của A trả về sau đó 50ms, hàm `authSessionGuard.accepts(generation)` sẽ thấy `generation` đã đổi và lập tức hủy bỏ kết quả, không cho phép tên của người dùng A hiển thị đè lên màn hình của người dùng B!
+2. **`requestVersion = React.useRef(0)` (Request Invalidation Pattern):**
+   - Khi người dùng bấm lưu thông tin cá nhân 2 lần liên tiếp: Lần 1 (version 1), Lần 2 (version 2). `useRef` lưu giữ giá trị nguyên bản qua các lần render. Chỉ khi nào `version === requestVersion.current` (chính là lần bấm cuối cùng) thì kết quả mới được chấp nhận, loại bỏ hoàn toàn tình trạng kết quả cũ về chậm ghi đè lên dữ liệu mới.
+3. **`window.addEventListener('storage', changed)` (Đồng bộ đa tab thời gian thực):**
+   - Thử nghiệm thực tế: Mở 2 tab Chrome cùng vào website. Tại Tab 1, bấm Đăng xuất. Sự kiện `storage` sẽ lập tức kích hoạt tại Tab 2! Tab 2 tự động phát hiện `token` bị xóa, gọi `authSessionGuard.advance()`, xóa `user` và giao diện Tab 2 tự động chuyển về trạng thái Chưa đăng nhập mà không cần người dùng phải bấm F5 tải lại trang.
+4. **`session: RealtimeSession | null`:**
+   - Đóng gói `{ token, generation }` cung cấp trực tiếp cho `WebSocketService` kết nối tới kênh Chat STOMP, đảm bảo kết nối thời gian thực luôn được khởi tạo lại chính xác mỗi khi người dùng đổi tài khoản.
 
 ---
 
@@ -316,52 +421,153 @@ const handleCheckout = async (e: React.FormEvent) => {
 
 *Vị trí file:* [frontend/src/services/websocket.ts](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/services/websocket.ts)
 
-### 📌 Đoạn mã nguồn thực tế:
+### 📌 Đoạn mã nguồn thực tế trong dự án:
 ```typescript
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import type { ChatMessage, SendMessageRequest } from '../api/types/chat.types';
+import type { NotificationResponse } from '../api/types/notification.types';
+import { authSessionGuard } from '../contexts/authSession';
 
-export class WebSocketService {
+export interface RealtimeSession { token: string; generation: number }
+
+// 1. Trích xuất thời điểm hết hạn (exp) từ Payload của Token JWT
+export function tokenExpiry(token: string): number {
+  try {
+    const exp = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp;
+    return typeof exp === 'number' ? exp * 1000 : 0;
+  } catch { return 0; }
+}
+
+class WebSocketService {
   private client: Client | null = null;
+  private sequence = 0;
+  private closing: Promise<void> = Promise.resolve();
+  private expiryTimer: ReturnType<typeof setTimeout> | undefined;
+  
+  // Quản lý các hàm lắng nghe (Listeners) bằng Set để tránh trùng lặp
+  private messages = new Set<(m: ChatMessage) => void>();
+  private notifications = new Set<(n: NotificationResponse) => void>();
+  private statuses = new Set<(connected: boolean) => void>();
+  private connected = false;
 
-  connect(token: string, onMessageReceived: (message: any) => void) {
-    // 1. Khởi tạo kết nối qua SockJS dự phòng nếu trình duyệt không hỗ trợ WebSocket thuần
-    const socket = new SockJS('http://localhost:8080/ws');
-    
-    // 2. Cấu hình STOMP Client
-    this.client = new Client({
-      webSocketFactory: () => socket,
-      // Gửi JWT Token trong Header STOMP CONNECT frame
-      connectHeaders: {
-        Authorization: `Bearer ${token}`
-      },
-      onConnect: () => {
-        console.log('STOMP Connected successfully!');
-        // 3. Đăng ký kênh nhận tin nhắn riêng của User hiện tại
-        this.client?.subscribe('/user/queue/messages', (frame) => {
-          const message = JSON.parse(frame.body);
-          onMessageReceived(message); // Gọi callback truyền tin nhắn vào React state
-        });
-      },
-      onStompError: (frame) => {
-        console.error('Broker error: ' + frame.headers['message']);
-      }
+  // 2. Thiết lập phiên kết nối dựa trên RealtimeSession truyền từ AuthContext
+  setSession(session: RealtimeSession | null) {
+    const sequence = ++this.sequence;
+    const old = this.client; 
+    this.client = null;
+    clearTimeout(this.expiryTimer); 
+    this.status(false);
+
+    // Xếp hàng đóng kết nối cũ an toàn trước khi mở kết nối mới (Graceful Shutdown)
+    this.closing = this.closing.then(async () => { 
+      if (old) await old.deactivate({ force: true }); 
     });
 
-    this.client.activate(); // Kích hoạt kết nối
+    void this.closing.then(() => {
+      if (!session || sequence !== this.sequence) return;
+      
+      const current = () => sequence === this.sequence && authSessionGuard.accepts(session.generation)
+        && localStorage.getItem('token') === session.token && tokenExpiry(session.token) > Date.now();
+      if (!current()) return;
+
+      const api = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const url = import.meta.env.VITE_WS_URL || `${api.replace(/^http/, 'ws')}/ws`;
+
+      // 3. Khởi tạo STOMP Client
+      const client = new Client({
+        brokerURL: url,
+        connectHeaders: { Authorization: `Bearer ${session.token}` },
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+        beforeConnect: async () => { if (!current()) await client.deactivate({ force: true }); },
+        onConnect: () => {
+          if (!current()) { void client.deactivate({ force: true }); return; }
+          
+          // Đăng ký nhận tin nhắn chat riêng tư (/user/queue/messages)
+          client.subscribe('/user/queue/messages', frame => {
+            if (!current()) return;
+            try { 
+              const value = JSON.parse(frame.body); 
+              this.messages.forEach(cb => cb(value)); 
+            } catch { }
+          });
+
+          // Đăng ký nhận thông báo hệ thống (/user/queue/notifications)
+          client.subscribe('/user/queue/notifications', frame => {
+            if (!current()) return;
+            try { 
+              const value = JSON.parse(frame.body); 
+              if (Number.isSafeInteger(value.id)) this.notifications.forEach(cb => cb(value)); 
+            } catch { }
+          });
+
+          this.status(true);
+        },
+        onStompError: () => { 
+          if (sequence === this.sequence) this.status(false); 
+          void client.deactivate({ force: true }); 
+        },
+        onWebSocketClose: () => { 
+          if (sequence === this.sequence) this.status(false); 
+        },
+      });
+
+      this.client = client;
+
+      // 4. Hẹn giờ tự động ngắt kết nối WebSocket đúng lúc JWT Token hết hạn
+      this.expiryTimer = setTimeout(() => { 
+        if (sequence === this.sequence) this.setSession(null); 
+      }, Math.min(tokenExpiry(session.token) - Date.now(), 2147483647));
+
+      client.activate();
+    });
   }
 
-  // 4. Gửi tin nhắn lên server qua kênh /app/chat.send
-  sendMessage(roomId: number, content: string) {
-    if (this.client && this.client.connected) {
-      this.client.publish({
-        destination: '/app/chat.send',
-        body: JSON.stringify({ roomId, content })
-      });
-    }
+  // 5. Các hàm Đăng ký sự kiện (Observer Pattern)
+  subscribe(cb: (m: ChatMessage) => void) { 
+    this.messages.add(cb); 
+    return () => { this.messages.delete(cb); }; 
+  }
+  
+  subscribeNotifications(cb: (n: NotificationResponse) => void) { 
+    this.notifications.add(cb); 
+    return () => { this.notifications.delete(cb); }; 
+  }
+  
+  onStatusChange(cb: (connected: boolean) => void) { 
+    this.statuses.add(cb); 
+    cb(this.connected); 
+    return () => { this.statuses.delete(cb); }; 
+  }
+
+  private status(value: boolean) { 
+    this.connected = value; 
+    this.statuses.forEach(cb => cb(value)); 
+  }
+
+  isConnected() { return this.connected; }
+
+  // 6. Gửi tin nhắn qua kênh đích /app/chat.send
+  sendMessage(body: SendMessageRequest) {
+    if (!this.client || !this.connected) return;
+    this.client.publish({
+      destination: '/app/chat.send',
+      body: JSON.stringify(body)
+    });
   }
 }
+
+export const webSocketService = new WebSocketService();
 ```
+
+### 💡 Giải thích từng cú pháp & Bản chất kỹ thuật:
+1. **`tokenExpiry(token)` & `expiryTimer`:**
+   - Hàm giải mã phần Payload ở giữa của JWT Token (`base64Url`) để lấy thuộc tính `exp` (thời điểm hết hạn do backend sinh ra). `WebSocketService` thiết lập một bộ đếm `setTimeout`: Khi token vừa hết hạn (sau 24h), socket tự động ngắt kết nối (`setSession(null)`), không để client duy trì kết nối ma khi đã mất quyền.
+2. **`this.closing = this.closing.then(...)` (Graceful Teardown Queue):**
+   - Đảm bảo việc ngắt kết nối cũ luôn hoàn tất 100% trước khi kết nối mới được khởi tạo, tránh tình trạng "kết nối ma" (Ghost connection) bị rò rỉ trên server.
+3. **`new Set<(...) => void>()` (Observer Pattern):**
+   - Lưu trữ danh sách các hàm Callback lắng nghe tin nhắn. Khi có tin nhắn mới tới, `this.messages.forEach(cb => cb(value))` kích hoạt tất cả các component đang mở cửa sổ chat cập nhật tin nhắn cùng lúc.
 
 ---
 
@@ -1066,7 +1272,9 @@ public class VnPayStrategy implements PaymentStrategy {
 
 # PHẦN 4: HỆ THỐNG KIỂM TRA HỢP LỆ (VALIDATION) & XỬ LÝ LỖI TOÀN CỤC (EXCEPTION HANDLING)
 
-Hệ thống chuyên nghiệp không bao giờ để ứng dụng bị văng lỗi 500 kèm stacktrace lộ thông tin nội bộ. Dự án đã xây dựng mô hình kiểm soát lỗi tập trung 2 tầng cực kỳ chặt chẽ: **Validate đầu vào tại DTO** $ightarrow$ **Xử lý lỗi tập trung tại GlobalExceptionHandler** $ightarrow$ **Ánh xạ lỗi lên giao diện người dùng qua apiError.ts**.
+Hệ thống chuyên nghiệp không bao giờ để ứng dụng bị văng lỗi 500 kèm stacktrace lộ thông tin nội bộ. Dự án đã xây dựng mô hình kiểm soát lỗi tập trung 2 tầng cực kỳ chặt chẽ: **Validate đầu vào tại DTO** $
+ightarrow$ **Xử lý lỗi tập trung tại GlobalExceptionHandler** $
+ightarrow$ **Ánh xạ lỗi lên giao diện người dùng qua apiError.ts**.
 
 ---
 
@@ -1485,7 +1693,8 @@ RefundAttempt reserve(RefundableOrderSnapshot order, Long actorId, String idempo
 ```
 
 ### 💡 Tại sao cần `Idempotency-Key` trong nghiệp vụ hoàn tiền?
-- Khi Admin ấn nút "Hoàn tiền cho khách", mạng có thể bị lag hoặc chập chờn. Nếu Admin mất kiên nhẫn bấm đúp (double-click) hoặc trình duyệt tự động gửi lại request (retry), nếu không có `Idempotency-Key`, hệ thống sẽ gọi API sang VNPay 2 lần $ightarrow$ **Tài khoản công ty bị mất tiền 2 lần cho cùng 1 đơn hàng**.
+- Khi Admin ấn nút "Hoàn tiền cho khách", mạng có thể bị lag hoặc chập chờn. Nếu Admin mất kiên nhẫn bấm đúp (double-click) hoặc trình duyệt tự động gửi lại request (retry), nếu không có `Idempotency-Key`, hệ thống sẽ gọi API sang VNPay 2 lần $
+ightarrow$ **Tài khoản công ty bị mất tiền 2 lần cho cùng 1 đơn hàng**.
 - `Idempotency-Key` sinh ra ở máy khách (UUID ngẫu nhiên duy nhất cho mỗi phiên thao tác). Khi request thứ 2 bay đến, DB phát hiện key này đã có trong bảng `refund_attempts`, nó lập tức trả về kết quả của request đầu tiên mà không bắn API hoàn tiền lần nữa.
 
 ---
@@ -1793,7 +2002,8 @@ Hàm này cung cấp dữ liệu cho biểu đồ thanh sao trên trang chi ti�
   4. Phía Backend: `JwtAuthenticationFilter` kiểm tra request (cho qua vì API public trong `SecurityConfig`). `ProductController.getAllProducts()` nhận request, gọi `ProductServiceImpl.getAllProducts()`.
   5. `ProductRepository` chạy truy vấn Hibernate xuống MySQL kèm `@EntityGraph` để lấy sản phẩm và danh mục chỉ trong 1 câu lệnh SQL duy nhất.
   6. Controller đóng gói kết quả vào `ApiResponse<Page<ProductResponse>>` gửi về dạng JSON (HTTP 200).
-  7. Axios nhận JSON, hàm setter `setProducts(data)` được gọi $ightarrow$ React re-render và hiển thị các Card sản phẩm lên màn hình.
+  7. Axios nhận JSON, hàm setter `setProducts(data)` được gọi $
+ightarrow$ React re-render và hiển thị các Card sản phẩm lên màn hình.
 
 ---
 
