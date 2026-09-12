@@ -9,6 +9,11 @@
 
 ## MỤC LỤC BÀI HỌC
 
+0. [Phần 0: Cẩm nang Khởi động từ Con số 0 — Bản chất Hệ thống qua Ví dụ Đời thường & Khi nào Code được Dùng](#phần-0-cẩm-nang-khởi-động-từ-con-số-0--bản-chất-hệ-thống-qua-ví-dụ-đời-thường--khi-nào-code-được-dùng)
+   - [0.1. Bức tranh Toàn cảnh: Siêu thị Đời thường & Luồng Đi của Dữ liệu](#01-bức-tranh-toàn-cảnh-siêu-thị-đời-thường--luồng-đi-của-dữ-liệu)
+   - [0.2. Từ điển Cú pháp Frontend: Bản chất & Khi nào Source Code Cần Dùng Đến?](#02-từ-điển-cú-pháp-frontend-bản-chất--khi-nào-source-code-cần-dùng-đến)
+   - [0.3. Từ điển Cú pháp Backend: Bản chất & Khi nào Source Code Cần Dùng Đến?](#03-từ-điển-cú-pháp-backend-bản-chất--khi-nào-source-code-cần-dùng-đến)
+   - [0.4. Công thức 3 Bước Vàng Trả lời Tự tin Mọi Câu hỏi của Hội đồng](#04-công-thức-3-bước-vàng-trả-lời-tự-tin-mọi-câu-hỏi-của-hội-đồng)
 1. [Phần 1: Giải mã Cú pháp Frontend qua Mã Nguồn Thực Tế](#phần-1-giải-mã-cú-pháp-frontend-qua-mã-nguồn-thực-tế)
    - [1.1. Cấu hình Mạng & Token Interceptor (`apiClient.ts`)](#11-cấu-hình-mạng--token-interceptor-apiclientts)
    - [1.2. Quản lý Đăng nhập Toàn cục với Context & Hook (`AuthContext.tsx`)](#12-quản-lý-đăng-nhập-toàn-cục-với-context--hook-authcontexttsx)
@@ -46,6 +51,191 @@
 6. [Phần 6: Trọn bộ 20 Câu Hỏi Vấn Đáp Thực Chiến & Mẫu Trả Lời Ghi Điểm Tuyệt Đối](#phần-6-trọn-bộ-20-câu-hỏi-vấn-đáp-thực-chiến--mẫu-trả-lời-ghi-điểm-tuyệt-đối)
 
 ---
+# PHẦN 0: CẨM NANG KHỞI ĐỘNG TỪ CON SỐ 0 — BẢN CHẤT HỆ THỐNG QUA VÍ DỤ ĐỜI THƯỜNG & KHI NÀO CODE ĐƯỢC DÙNG
+
+Phần này dành riêng cho bạn nếu bạn cảm thấy mình **"mất gốc"**, bối rối trước hàng ngàn dòng code hoặc lo sợ khi bị Hội đồng hỏi xoay quanh cú pháp. Hãy đọc kỹ phần này trước khi đi sâu vào chi tiết các file code bên dưới.
+
+---
+
+## 0.1. Bức tranh Toàn cảnh: Siêu thị Đời thường & Luồng Đi của Dữ liệu
+
+Hãy tưởng tượng toàn bộ đồ án E-commerce của bạn giống hệt một **Trung tâm thương mại / Siêu thị đa gian hàng**:
+
+```text
+[ TRÌNH DUYỆT CỦA NGƯỜI DÙNG ]
+       (FRONTEND - React)
+              │
+              │  (1) HTTP Request (Gửi thư hỏi - đáp qua Axios)
+              │  (2) WebSocket STOMP (Bộ đàm đàm thoại 2 chiều liên tục)
+              ▼
+[ TRUNG TÂM ĐIỀU HÀNH MÁY CHỦ ]
+       (BACKEND - Spring Boot)
+              │
+              │  Đọc / Ghi vào Két sắt bảo mật
+              ▼
+[ KÉT SẮT HỒ SƠ DỮ LIỆU ]
+       (DATABASE - MySQL)
+```
+
+1. **Frontend (Mặt tiền siêu thị):**
+   - Nơi trưng bày sản phẩm lung linh, giỏ hàng, bảng chọn màu sắc, kích thước, nút "Mua ngay", khung chat nổi.
+   - Viết bằng: **React + TypeScript + TailwindCSS**.
+   - Chạy trực tiếp trên trình duyệt của khách hàng (Client-side).
+2. **Backend (Văn phòng quản lý & Nhà kho trung tâm):**
+   - Nơi kiểm tra mật khẩu có đúng không, tính toán tổng tiền, trừ hàng trong kho, kiểm tra xem shop có tự chat với chính mình không, gọi sang ngân hàng VNPay.
+   - Viết bằng: **Java 21 + Spring Boot 3 + Spring Security 6**.
+   - Chạy an toàn trên máy chủ (Server-side), người ngoài không thể nhìn trộm code hay can thiệp.
+3. **Database (Két sắt hồ sơ chống cháy):**
+   - Nơi lưu trữ vĩnh viễn: Danh sách tài khoản (`users`), kho hàng (`product_variants`), đơn hàng (`orders`), tin nhắn (`chat_messages`).
+   - Viết bằng: **MySQL**. Tắt máy tính hay cúp điện bật lại thì toàn bộ dữ liệu vẫn nguyên vẹn.
+
+---
+
+### 🔄 Luồng Đi của 1 Thao tác Mua hàng Đời thường:
+1. **Khách bấm "Đặt hàng" trên màn hình:**
+   - [CheckoutPage.tsx](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/pages/public/CheckoutPage.tsx) gom toàn bộ thông tin (địa chỉ, phương thức thanh toán, ID các món hàng) đóng gói thành một gói hàng JSON (`OrderCreateRequest`).
+2. **Gửi qua đường bưu điện Internet:**
+   - [apiClient.ts](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/api/apiClient.ts) tự động dán "con tem hộ chiếu" JWT Bearer Token vào Header rồi gửi request `POST /api/v1/orders/checkout` sang Backend.
+3. **Tiếp tân tiếp nhận:**
+   - [OrderController.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/order/controller/OrderController.java) đón lấy request, bóc tem kiểm tra người gửi là ai (`@CurrentUserId Long userId`), kiểm tra địa chỉ có bị bỏ trống không (`@Valid`), rồi chuyển vào cho phòng nghiệp vụ.
+4. **Phòng nghiệp vụ tính toán & trừ kho:**
+   - [OrderServiceImpl.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/order/service/OrderServiceImpl.java) mở giao dịch an toàn `@Transactional`, gom các món cùng một shop thành một đơn hàng con, trừ số lượng tồn kho từng món, áp dụng mã giảm giá voucher.
+5. **Ghi vào két sắt:**
+   - Gọi `orderRepository.save(...)` để lưu đơn hàng vĩnh viễn vào bảng `orders` của MySQL.
+6. **Bắn thông báo tức thì:**
+   - Ngay khi đơn hàng được tạo, hệ thống phát sự kiện `OrderConfirmedEvent` qua bộ đàm WebSocket STOMP để chuông thông báo trên máy của chủ shop reo lên ngay lập tức!
+
+---
+
+## 0.2. Từ điển Cú pháp Frontend: Bản chất & Khi nào Source Code Cần Dùng Đến?
+
+### 1. `useState`
+* **Hiểu đời thường:** Là "Bộ nhớ tạm thời trong đầu". Bạn đi siêu thị, tay nhặt quả táo và hộp sữa, đầu bạn phải nhớ là mình đang cầm 2 món này.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong [CartPage.tsx](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/pages/public/CartPage.tsx#L292): `const [selectedItemIds, setSelectedItemIds] = useState<number[]>([])`. Khi khách tick chọn 3 món đồ, `useState` lưu ID của 3 món đó. Khi khách bấm "Mua hàng", code biết chính xác cần gom 3 món nào để thanh toán.
+  - Trong [FloatingChatWidget.tsx](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/components/chat/FloatingChatWidget.tsx#L38): `const [inputContent, setInputContent] = useState('')`. Lưu tạm từng chữ khách đang gõ vào ô chat trước khi bấm nút Gửi.
+* **Hậu quả nếu không có:** Mỗi lần người dùng click chuột hay gõ phím, trang web sẽ bị "mất trí nhớ" và xóa sạch dữ liệu khách vừa nhập!
+
+---
+
+### 2. `useEffect`
+* **Hiểu đời thường:** Lời dặn dò tự động: *"Hễ khi nào bước chân vào phòng, con phải bật đèn lên ngay"*.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong [AuthContext.tsx](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/contexts/AuthContext.tsx#L191): Khi người dùng vừa mở trang web lên, `useEffect` tự động chạy để kiểm tra xem trong `localStorage` có sẵn token đăng nhập cũ hay không. Nếu có, nó tự động kết nối WebSocket và nạp hồ sơ người dùng mà khách không cần đăng nhập lại.
+  - Trong [FloatingChatWidget.tsx](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/components/chat/FloatingChatWidget.tsx#L44): Khi danh sách tin nhắn `messages` có thêm tin mới, `useEffect` tự động cuộn màn hình chat xuống tận đáy để khách nhìn thấy tin nhắn vừa gửi.
+* **Hậu quả nếu không có:** Khách mở trang Giỏ hàng nhưng màn hình trắng trơn, phải tự tay bấm nút F5 tải lại trang thì mới thấy dữ liệu!
+
+---
+
+### 3. `async` và `await`
+* **Hiểu đời thường:** Bạn đi ăn phở. Pha chế cần 5 phút mới nấu xong bát phở.
+  - *Không dùng await (chạy ẩu):* Vừa gọi món xong bạn đã vội bưng cái bát rỗng không về bàn ăn $ightarrow$ Lỗi!
+  - *Có await (chờ đợi văn minh):* Bạn đứng đợi đầu bếp nấu xong, bưng bát phở nóng hổi đầy đủ rồi mới mang về bàn thưởng thức.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong [CheckoutPage.tsx](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/pages/public/CheckoutPage.tsx#L94):
+    ```typescript
+    const result = await orderApi.checkout(...);
+    // Phải chờ Backend tạo xong đơn hàng và trả về link thanh toán VNPay thì mới chuyển hướng
+    if (result.data?.paymentUrl) {
+        window.location.href = result.data.paymentUrl;
+    }
+    ```
+* **Hậu quả nếu không có:** JavaScript chạy lướt qua dòng gọi API khi máy chủ chưa kịp trả kết quả, dẫn đến biến `result` bị `undefined` và ứng dụng lập tức bị sập (Crash màn hình trắng).
+
+---
+
+### 4. `useContext`
+* **Hiểu đời thường:** Chiếc loa phát thanh của tòa nhà chung cư.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong toàn bộ dự án: Header cần biết ai đang đăng nhập để hiện avatar; Trang Giỏ hàng cần biết giỏ có mấy món; Khung Chat cần biết ID người dùng hiện tại để phân biệt tin nhắn của mình (bóng cam bên phải) hay của đối phương (bóng trắng bên trái).
+  - Thay vì phải truyền tham số xuyên qua 10 tầng component trung gian (Prop Drilling), bất kỳ trang nào chỉ cần gọi `const { user } = useAuth()` hoặc `const { currentUserId } = useChatContext()` là lấy được dữ liệu ngay lập tức.
+* **Hậu quả nếu không có:** Bạn phải viết code truyền dữ liệu lòng vòng qua hàng chục file component, code cực kỳ rối rắm và rất dễ phát sinh lỗi khi bảo trì.
+
+---
+
+### 5. `WebSocket STOMP`
+* **Hiểu đời thường:**
+  - *HTTP thông thường:* Giống như bạn gửi thư bưu điện. Bạn gửi câu hỏi thì bên kia mới gửi thư trả lời (Hỏi một câu - Đáp một câu).
+  - *WebSocket STOMP:* Giống như chiếc máy bộ đàm được bật thông suốt 24/7. Bên kia nói một từ là bên này nghe thấy ngay lập tức mà không cần gửi thư hỏi thăm.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong [websocket.ts](file:///c:/Users/Dell/IdeaProjects/ecommerce/frontend/src/services/websocket.ts#L33): Khi Người mua gửi tin nhắn chat, Backend bắn thẳng tin nhắn vào kênh riêng `/user/queue/messages` của Chủ shop. Màn hình của Shop tự động hiện tin nhắn mới trong tích tắc mà Shop không cần phải bấm F5 tải lại trang.
+
+---
+
+## 0.3. Từ điển Cú pháp Backend: Bản chất & Khi nào Source Code Cần Dùng Đến?
+
+### 1. `@RestController` vs `@Service` vs `@Repository`
+Hãy ghi nhớ bộ ba quyền lực: **"Tiếp tân $ightarrow$ Bác sĩ chuyên khoa $ightarrow$ Thủ kho két sắt"**
+
+| Tầng | Vai trò đời thường | Nhiệm vụ chính trong đồ án | Ví dụ thực tế trong code |
+|---|---|---|---|
+| **`@RestController`** | Nhân viên tiếp tân ở sảnh | Đón request HTTP từ trình duyệt, kiểm tra form có thiếu dữ liệu không (`@Valid`), chuyển cho Service xử lý | [ChatRoomController.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/chat/controller/ChatRoomController.java) |
+| **`@Service`** | Bác sĩ / Khối óc nghiệp vụ | Thực hiện tính toán phức tạp: trừ tồn kho, tính giảm giá voucher, chặn shop tự chat với chính mình | [ChatServiceImpl.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/chat/service/ChatServiceImpl.java) |
+| **`@Repository`** | Thủ kho giữ chìa khóa két sắt | Chỉ có người này mới được mở két sắt MySQL để chạy câu lệnh `SELECT`, `INSERT`, `UPDATE` | [ChatRoomRepository.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/chat/repository/ChatRoomRepository.java) |
+
+---
+
+### 2. DTO vs Entity
+* **`Entity` (Hồ sơ gốc trong két sắt):**
+  - Ánh xạ trực tiếp 1-1 với bảng trong cơ sở dữ liệu MySQL (ví dụ: bảng `users` có `password_hash`, `email`, `status`).
+  - *Quy tắc tối cao:* Tuyệt đối không bao giờ trả thẳng Entity ra màn hình trình duyệt vì sẽ để lộ mật khẩu và cấu trúc bảo mật nội bộ của hệ thống.
+* **`DTO` (Tờ phiếu thông tin gửi cho khách):**
+  - Data Transfer Object: Chỉ chọn lọc các trường thông tin cần thiết và an toàn để gửi qua mạng (ví dụ: [ChatRoomResponse.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/chat/dto/response/ChatRoomResponse.java) chỉ gửi `id`, `shopName`, `buyerName`, `lastMessage`).
+
+---
+
+### 3. `@Transactional`
+* **Hiểu đời thường:** Nguyên tắc **"Ăn cả ngã về không" (All or Nothing)** khi đi chuyển tiền ngân hàng.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong [OrderServiceImpl.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/order/service/OrderServiceImpl.java): Quá trình đặt hàng gồm 3 bước liên hoàn:
+    1. Trừ số lượng hàng trong kho (`stock_quantity`).
+    2. Tạo bản ghi đơn hàng vào bảng `orders`.
+    3. Xóa các món hàng đã mua ra khỏi giỏ hàng `cart_items`.
+  - Nếu bước 1 và 2 thành công nhưng bước 3 gặp sự cố sập mạng: `@Transactional` lập tức ra lệnh **Rollback (hoàn tác)** toàn bộ bước 1 và bước 2, trả lại số lượng kho như cũ! Khách hàng không bao giờ bị tình trạng mất hàng ảo hay đơn hàng rác.
+
+---
+
+### 4. Khóa bi quan (`findByIdForUpdate` / Pessimistic Locking)
+* **Hiểu đời thường:** Hai người cùng chạy đến một chiếc phòng thử đồ. Ai bước vào trước thì **chốt then cài cửa lại** (`FOR UPDATE`). Người thứ hai bắt buộc phải đứng ngoài hành lang xếp hàng đợi người thứ nhất dùng xong mở cửa ra thì mới được vào.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong [CartServiceImpl.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/cart/service/CartServiceImpl.java): Khi một chiếc áo chỉ còn đúng 1 sản phẩm duy nhất trong kho mà có 10 khách hàng cùng bấm "Thêm vào giỏ / Đặt hàng" cùng 1 giây.
+  - Khóa bi quan khóa bản ghi sản phẩm đó lại, xử lý lần lượt từng người một, triệt tiêu 100% nguy cơ bán âm kho (Overselling).
+
+---
+
+### 5. Modular Monolith & Giao tiếp qua `InternalService`
+* **Hiểu đời thường:** Tòa nhà chung cư cao cấp gồm nhiều căn hộ riêng biệt (`auth`, `cart`, `order`, `chat`, `shop`). Mỗi căn hộ có chìa khóa riêng.
+  - *Hành vi sai trái:* Người nhà `chat` tự ý cạy cửa lẻn vào phòng ngủ của nhà `identity` lục lọi (`ChatServiceImpl` tự tiêm `@Autowired UserRepository`).
+  - *Hành vi văn minh (Modular Monolith):* Người nhà `chat` đứng trước cửa bấm chuông và nhờ vả qua chiếc điện thoại nội bộ ([IdentityInternalService.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/identity/api/IdentityInternalService.java)): *"Làm ơn cho tôi hỏi tên của vị khách có mã ID số 12 này là gì?"*.
+* **Khi nào trong Source Code cần dùng đến?**
+  - Trong [ChatServiceImpl.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/chat/service/ChatServiceImpl.java#L195): Gọi `identityInternalService.getUserFullNameOrDefault(room.getBuyerId())`. Nhờ đó, module `chat` hoàn toàn không bị phụ thuộc vào database nội bộ của module `identity`.
+
+---
+
+## 0.4. Công thức 3 Bước Vàng Trả lời Tự tin Mọi Câu hỏi của Hội đồng
+
+Khi thầy cô bất ngờ chỉ vào một hàm trong code và hỏi: *"Em giải thích hàm này làm gì?"*, bạn đừng hoảng sợ. Hãy bình tĩnh hít sâu và áp dụng đúng 3 bước:
+
+```text
+BƯỚC 1: NÓI MỤC ĐÍCH ĐỜI THƯỜNG TRƯỚC
+"Dạ thưa thầy cô, hàm này dùng để giải quyết bài toán [Mục đích của hàm] khi người dùng [Hành động] trên giao diện."
+
+BƯỚC 2: CHỈ RA 1-2 TỪ KHÓA KỸ THUẬT THEN CHỐT
+"Về mặt kỹ thuật, em sử dụng [Từ khóa kỹ thuật: @Transactional / async await / Khóa bi quan / Interface Contract] để [Lợi ích mang lại]."
+
+BƯỚC 3: NÊU GIẢI PHÁP BẢO VỆ CHỐNG LỖI CỦA DỰ ÁN
+"Đặc biệt, em có cài đặt thêm cơ chế [Kiểm tra hợp lệ / Rollback / Chặn tự chat / Double check] để ngăn ngừa triệt để lỗi [Hậu quả nếu không làm], giúp hệ thống vận hành an toàn và chuẩn xác ạ."
+```
+
+*Ví dụ thực chiến khi thầy cô hỏi về hàm `createOrGetRoom` trong `ChatServiceImpl.java`:*
+> *"Dạ thưa thầy cô, hàm này dùng để mở phòng chat giữa Người mua và Gian hàng khi khách bấm nút 'Chat ngay' trên trang chi tiết sản phẩm ạ. (Bước 1)  
+> Về mặt kỹ thuật, em thiết kế hàm theo chuẩn Modular Monolith, module Chat gọi sang module Shop qua hợp đồng nội bộ `ShopInternalService` để xác định chủ sở hữu gian hàng. (Bước 2)  
+> Đặc biệt, hệ thống có kiểm tra điều kiện an toàn `if (buyerId.equals(shopOwnerId))`: nếu chính chủ shop đang đăng nhập và bấm chat với gian hàng của mình, hệ thống sẽ lập tức từ chối để ngăn chặn triệt để lỗi Shop tự nhắn tin cho chính mình gây loạn dữ liệu ạ!"* (Bước 3 $ightarrow$ Ghi trọn điểm 10!).
+
+---
+
+---
+
 # PHẦN 1: GIẢI MÃ CÚ PHÁP FRONTEND QUA MÃ NGUỒN THỰC TẾ
 
 ## 1.1. Cấu hình Mạng & Token Interceptor (`apiClient.ts`)
