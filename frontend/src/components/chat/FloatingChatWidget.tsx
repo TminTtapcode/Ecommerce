@@ -75,7 +75,7 @@ export const FloatingChatWidget: React.FC = () => {
     if (isBuyer) {
       return room.shopName || `Shop #${room.shopId}`;
     }
-    return room.buyerName || `Người mua #${room.buyerId}`;
+    return room.buyerName || `Người dùng #${room.buyerId}`;
   };
 
   const filteredRooms = rooms.filter((r) => {
@@ -214,7 +214,6 @@ export const FloatingChatWidget: React.FC = () => {
                   filteredRooms.map((room) => {
                     const isSelected = room.id === activeRoomId;
                     const displayName = getRoomDisplayName(room);
-                    const isBuyer = room.buyerId === currentUserId;
                     return (
                       <div
                         key={room.id}
@@ -231,20 +230,13 @@ export const FloatingChatWidget: React.FC = () => {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span
-                                className={`text-xs truncate ${
-                                  isSelected ? 'font-bold text-[#ee4d2d]' : 'font-semibold text-gray-800'
-                                }`}
-                              >
-                                {displayName}
-                              </span>
-                              {!isBuyer && (
-                                <span className="text-[10px] bg-orange-100 text-[#ee4d2d] px-1 py-0.2 rounded font-medium shrink-0">
-                                  Khách mua
-                                </span>
-                              )}
-                            </div>
+                            <span
+                              className={`text-xs truncate ${
+                                isSelected ? 'font-bold text-[#ee4d2d]' : 'font-semibold text-gray-800'
+                              }`}
+                            >
+                              {displayName}
+                            </span>
                             <span className="text-[10px] text-gray-400 shrink-0 ml-1">
                               {formatTime(room.lastMessageAt || room.updatedAt)}
                             </span>
@@ -327,16 +319,9 @@ export const FloatingChatWidget: React.FC = () => {
                         {getRoomDisplayName(activeRoom).charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="text-xs font-bold text-gray-900 leading-tight">
-                            {getRoomDisplayName(activeRoom)}
-                          </h4>
-                          {activeRoom.buyerId !== currentUserId && (
-                            <span className="text-[10px] bg-orange-100 text-[#ee4d2d] px-1.5 py-0.2 rounded font-medium">
-                              Khách hàng
-                            </span>
-                          )}
-                        </div>
+                        <h4 className="text-xs font-bold text-gray-900 leading-tight">
+                          {getRoomDisplayName(activeRoom)}
+                        </h4>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           <span className="text-[10px] text-gray-400">
