@@ -6,5 +6,5 @@ import java.util.List;
 public record CartResponse(
         Long cartId,
         List<CartItemResponse> items,
-        BigDecimal totalAmount // Tổng tiền cả giỏ hàng
+        BigDecimal totalAmount
 ) {}

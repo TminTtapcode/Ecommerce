@@ -19,7 +19,6 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Loose Coupling với module Identity (1 User chỉ có 1 Cart đang Active)
     @Column(name = "user_id", unique = true, nullable = false)
     private Long userId;
 

@@ -26,13 +26,17 @@ public class CartInternalServiceImpl implements CartInternalService {
     @Transactional(readOnly = true)
     public List<CartItemInternalDto> getCartItems(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseGet(() -> Cart.builder().userId(userId).build()); // Empty cart
+                .orElseGet(() -> Cart.builder().userId(userId).build());
 
         List<CartItemInternalDto> internalDtos = new ArrayList<>();
 
+        List<Long> variantIds = cart.getItems().stream().map(CartItem::getProductVariantId).toList();
+        java.util.Map<Long, ProductVariantInfoDto> variantInfoMap = productInternalService.getVariantInfos(variantIds);
+
         for (CartItem item : cart.getItems()) {
-            ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(item.getProductVariantId());
-            
+            ProductVariantInfoDto variantInfo = variantInfoMap.get(item.getProductVariantId());
+            if (variantInfo == null) continue;
+
             BigDecimal subTotal = variantInfo.price().multiply(BigDecimal.valueOf(item.getQuantity()));
             boolean isAvailable = "ACTIVE".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();
 

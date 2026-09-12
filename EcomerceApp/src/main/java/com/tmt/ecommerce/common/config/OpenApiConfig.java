@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
                 version = "1.0",
                 description = "Tài liệu API cho hệ thống E-commerce"
         ),
-        // Áp dụng security chung cho toàn bộ các API (ngoại trừ những cái Public được cấu hình trong SecurityFilterChain)
+
         security = {
                 @SecurityRequirement(name = "bearerAuth")
         }
@@ -29,5 +29,5 @@ import org.springframework.context.annotation.Configuration;
         in = SecuritySchemeIn.HEADER
 )
 public class OpenApiConfig {
-    // Không cần viết thêm logic gì bên trong, Springdoc sẽ tự quét Annotation để render UI
+
 }

@@ -23,12 +23,12 @@ public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
     private final ProductInternalService productInternalService;
+    private final com.tmt.ecommerce.shop.api.ShopInternalService shopInternalService;
 
     @Override
     @Transactional
     public void addToCart(Long userId, CartItemRequest request) {
 
-        // 1. Giao tiếp lỏng lẻo với module Product thông qua Internal API
         ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(request.getProductVariantId());
 
         if (!"ACTIVE".equals(variantInfo.status())) {
@@ -39,14 +39,14 @@ public class CartServiceImpl implements CartService {
             throw new IllegalStateException("Số lượng tồn kho không đủ. Chỉ còn " + variantInfo.stockQuantity() + " sản phẩm.");
         }
 
-        // 2. Lấy giỏ hàng của User (Nếu chưa có thì tạo mới)
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseGet(() -> {
                     Cart newCart = Cart.builder().userId(userId).build();
                     return cartRepository.save(newCart);
                 });
 
-        // 3. Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
+        shopInternalService.requireNotBannedForSale(variantInfo.shopId());
+
         Optional<CartItem> existingItemOpt = cart.getItems().stream()
                 .filter(item -> item.getProductVariantId().equals(request.getProductVariantId()))
                 .findFirst();
@@ -68,29 +68,29 @@ public class CartServiceImpl implements CartService {
             cart.getItems().add(newItem);
         }
 
-        // 4. Lưu lại
         cartRepository.save(cart);
     }
-    // Trả về toàn bộ thông tin giỏ hàng của User
+
     @Transactional(readOnly = true)
     public CartResponse getCart(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseGet(() -> Cart.builder().userId(userId).build()); // Trả về giỏ rỗng nếu chưa có
+                .orElseGet(() -> Cart.builder().userId(userId).build());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        // Cần import java.util.List và java.util.ArrayList
         List<CartItemResponse> itemResponses = new ArrayList<>();
 
-        for (CartItem item : cart.getItems()) {
-            // Lấy data real-time từ module Product
-            ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(item.getProductVariantId());
+        List<Long> variantIds = cart.getItems().stream().map(CartItem::getProductVariantId).toList();
+        java.util.Map<Long, ProductVariantInfoDto> variantInfoMap = productInternalService.getVariantInfos(variantIds);
 
-            // Tính thành tiền của từng món (Dùng hàm .multiply() của BigDecimal)
+        var bannedShopIds = shopInternalService.getBannedShopIds();
+        for (CartItem item : cart.getItems()) {
+            ProductVariantInfoDto variantInfo = variantInfoMap.get(item.getProductVariantId());
+            if (variantInfo == null) continue;
+
             BigDecimal subTotal = variantInfo.price().multiply(BigDecimal.valueOf(item.getQuantity()));
 
-            // Kiểm tra trạng thái khả dụng
-            boolean isAvailable = "ACTIVE".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();
+            boolean isAvailable = !bannedShopIds.contains(variantInfo.shopId()) && "ACTIVE".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();
 
             if (isAvailable) {
                 totalAmount = totalAmount.add(subTotal);
@@ -99,7 +99,7 @@ public class CartServiceImpl implements CartService {
             itemResponses.add(new CartItemResponse(
                     item.getId(),
                     variantInfo.variantId(),
-                    variantInfo.shopId(), // THÊM TRƯỜNG NÀY ĐỂ MAP VỚI RECORD
+                    variantInfo.shopId(),
                     variantInfo.productName(),
                     variantInfo.sku(),
                     variantInfo.price(),
@@ -117,7 +117,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public void updateItemQuantity(Long userId, Long cartItemId, Integer newQuantity) {
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng."));
 
         CartItem itemToUpdate = cart.getItems().stream()
@@ -125,9 +125,13 @@ public class CartServiceImpl implements CartService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong giỏ hàng."));
 
-        ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(itemToUpdate.getProductVariantId());
-        if (newQuantity > variantInfo.stockQuantity()) {
-            throw new IllegalStateException("Số lượng yêu cầu vượt quá tồn kho hiện tại.");
+        if (newQuantity == null || newQuantity < 1) {
+            throw new com.tmt.ecommerce.common.exception.AppException(com.tmt.ecommerce.common.exception.ErrorCode.INVALID_INPUT);
+        }
+        if (newQuantity > itemToUpdate.getQuantity()) {
+            ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(itemToUpdate.getProductVariantId());
+            shopInternalService.requireNotBannedForSale(variantInfo.shopId());
+            if (newQuantity > variantInfo.stockQuantity()) throw new IllegalStateException("Insufficient stock");
         }
 
         itemToUpdate.setQuantity(newQuantity);
@@ -137,7 +141,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public void removeCartItem(Long userId, Long cartItemId) {
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng."));
 
         boolean isRemoved = cart.getItems().removeIf(item -> item.getId().equals(cartItemId));
@@ -150,7 +154,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public void clearCart(Long userId) {
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng."));
 
         cart.getItems().clear();

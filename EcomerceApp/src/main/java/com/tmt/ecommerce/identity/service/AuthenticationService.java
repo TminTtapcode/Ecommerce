@@ -5,10 +5,13 @@ import com.tmt.ecommerce.identity.dto.UserLoginRequest;
 import com.tmt.ecommerce.identity.dto.UserRegisterRequest;
 import com.tmt.ecommerce.identity.entity.Role;
 import com.tmt.ecommerce.identity.entity.User;
+import com.tmt.ecommerce.identity.security.CustomUserDetails;
 import com.tmt.ecommerce.identity.repository.RoleRepository;
 import com.tmt.ecommerce.identity.repository.UserRepository;
 import com.tmt.ecommerce.common.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import com.tmt.ecommerce.common.exception.AppException;
+import com.tmt.ecommerce.common.exception.ErrorCode;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,10 +31,9 @@ public class AuthenticationService {
     @Transactional
     public AuthResponse register(UserRegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email này đã được sử dụng.");
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        // Tìm role mặc định là ROLE_USER (nếu chưa có trong DB thì tự động tạo mới)
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
 
@@ -46,12 +48,13 @@ public class AuthenticationService {
         user.getRoles().add(userRole);
         userRepository.save(user);
 
-        String jwtToken = jwtService.generateToken(user);
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        String jwtToken = jwtService.generateToken(userDetails);
         return AuthResponse.builder().token(jwtToken).build();
     }
 
     public AuthResponse authenticate(UserLoginRequest request) {
-        // AuthenticationManager sẽ tự động đối chiếu mật khẩu băm trong DB
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -60,9 +63,10 @@ public class AuthenticationService {
         );
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        String jwtToken = jwtService.generateToken(user);
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        String jwtToken = jwtService.generateToken(userDetails);
         return AuthResponse.builder().token(jwtToken).build();
     }
 }

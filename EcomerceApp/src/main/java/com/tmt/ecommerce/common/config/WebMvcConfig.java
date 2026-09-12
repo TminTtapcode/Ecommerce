@@ -15,7 +15,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-        // Bơm kẻ giải mã của chúng ta vào danh sách các Resolver mặc định của Spring
+
         resolvers.add(currentUserIdArgumentResolver);
     }
 }

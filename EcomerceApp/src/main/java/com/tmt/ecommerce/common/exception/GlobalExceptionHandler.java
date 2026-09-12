@@ -1,63 +1,96 @@
 package com.tmt.ecommerce.common.exception;
 
 import com.tmt.ecommerce.common.dto.ApiResponse;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 1. Bắt lỗi liên quan đến Business Logic (Ví dụ: Trùng tên shop, user đã có shop)
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
+        return response(ex.getErrorCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, BusinessException.class})
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(RuntimeException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .message(ex.getMessage()) // Lấy câu thông báo từ lúc ta throw trong Service
-                .build();
-
-        return ResponseEntity.badRequest().body(response);
+        return response(ErrorCode.INVALID_INPUT, ex.getMessage());
     }
 
-    // 2. Bắt lỗi Validation (Khi @Valid ở Controller phát hiện dữ liệu truyền lên bị sai)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
-
-        Map<String, String> errors = new HashMap<>();
-        // Lấy tất cả các field bị lỗi và thông báo lỗi tương ứng
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
-
-        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .message("Dữ liệu đầu vào không hợp lệ")
-                .data(errors) // Trả về danh sách lỗi cho Frontend hiển thị dưới từng ô input
-                .build();
-
-        return ResponseEntity.badRequest().body(response);
+    public ResponseEntity<ApiResponse<Void>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error ->
+                errors.putIfAbsent(error instanceof FieldError field ? field.getField() : "_global",
+                        error.getDefaultMessage() != null ? error.getDefaultMessage() : "Dữ liệu không hợp lệ"));
+        return ResponseEntity.badRequest().body(ApiResponse.<Void>builder()
+                .status(400)
+                .errorCode(ErrorCode.INVALID_INPUT.name())
+                .message(ErrorCode.INVALID_INPUT.getDefaultMessage())
+                .fieldErrors(errors)
+                .build());
     }
 
-    // 3. Bắt các lỗi chưa lường trước (Fallback)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        return response(ErrorCode.INVALID_INPUT, ErrorCode.INVALID_INPUT.getDefaultMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
+        return response(ErrorCode.ACCESS_DENIED, ErrorCode.ACCESS_DENIED.getDefaultMessage());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
+        return response(ErrorCode.UNAUTHORIZED, ErrorCode.UNAUTHORIZED.getDefaultMessage());
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return response(ErrorCode.NOT_FOUND, ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {
-        // Trong thực tế sẽ dùng Logger để ghi lỗi này ra file log hệ thống
-        System.err.println("Lỗi hệ thống: " + ex.getMessage());
 
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Hệ thống đang gặp sự cố, vui lòng thử lại sau.")
-                .build();
+        if (ex instanceof ErrorResponse error) {
+            int status = error.getStatusCode().value();
+            ErrorCode code = ErrorCode.forHttpStatus(status);
+            return ResponseEntity.status(status).headers(error.getHeaders())
+                    .body(ApiResponse.error(status, code, code.getDefaultMessage()));
+        }
+        ResponseStatus annotated = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);
+        if (annotated != null) {
+            int status = annotated.code().value();
+            ErrorCode code = ErrorCode.forHttpStatus(status);
+            return ResponseEntity.status(status).body(ApiResponse.error(status, code, code.getDefaultMessage()));
+        }
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        if (ex instanceof org.springframework.http.converter.HttpMessageNotReadableException
+                || ex instanceof org.springframework.beans.TypeMismatchException) {
+            return response(ErrorCode.INVALID_INPUT, ErrorCode.INVALID_INPUT.getDefaultMessage());
+        }
+        log.error("Unhandled API exception", ex);
+        return response(ErrorCode.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_SERVER_ERROR.getDefaultMessage());
+    }
+
+    private ResponseEntity<ApiResponse<Void>> response(ErrorCode code, String message) {
+        return ResponseEntity.status(code.getHttpStatus())
+                .body(ApiResponse.error(code.getHttpStatus().value(), code, message));
     }
 }

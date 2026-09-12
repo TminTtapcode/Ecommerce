@@ -22,18 +22,19 @@ public class IdentityInternalServiceImpl implements IdentityInternalService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chủ sở hữu."));
 
-        Role shopRole = roleRepository.findByName("ROLE_SHOP_OWNER")
-                .orElseThrow(() -> new IllegalStateException("Chưa cấu hình quyền ROLE_SHOP_OWNER."));
+        Role shopRole = roleRepository.findByName("ROLE_VENDOR")
+                .orElseThrow(() -> new IllegalStateException("Chưa cấu hình quyền ROLE_VENDOR."));
 
         if (!user.getRoles().contains(shopRole)) {
             user.getRoles().add(shopRole);
             userRepository.save(user);
         }
-        
+
         return user.getEmail();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public String getUserFullNameOrDefault(Long userId) {
         return userRepository.findById(userId)
                 .map(user -> {
@@ -48,5 +49,19 @@ public class IdentityInternalServiceImpl implements IdentityInternalService {
                     return email;
                 })
                 .orElse("Khách hàng");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasRole(Long userId, String roleName) {
+        return userRepository.findById(userId)
+                .map(user -> user.getRoles().stream().anyMatch(role -> role.getName().equals(roleName)))
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countUsers() {
+        return userRepository.count();
     }
 }

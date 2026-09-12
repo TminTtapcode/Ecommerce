@@ -29,27 +29,37 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> {
+            Object userId = claims.get("userId");
+            if (userId instanceof Number) {
+                return ((Number) userId).longValue();
+            } else if (userId instanceof String) {
+                return Long.parseLong((String) userId);
+            }
+            return null;
+        });
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    // ĐÃ CHỈNH SỬA: Tự động trích xuất Role từ UserDetails và đưa vào Token
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
 
-        if (userDetails instanceof com.tmt.ecommerce.identity.entity.User) {
-            com.tmt.ecommerce.identity.entity.User user = (com.tmt.ecommerce.identity.entity.User) userDetails;
-            extraClaims.put("userId", user.getId());
-            extraClaims.put("fullName", user.getFullName());
+        if (userDetails instanceof CurrentUserPrincipal) {
+            CurrentUserPrincipal principal = (CurrentUserPrincipal) userDetails;
+            extraClaims.put("userId", principal.getId());
+            extraClaims.put("fullName", principal.getFullName());
         }
 
-        // Lấy danh sách quyền (Roles) và chuyển thành List<String>
         var roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        extraClaims.put("roles", roles); // Nhét Roles vào Payload của JWT
+        extraClaims.put("roles", roles);
 
         return generateToken(extraClaims, userDetails);
     }
