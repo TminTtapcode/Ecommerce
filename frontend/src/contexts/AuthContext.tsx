@@ -4,17 +4,15 @@ import type { Profile, ProfileUpdate } from '../api/userApi';
 import { decodeUser } from './authSession';
 import type { UserPayload } from './authSession';
 import { websocketService } from '../services/websocket';
-import type { RealtimeSession } from '../services/websocket';
 
 export type { UserPayload } from './authSession';
 
 interface AuthContextType {
-  session: RealtimeSession | null;
+  user: UserPayload | null;
+  loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isVendor: boolean;
-  user: UserPayload | null;
-  loading: boolean;
   login: (token: string) => void;
   logout: () => void;
   loadProfile: () => Promise<Profile | null>;
@@ -28,13 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = localStorage.getItem('token');
     return decodeUser(token);
   });
-  const [session, setSession] = useState<RealtimeSession | null>(() => {
-    const token = localStorage.getItem('token');
-    return token ? { token } : null;
-  });
   const [loading] = useState<boolean>(false);
 
-  // Hàm tải thông tin hồ sơ người dùng từ Backend
+  // 1. Tải thông tin hồ sơ người dùng từ Backend
   const loadProfile = useCallback(async (): Promise<Profile | null> => {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -52,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Hàm cập nhật hồ sơ cá nhân
+  // 2. Cập nhật hồ sơ cá nhân
   const saveProfile = useCallback(async (body: ProfileUpdate): Promise<Profile | null> => {
     try {
       const response = await userApi.updateProfile(body);
@@ -68,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Khi mở ứng dụng: nếu có token thì kết nối WebSocket và nạp hồ sơ
+  // 3. Khởi động ứng dụng: nếu có token thì kết nối WebSocket và tải hồ sơ
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -77,14 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [loadProfile]);
 
-  // Đồng bộ đa tab: khi đăng nhập/đăng xuất ở tab khác thì tự cập nhật giao diện
+  // 4. Đồng bộ đa tab: khi đăng nhập/đăng xuất ở tab khác thì tự cập nhật giao diện
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'token') {
         const token = localStorage.getItem('token');
         const identity = decodeUser(token);
         setUser(identity);
-        setSession(token ? { token } : null);
         if (token) {
           websocketService.connect(token);
           void loadProfile();
@@ -97,21 +90,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [loadProfile]);
 
-  // Hàm đăng nhập: Lưu token, set user, kết nối WebSocket và nạp profile
+  // 5. Hàm đăng nhập: Lưu token, set user, kết nối WebSocket và nạp profile
   const login = (token: string) => {
     localStorage.setItem('token', token);
     const identity = decodeUser(token);
     setUser(identity);
-    setSession({ token });
     websocketService.connect(token);
     void loadProfile();
   };
 
-  // Hàm đăng xuất: Xóa token, reset user và ngắt kết nối WebSocket
+  // 6. Hàm đăng xuất: Xóa token, reset user và ngắt kết nối WebSocket
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    setSession(null);
     websocketService.disconnect();
   };
 
@@ -122,12 +113,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider
       value={{
-        session,
+        user,
+        loading,
         isAuthenticated,
         isAdmin,
         isVendor,
-        user,
-        loading,
         login,
         logout,
         loadProfile,

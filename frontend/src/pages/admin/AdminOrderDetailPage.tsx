@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
 import type { OrderResponse } from '../../api/types/order.types';
@@ -20,17 +20,14 @@ export const AdminOrderDetailPage: React.FC = () => {
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
-  const activeId = useRef(id);
-  activeId.current = id;
-  const requestSequence = useRef(0);
 
   const refresh = useCallback(async () => {
     if (!id) return;
-    const sequence = ++requestSequence.current;
     const [detail, allowed, audit] = await Promise.all([
-      adminApi.getOrderDetail(Number(id)), adminApi.getOrderActions(Number(id)), adminApi.getOrderHistory(Number(id), historyPage),
+      adminApi.getOrderDetail(Number(id)),
+      adminApi.getOrderActions(Number(id)),
+      adminApi.getOrderHistory(Number(id), historyPage),
     ]);
-    if (activeId.current !== id || sequence !== requestSequence.current) return;
     setOrder(detail.data.data);
     setActions(allowed.data.data ?? []);
     setHistory(audit.data.data?.content ?? []);
@@ -55,16 +52,32 @@ export const AdminOrderDetailPage: React.FC = () => {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!order || saving || !target || !reason.trim()) return;
-    setSaving(true); setNotice('');
+    setSaving(true);
+    setNotice('');
     try {
-      await adminApi.updateOrderStatus(order.id, { expectedStatus: order.status, status: target, reason: reason.trim() });
-      setTarget(''); setReason(''); setNotice('Đã cập nhật trạng thái đơn hàng.');
+      await adminApi.updateOrderStatus(order.id, {
+        expectedStatus: order.status,
+        status: target,
+        reason: reason.trim(),
+      });
+      setTarget('');
+      setReason('');
+      setNotice('Đã cập nhật trạng thái đơn hàng.');
     } catch (err) {
       const details = getApiError(err, 'Không thể cập nhật đơn hàng');
-      setNotice(details.errorCode === ERROR_CODES.ORDER_STATE_CONFLICT ? 'Đơn hàng đã thay đổi. Kiểm tra trạng thái mới trước khi thao tác lại.' : details.message);
+      setNotice(
+        details.errorCode === ERROR_CODES.ORDER_STATE_CONFLICT
+          ? 'Đơn hàng đã thay đổi. Kiểm tra trạng thái mới trước khi thao tác lại.'
+          : details.message
+      );
       setTarget('');
     } finally {
-      try { await refresh(); } catch { setActions([]); setNotice('Không tải được trạng thái mới. Vui lòng tải lại trang trước khi thao tác tiếp.'); }
+      try {
+        await refresh();
+      } catch {
+        setActions([]);
+        setNotice('Không tải được trạng thái mới. Vui lòng tải lại trang trước khi thao tác tiếp.');
+      }
       setSaving(false);
     }
   };

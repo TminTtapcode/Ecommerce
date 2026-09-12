@@ -1,4 +1,3 @@
-import { RealtimeProvider } from './contexts/RealtimeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -38,8 +37,9 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <BrowserRouter>
-          <RealtimeProvider><NotificationProvider><ChatProvider>
-            <Routes>
+          <NotificationProvider>
+            <ChatProvider>
+              <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<Navigate to="/products" replace />} />
@@ -78,8 +78,9 @@ function App() {
             <Route path="orders/:id" element={<AdminOrderDetailPage />} />
             <Route path="vouchers" element={<AdminVoucherListPage />} />
           </Route>
-            </Routes>
-          </ChatProvider></NotificationProvider></RealtimeProvider>
+              </Routes>
+            </ChatProvider>
+          </NotificationProvider>
         </BrowserRouter>
       </CartProvider>
     </AuthProvider>

@@ -1,11 +1,21 @@
-import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { websocketService } from '../services/websocket';
 import { notificationApi } from '../api/notificationApi';
 import type { NotificationResponse } from '../api/types/notification.types';
-import { NotificationContext as Context } from '../hooks/useNotifications';
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
+export interface NotificationContextType {
+  notifications: NotificationResponse[];
+  unreadCount: number;
+  isLoading: boolean;
+  error: string;
+  refresh: () => void;
+  read: (id?: number) => Promise<boolean>;
+}
+
+export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+
+export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -56,7 +66,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  // Khi đăng nhập: tự động tải thông báo và đăng ký nhận thông báo realtime qua WebSocket
+  // Khi đăng nhập: tự động tải thông báo và lắng nghe qua WebSocket STOMP
   useEffect(() => {
     if (!isAuthenticated) {
       setNotifications([]);
@@ -66,7 +76,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     void refresh();
 
-    // Lắng nghe thông báo đẩy từ WebSocket STOMP
     const unsubscribe = websocketService.subscribeNotifications((newNotification) => {
       setNotifications((prev) => [newNotification, ...prev]);
       setUnreadCount((prev) => prev + 1);
@@ -78,7 +87,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, refresh]);
 
   return (
-    <Context.Provider
+    <NotificationContext.Provider
       value={{
         notifications,
         unreadCount,
@@ -89,6 +98,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </Context.Provider>
+    </NotificationContext.Provider>
   );
-}
+};
+
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within a NotificationProvider');
+  }
+  return context;
+};

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productApi } from '../../api/productApi';
 import { categoryApi, type CategoryResponse } from '../../api/categoryApi';
@@ -42,8 +42,6 @@ export const ProductListPage: React.FC = () => {
   const [maxInput, setMaxInput] = useState(maxPriceRaw || '');
   const [priceError, setPriceError] = useState<string | null>(null);
 
-  const fetchRevision = useRef(0);
-
   useEffect(() => {
     categoryApi.getAllCategories()
       .then(res => { if (res.data.data) setCategories(res.data.data); })
@@ -52,40 +50,36 @@ export const ProductListPage: React.FC = () => {
 
   const isRecommendationMode = !keyword && !categoryId && !minPrice && !maxPrice && (!sortBy || sortBy === 'id_desc');
 
-  useEffect(() => {
-    const rev = ++fetchRevision.current;
+  const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
-    const handleFetch = async () => {
-      try {
-        let res;
-        if (isRecommendationMode) {
-          try {
-            res = await productApi.getRecommendations(size);
-          } catch (recErr) {
-            console.warn('Recommendation API failed, falling back to standard product listing:', recErr);
-            res = await productApi.getProducts({ page, size, sortBy: 'id_desc' });
-          }
-        } else {
-          res = await productApi.getProducts({ page, size, keyword, categoryId, minPrice, maxPrice, sortBy });
+    try {
+      let res;
+      if (isRecommendationMode) {
+        try {
+          res = await productApi.getRecommendations(size);
+        } catch (recErr) {
+          console.warn('Recommendation API failed, falling back to standard product listing:', recErr);
+          res = await productApi.getProducts({ page, size, sortBy: 'id_desc' });
         }
-
-        if (rev !== fetchRevision.current) return;
-        if (res.data.data) {
-          setProducts(res.data.data.content);
-          setTotalPages(res.data.data.totalPages);
-        }
-      } catch {
-        if (rev !== fetchRevision.current) return;
-        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
-      } finally {
-        if (rev === fetchRevision.current) setIsLoading(false);
+      } else {
+        res = await productApi.getProducts({ page, size, keyword, categoryId, minPrice, maxPrice, sortBy });
       }
-    };
 
-    handleFetch();
+      if (res.data.data) {
+        setProducts(res.data.data.content);
+        setTotalPages(res.data.data.totalPages);
+      }
+    } catch {
+      setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+    } finally {
+      setIsLoading(false);
+    }
   }, [page, size, keyword, categoryId, minPrice, maxPrice, sortBy, isRecommendationMode]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const updateParams = (updates: Record<string, string | undefined>) => {
     const next = new URLSearchParams(searchParams);
@@ -327,7 +321,7 @@ export const ProductListPage: React.FC = () => {
               <p className="text-sm text-red-700">{error}</p>
               <button
                 id="retry-btn"
-                onClick={() => { setError(null); setIsLoading(true); fetchRevision.current++; }}
+                onClick={fetchProducts}
                 className="text-xs text-red-600 underline mt-1"
               >
                 Thử lại
