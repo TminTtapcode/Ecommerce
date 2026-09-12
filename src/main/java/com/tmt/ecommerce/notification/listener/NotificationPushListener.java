@@ -5,18 +5,26 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.*;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class NotificationPushListener {
-    private final SimpMessagingTemplate messaging;
+
+    private final SimpMessagingTemplate messagingTemplate;
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void created(NotificationWriter.Created event) {
-        try { messaging.convertAndSendToUser(event.recipient().toString(), "/queue/notifications", event.notification()); }
-        catch (Exception failure) {
-            log.error("event=notification_push_failed notificationId={} failureType={}", event.notification().id(), failure.getClass().getSimpleName());
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    event.recipient().toString(),
+                    "/queue/notifications",
+                    event.notification()
+            );
+        } catch (Exception e) {
+            log.error("Không thể bắn thông báo realtime cho user {}: {}", event.recipient(), e.getMessage());
         }
     }
 }

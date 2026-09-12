@@ -1,47 +1,109 @@
 package com.tmt.ecommerce.common.websocket;
 
-import com.tmt.ecommerce.common.security.*;
+import com.tmt.ecommerce.common.security.CurrentUserPrincipal;
+import com.tmt.ecommerce.common.security.JwtService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.*;
-import org.springframework.messaging.simp.stomp.*;
-import org.springframework.messaging.support.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+
 import java.security.Principal;
 import java.util.Set;
 
+/**
+ * Interceptor kiểm tra xác thực JWT Token và phân quyền đích đến cho các gói tin STOMP.
+ */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtChannelInterceptor implements ChannelInterceptor {
-    private final JwtService jwt;
-    private final UserDetailsService users;
-    private final SocketSessions sessions;
-    @Override public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        var a = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-        if (a == null) throw new IllegalArgumentException("FORBIDDEN");
-        var command = a.getCommand();
-        if (command == StompCommand.CONNECT) {
+
+    private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
+    private final SocketSessions socketSessions;
+
+    private static final Set<String> ALLOWED_SUBSCRIBE_DESTINATIONS = Set.of(
+            "/user/queue/messages",
+            "/user/queue/notifications"
+    );
+
+    @Override
+    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        if (accessor == null) {
+            throw new IllegalArgumentException("FORBIDDEN");
+        }
+
+        StompCommand command = accessor.getCommand();
+
+        // 1. Xử lý bắt tay kết nối STOMP (CONNECT): Xác thực JWT Token
+        if (StompCommand.CONNECT.equals(command)) {
             try {
-                String header = a.getFirstNativeHeader("Authorization");
-                a.setNativeHeader("Authorization", null);
-                if (header == null || !header.startsWith("Bearer ")) throw new IllegalArgumentException();
-                String token = header.substring(7);
-                var details = users.loadUserByUsername(jwt.extractUsername(token));
-                Long id = jwt.extractUserId(token);
-                if (!(details instanceof CurrentUserPrincipal current) || id == null || id <= 0
-                        || !id.equals(current.getId()) || !jwt.isTokenValid(token, details)) throw new IllegalArgumentException();
-                sessions.authenticate(a.getSessionId(), jwt.extractClaim(token, Claims::getExpiration).getTime());
-                Principal principal = () -> id.toString();
-                a.setUser(new UsernamePasswordAuthenticationToken(principal, null, details.getAuthorities()));
-            } catch (Exception failure) { throw new IllegalArgumentException("UNAUTHORIZED"); }
+                String authHeader = accessor.getFirstNativeHeader("Authorization");
+                accessor.setNativeHeader("Authorization", null);
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    throw new IllegalArgumentException("UNAUTHORIZED");
+                }
+
+                String token = authHeader.substring(7);
+                String username = jwtService.extractUsername(token);
+                Long userId = jwtService.extractUserId(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                if (!(userDetails instanceof CurrentUserPrincipal currentUser)
+                        || userId == null
+                        || userId <= 0
+                        || !userId.equals(currentUser.getId())
+                        || !jwtService.isTokenValid(token, userDetails)) {
+                    throw new IllegalArgumentException("UNAUTHORIZED");
+                }
+
+                // Ghi nhận thời gian hết hạn của token vào SocketSessions
+                long expiresAt = jwtService.extractClaim(token, Claims::getExpiration).getTime();
+                socketSessions.authenticate(accessor.getSessionId(), expiresAt);
+
+                // Gán Principal để SimpMessagingTemplate có thể gửi tin nhắn đích danh cho user
+                Principal principal = () -> String.valueOf(userId);
+                accessor.setUser(new UsernamePasswordAuthenticationToken(principal, null, userDetails.getAuthorities()));
+
+                log.info("[WebSocket] Người dùng #{} kết nối STOMP thành công", userId);
+            } catch (Exception e) {
+                log.warn("[WebSocket] Từ chối kết nối STOMP: {}", e.getMessage());
+                throw new IllegalArgumentException("UNAUTHORIZED");
+            }
             return message;
         }
-        if (command == StompCommand.DISCONNECT || command == StompCommand.UNSUBSCRIBE || command == null) return message;
-        if (a.getUser() == null || !sessions.valid(a.getSessionId())) throw new IllegalArgumentException("UNAUTHORIZED");
-        if (command == StompCommand.SUBSCRIBE && Set.of("/user/queue/messages", "/user/queue/notifications").contains(a.getDestination())) return message;
-        if (command == StompCommand.SEND && "/app/chat.send".equals(a.getDestination())) return message;
+
+        // 2. Bỏ qua các lệnh hệ thống DISCONNECT, UNSUBSCRIBE
+        if (StompCommand.DISCONNECT.equals(command) || StompCommand.UNSUBSCRIBE.equals(command) || command == null) {
+            return message;
+        }
+
+        // 3. Với các thao tác khác (SUBSCRIBE, SEND), kiểm tra xác thực và tính hợp lệ của phiên
+        if (accessor.getUser() == null || !socketSessions.valid(accessor.getSessionId())) {
+            throw new IllegalArgumentException("UNAUTHORIZED");
+        }
+
+        // 4. Kiểm tra phân quyền kênh đăng ký (SUBSCRIBE)
+        if (StompCommand.SUBSCRIBE.equals(command) && ALLOWED_SUBSCRIBE_DESTINATIONS.contains(accessor.getDestination())) {
+            return message;
+        }
+
+        // 5. Kiểm tra đích gửi tin nhắn (SEND)
+        if (StompCommand.SEND.equals(command) && "/app/chat.send".equals(accessor.getDestination())) {
+            return message;
+        }
+
+        // 6. Các frame không được hỗ trợ (BEGIN, COMMIT, ABORT, ACK, NACK,...) hoặc đích trái phép bị từ chối
         throw new IllegalArgumentException("FORBIDDEN");
     }
 }

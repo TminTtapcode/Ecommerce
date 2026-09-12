@@ -1,5 +1,7 @@
 package com.tmt.ecommerce.notification.service;
 
+import com.tmt.ecommerce.common.exception.AppException;
+import com.tmt.ecommerce.common.exception.ErrorCode;
 import com.tmt.ecommerce.notification.dto.response.NotificationResponse;
 import com.tmt.ecommerce.notification.dto.response.UnreadCountResponse;
 import com.tmt.ecommerce.notification.entity.Notification;
@@ -22,7 +24,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public Page<NotificationResponse> getUserNotifications(Long userId, int page, int size) {
-        if (page < 0 || size < 1 || size > 100) throw new com.tmt.ecommerce.common.exception.AppException(com.tmt.ecommerce.common.exception.ErrorCode.INVALID_INPUT);
+        if (page < 0 || size < 1 || size > 100) {
+            throw new AppException(ErrorCode.INVALID_INPUT);
+        }
         Pageable pageable = PageRequest.of(page, size);
         return notificationRepository.findByUserIdOrderByCreatedAtDescIdDesc(userId, pageable)
                 .map(NotificationWriter::response);
@@ -39,7 +43,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void markAsRead(Long userId, Long notificationId) {
         Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
-                .orElseThrow(() -> new com.tmt.ecommerce.common.exception.AppException(com.tmt.ecommerce.common.exception.ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
 
         if (!notification.isRead()) {
             notification.setRead(true);
@@ -52,5 +56,4 @@ public class NotificationServiceImpl implements NotificationService {
     public void markAllAsRead(Long userId) {
         notificationRepository.markAllAsReadByUserId(userId);
     }
-
 }

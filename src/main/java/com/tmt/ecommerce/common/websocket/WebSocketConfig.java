@@ -3,60 +3,126 @@ package com.tmt.ecommerce.common.websocket;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.*;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
-import org.springframework.messaging.simp.config.*;
-import org.springframework.messaging.simp.stomp.*;
-import org.springframework.messaging.support.*;
-import org.springframework.web.socket.*;
-import org.springframework.web.socket.config.annotation.*;
+import org.springframework.messaging.simp.config.ChannelRegistration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.ExecutorChannelInterceptor;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 import org.springframework.web.socket.messaging.StompSubProtocolErrorHandler;
 
+/**
+ * Cấu hình hệ thống WebSocket STOMP Message Broker.
+ */
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-    private final JwtChannelInterceptor inbound;
-    private final SocketSessions sessions;
-    @Value("${application.websocket.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}") String[] origins;
-    @Override public void configureMessageBroker(MessageBrokerRegistry c) {
-        c.enableSimpleBroker("/queue", "/topic"); c.setApplicationDestinationPrefixes("/app"); c.setUserDestinationPrefix("/user");
+
+    private final JwtChannelInterceptor jwtChannelInterceptor;
+    private final SocketSessions socketSessions;
+
+    @Value("${application.websocket.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
+    private String[] allowedOrigins;
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        // Kênh broker gửi tin về client: /queue (tin riêng cho user), /topic (tin broadcast)
+        registry.enableSimpleBroker("/queue", "/topic");
+
+        // Tiền tố cho message từ client gửi lên Controller (@MessageMapping)
+        registry.setApplicationDestinationPrefixes("/app");
+
+        // Tiền tố gửi tin nhắn riêng theo user: /user/{userId}/queue/...
+        registry.setUserDestinationPrefix("/user");
     }
-    @Override public void registerStompEndpoints(StompEndpointRegistry r) {
-        r.setErrorHandler(new StompSubProtocolErrorHandler() {
-            @Override public Message<byte[]> handleClientMessageProcessingError(Message<byte[]> message, Throwable ex) {
-                String code = message == null || org.springframework.messaging.simp.SimpMessageHeaderAccessor.getUser(message.getHeaders()) == null ? "UNAUTHORIZED" : "FORBIDDEN";
-                for (Throwable cause = ex; cause != null; cause = cause.getCause())
-                    if ("UNAUTHORIZED".equals(cause.getMessage())) code = "UNAUTHORIZED";
-                var h = StompHeaderAccessor.create(StompCommand.ERROR);
-                h.setMessage(code); h.setNativeHeader("errorCode", code);
-                return MessageBuilder.createMessage(new byte[0], h.getMessageHeaders());
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Điểm kết nối bắt tay WebSocket
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins(allowedOrigins);
+
+        // Trình xử lý lỗi STOMP: trả về frame ERROR rõ ràng cho client
+        registry.setErrorHandler(new StompSubProtocolErrorHandler() {
+            @Override
+            public Message<byte[]> handleClientMessageProcessingError(Message<byte[]> clientMessage, Throwable ex) {
+                String errorCode = clientMessage == null || SimpMessageHeaderAccessor.getUser(clientMessage.getHeaders()) == null
+                        ? "UNAUTHORIZED"
+                        : "FORBIDDEN";
+
+                for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+                    if ("UNAUTHORIZED".equals(cause.getMessage())) {
+                        errorCode = "UNAUTHORIZED";
+                        break;
+                    }
+                }
+
+                StompHeaderAccessor headers = StompHeaderAccessor.create(StompCommand.ERROR);
+                headers.setMessage(errorCode);
+                headers.setNativeHeader("errorCode", errorCode);
+                return MessageBuilder.createMessage(new byte[0], headers.getMessageHeaders());
             }
         });
-        r.addEndpoint("/ws").setAllowedOrigins(origins);
     }
-    @Override public void configureClientInboundChannel(ChannelRegistration c) { c.interceptors(inbound); }
-    @Override public void configureClientOutboundChannel(ChannelRegistration c) {
-        c.interceptors(new ChannelInterceptor() {
-            @Override public Message<?> preSend(Message<?> message, MessageChannel channel) { return allowed(message) ? message : null; }
-        }, new ExecutorChannelInterceptor() {
-            @Override public Message<?> beforeHandle(Message<?> message, MessageChannel channel, MessageHandler handler) {
-                return allowed(message) ? message : null;
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        // Gắn interceptor kiểm tra xác thực JWT cho luồng message đi vào
+        registration.interceptors(jwtChannelInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        // Kiểm tra phiên kết nối còn hợp lệ trước khi gửi tin nhắn outbound về cho client
+        registration.interceptors(
+                new ChannelInterceptor() {
+                    @Override
+                    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                        return isSessionValid(message) ? message : null;
+                    }
+                },
+                new ExecutorChannelInterceptor() {
+                    @Override
+                    public Message<?> beforeHandle(Message<?> message, MessageChannel channel, MessageHandler handler) {
+                        return isSessionValid(message) ? message : null;
+                    }
+                }
+        );
+    }
+
+    private boolean isSessionValid(Message<?> message) {
+        SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.wrap(message);
+        return headerAccessor.getMessageType() != SimpMessageType.MESSAGE || socketSessions.valid(headerAccessor.getSessionId());
+    }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        // Theo dõi sự kiện mở và đóng phiên kết nối WebSocket để SocketSessions quản lý
+        registration.addDecoratorFactory(handler -> new WebSocketHandlerDecorator(handler) {
+            @Override
+            public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+                socketSessions.opened(session);
+                super.afterConnectionEstablished(session);
             }
-        });
-    }
-    private boolean allowed(Message<?> message) {
-        var h = org.springframework.messaging.simp.SimpMessageHeaderAccessor.wrap(message);
-        return h.getMessageType() != SimpMessageType.MESSAGE || sessions.valid(h.getSessionId());
-    }
-    @Override public void configureWebSocketTransport(WebSocketTransportRegistration r) {
-        r.addDecoratorFactory(handler -> new WebSocketHandlerDecorator(handler) {
-            @Override public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-                sessions.opened(session); super.afterConnectionEstablished(session);
-            }
-            @Override public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-                sessions.removed(session.getId()); super.afterConnectionClosed(session, status);
+
+            @Override
+            public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+                socketSessions.removed(session.getId());
+                super.afterConnectionClosed(session, status);
             }
         });
     }
