@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Direct HTTP tests on MySQL for D8 ownership, state and durable delivery evidence. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class DeliveryConfirmationIntegrationTest {
     @org.springframework.boot.test.web.server.LocalServerPort int port;

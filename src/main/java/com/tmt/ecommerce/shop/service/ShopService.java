@@ -30,31 +30,24 @@ public class ShopService {
     @Transactional
     public void createShop(Long userId, ShopCreateRequest request) {
 
-        // Rule 1: User này đã có shop chưa?
         if (shopRepository.existsByUserId(userId)) {
             throw new AppException(ErrorCode.SHOP_ALREADY_EXISTS);
         }
 
-        // Rule 2: Tên shop đã tồn tại trong hệ thống chưa?
         if (shopRepository.existsByName(request.getName())) {
             throw new AppException(ErrorCode.SHOP_NAME_DUPLICATE);
         }
 
-        // Tạo Shop mới
         Shop newShop = Shop.builder()
                 .userId(userId)
                 .name(request.getName())
                 .description(request.getDescription())
-                .status(ShopStatus.PENDING) // Luôn ở trạng thái chờ Admin duyệt
+                .status(ShopStatus.PENDING)
                 .build();
 
         shopRepository.save(newShop);
 
-        // Ghi chú: Sau này khi học đến module phân quyền sâu hơn,
-        // chúng ta sẽ gọi logic thêm ROLE_SHOP_OWNER cho User tại đây.
     }
-    // Thêm các dependency này vào đầu class ShopService
-
 
     @Transactional
     public void approveShop(Long shopId) {
@@ -65,14 +58,11 @@ public class ShopService {
             throw new AppException(ErrorCode.SHOP_INVALID_STATUS_TRANSITION);
         }
 
-        // Cập nhật trạng thái
         shop.setStatus(ShopStatus.ACTIVE);
         shopRepository.save(shop);
 
-        // Cấp quyền cho User thông qua Internal API
         String userEmail = identityInternalService.assignShopOwnerRole(shop.getUserId());
 
-        // Publish semantic domain event - email will only be dispatched AFTER_COMMIT
         eventPublisher.publishEvent(new ShopApprovedEvent(shop.getId(), shop.getUserId(), userEmail, shop.getName()));
     }
 

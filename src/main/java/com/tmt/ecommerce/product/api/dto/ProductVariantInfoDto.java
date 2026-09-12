@@ -9,7 +9,7 @@ public record ProductVariantInfoDto(
         Long shopId,
         String productName,
         String sku,
-        BigDecimal price, // Giá mới nhất
+        BigDecimal price,
         Integer stockQuantity,
         String status,
         String thumbnailUrl,

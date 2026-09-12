@@ -34,7 +34,7 @@ public class User {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Builder.Default // THÊM DÒNG NÀY VÀO ĐÂY
+    @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

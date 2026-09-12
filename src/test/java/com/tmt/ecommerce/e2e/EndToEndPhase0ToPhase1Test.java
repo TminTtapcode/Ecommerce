@@ -82,7 +82,6 @@ public class EndToEndPhase0ToPhase1Test {
     void test1_Authentication() throws Exception {
         System.out.println("\n--- [E2E STEP 1] Authentication ---");
 
-        // Customer Login (customer1@gmail.com / password123)
         String customerLoginJson = objectMapper.writeValueAsString(Map.of(
                 "email", customerEmail,
                 "password", "password123"
@@ -101,7 +100,6 @@ public class EndToEndPhase0ToPhase1Test {
         assertFalse(customerToken.isBlank());
         System.out.println("Customer Token acquired: " + customerToken.substring(0, 25) + "...");
 
-        // Vendor Login (vendor1@techzone.vn / password123 - Shop 1: TechZone)
         String vendorLoginJson = objectMapper.writeValueAsString(Map.of(
                 "email", vendorEmail,
                 "password", "password123"
@@ -127,7 +125,6 @@ public class EndToEndPhase0ToPhase1Test {
     void test2_CatalogAndProductDetail() throws Exception {
         System.out.println("\n--- [E2E STEP 2] Catalog & Product Detail ---");
 
-        // 1. Get Product List (Public endpoint)
         HttpRequest listReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/products?page=0&size=10&keyword=" + fixturePrefix)))
                 .GET()
@@ -142,7 +139,6 @@ public class EndToEndPhase0ToPhase1Test {
         assertEquals(10, content.size());
         System.out.println("Catalog pagination verified: 10 items returned.");
 
-        // 2. Get Product Detail for Product 1 (iPhone 15 Pro Max)
         HttpRequest detailReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/products/" + productId)))
                 .GET()
@@ -165,7 +161,6 @@ public class EndToEndPhase0ToPhase1Test {
     void test3_CartOperations() throws Exception {
         System.out.println("\n--- [E2E STEP 3] Cart Operations ---");
 
-        // 1. Add Variant 1 to Cart
         String cartItemJson = objectMapper.writeValueAsString(Map.of(
                 "productVariantId", fixtureVariantId,
                 "quantity", 2
@@ -179,7 +174,6 @@ public class EndToEndPhase0ToPhase1Test {
         HttpResponse<String> addCartResp = httpClient.send(addCartReq, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, addCartResp.statusCode());
 
-        // 2. View Cart
         HttpRequest getCartReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/carts")))
                 .header("Authorization", "Bearer " + customerToken)
@@ -265,7 +259,6 @@ public class EndToEndPhase0ToPhase1Test {
         createdOrderId = firstOrder.path("id").asLong();
         String status = firstOrder.path("status").asText();
 
-        // COD orders automatically transition to CONFIRMED
         assertEquals("CONFIRMED", status);
         System.out.println("Order created: ID=" + createdOrderId + ", Status=" + status + ", PaymentGroup=" + paymentGroupId);
     }
@@ -276,7 +269,6 @@ public class EndToEndPhase0ToPhase1Test {
     void test6_CustomerOrderHistoryAndDetail() throws Exception {
         System.out.println("\n--- [E2E STEP 6] Customer Order History & Detail ---");
 
-        // 1. Get My Orders
         HttpRequest myOrdersReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/orders?page=0&size=10")))
                 .header("Authorization", "Bearer " + customerToken)
@@ -285,7 +277,6 @@ public class EndToEndPhase0ToPhase1Test {
         HttpResponse<String> myOrdersResp = httpClient.send(myOrdersReq, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, myOrdersResp.statusCode());
 
-        // 2. Get Order Detail
         HttpRequest detailReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/orders/" + createdOrderId)))
                 .header("Authorization", "Bearer " + customerToken)
@@ -306,7 +297,6 @@ public class EndToEndPhase0ToPhase1Test {
     void test7_VendorStateMachineTransitions() throws Exception {
         System.out.println("\n--- [E2E STEP 7] Vendor State Machine Transitions ---");
 
-        // 1. Vendor lists CONFIRMED orders
         HttpRequest vendorOrdersReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/vendor/orders?status=CONFIRMED")))
                 .header("Authorization", "Bearer " + vendorToken)
@@ -315,7 +305,6 @@ public class EndToEndPhase0ToPhase1Test {
         HttpResponse<String> vendorOrdersResp = httpClient.send(vendorOrdersReq, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, vendorOrdersResp.statusCode());
 
-        // 2. INVALID Transition Test: CONFIRMED -> DELIVERED (must fail with 400 Bad Request)
         String invalidTransition = objectMapper.writeValueAsString(Map.of(
                 "status", "DELIVERED"
         ));
@@ -329,7 +318,6 @@ public class EndToEndPhase0ToPhase1Test {
         assertEquals(400, invalidResp.statusCode(), "CONFIRMED -> DELIVERED should be rejected with 400 Bad Request");
         System.out.println("State Machine correctly blocked invalid transition: CONFIRMED -> DELIVERED.");
 
-        // 3. VALID Transition: CONFIRMED -> SHIPPED
         String toShipped = objectMapper.writeValueAsString(Map.of(
                 "status", "SHIPPED"
         ));
@@ -346,7 +334,6 @@ public class EndToEndPhase0ToPhase1Test {
         assertEquals("SHIPPED", shippedNode.path("data").path("status").asText());
         System.out.println("Order status successfully updated to SHIPPED.");
 
-        // 4. Buyer, not Vendor, confirms receipt: SHIPPED -> DELIVERED.
         HttpRequest deliveredReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/orders/" + createdOrderId + "/confirm-delivery")))
                 .header("Authorization", "Bearer " + customerToken)
@@ -419,7 +406,6 @@ public class EndToEndPhase0ToPhase1Test {
     void test10_VerifyPublicReviewAndSummary() throws Exception {
         System.out.println("\n--- [E2E STEP 10] Public Review Summary & Product Reviews ---");
 
-        // 1. Rating Summary
         HttpRequest summaryReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/products/" + productId + "/reviews/summary")))
                 .GET()
@@ -430,7 +416,6 @@ public class EndToEndPhase0ToPhase1Test {
         JsonNode summaryNode = objectMapper.readTree(summaryResp.body());
         assertTrue(summaryNode.path("data").path("totalReviews").asInt() >= 1);
 
-        // 2. Product Reviews List
         HttpRequest listReq = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl("/api/v1/products/" + productId + "/reviews?page=0&size=10")))
                 .GET()
@@ -449,7 +434,6 @@ public class EndToEndPhase0ToPhase1Test {
     void test11_VendorCancelOrder() throws Exception {
         System.out.println("\n--- [E2E STEP 11] Vendor Cancelling Order ---");
 
-        // 1. Customer adds item & checkouts another order
         String cartItemJson = objectMapper.writeValueAsString(Map.of(
                 "productVariantId", fixtureVariantId,
                 "quantity", 1
@@ -479,7 +463,6 @@ public class EndToEndPhase0ToPhase1Test {
         JsonNode checkoutNode = objectMapper.readTree(checkoutResp.body());
         long orderToCancelId = checkoutNode.path("data").path("orders").get(0).path("id").asLong();
 
-        // 2. Vendor cancels this CONFIRMED order
         String cancelJson = objectMapper.writeValueAsString(Map.of(
                 "status", "CANCELLED",
                 "reason", "Khách hàng thông báo hủy đơn để chọn màu khác"

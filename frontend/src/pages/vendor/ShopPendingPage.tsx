@@ -15,7 +15,7 @@ export const ShopPendingPage: React.FC = () => {
             Đang Chờ Duyệt
           </h2>
           <p className="mt-3 text-base text-gray-500">
-            Hồ sơ đăng ký Kênh Người Bán của bạn đã được gửi đi và đang chờ Quản trị viên phê duyệt. 
+            Hồ sơ đăng ký Kênh Người Bán của bạn đã được gửi đi và đang chờ Quản trị viên phê duyệt.
             Quá trình này có thể mất từ 1-2 ngày làm việc.
           </p>
         </div>

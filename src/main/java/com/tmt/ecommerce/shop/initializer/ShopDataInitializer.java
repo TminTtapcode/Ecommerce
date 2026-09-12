@@ -29,7 +29,6 @@ public class ShopDataInitializer implements CommandLineRunner {
 
         log.info("=== STARTING SHOP SEED DATA ===");
 
-        // Shops (3 Shops) mapped to Vendor IDs
         createShop(SeedDataIds.VENDOR_1_ID, "TechZone Official Store", "Chuyên đồ công nghệ cao cấp chính hãng", ShopStatus.ACTIVE);
         createShop(SeedDataIds.VENDOR_2_ID, "Fashion Hub Vietnam", "Thời trang xu hướng mới nhất năm 2026", ShopStatus.ACTIVE);
         createShop(SeedDataIds.VENDOR_3_ID, "Gia Dụng Xanh Store", "Thiết bị nhà bếp và gia đình tiện ích", ShopStatus.ACTIVE);

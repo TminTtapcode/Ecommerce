@@ -26,7 +26,6 @@ public class GlobalExceptionHandler {
         return response(ex.getErrorCode(), ex.getMessage());
     }
 
-    // Compatibility for domain services that have not yet migrated to AppException.
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, BusinessException.class})
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(RuntimeException ex) {
         return response(ErrorCode.INVALID_INPUT, ex.getMessage());
@@ -68,8 +67,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {
-        // Preserve framework status/headers (binding, missing routes, unsupported methods/media).
-        // Never expose exception details such as parser input or database errors.
+
         if (ex instanceof ErrorResponse error) {
             int status = error.getStatusCode().value();
             ErrorCode code = ErrorCode.forHttpStatus(status);
@@ -82,7 +80,7 @@ public class GlobalExceptionHandler {
             ErrorCode code = ErrorCode.forHttpStatus(status);
             return ResponseEntity.status(status).body(ApiResponse.error(status, code, code.getDefaultMessage()));
         }
-        // HttpMessageNotReadableException is not an ErrorResponse in all Spring versions.
+
         if (ex instanceof org.springframework.http.converter.HttpMessageNotReadableException
                 || ex instanceof org.springframework.beans.TypeMismatchException) {
             return response(ErrorCode.INVALID_INPUT, ErrorCode.INVALID_INPUT.getDefaultMessage());

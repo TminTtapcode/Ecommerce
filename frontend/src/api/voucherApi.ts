@@ -3,14 +3,13 @@ import type { ApiResponse, PageResponse } from './types/common.types';
 import type { VoucherResponse, VoucherCreateRequest, VoucherUpdateRequest } from './types/voucher.types';
 
 export const voucherApi = {
-  // Vendor
+
   getMyShopVouchers: (page = 0, size = 10) => {
     return apiClient.get<ApiResponse<PageResponse<VoucherResponse>>>('/api/v1/vouchers/my-shop', {
       params: { page, size }
     });
   },
-  
-  // Shared (Admin creates SYSTEM, Vendor creates SHOP)
+
   createVoucher: (data: VoucherCreateRequest) => {
     return apiClient.post<ApiResponse<VoucherResponse>>('/api/v1/vouchers', data);
   },
@@ -23,4 +22,3 @@ export const voucherApi = {
     return apiClient.delete<ApiResponse<void>>(`/api/v1/vouchers/${id}`);
   }
 };
-

@@ -36,7 +36,7 @@ public class Review {
     private Long orderId;
 
     @Column(nullable = false)
-    private Integer rating; // 1 to 5
+    private Integer rating;
 
     @Column(nullable = false, length = 1000)
     private String comment;

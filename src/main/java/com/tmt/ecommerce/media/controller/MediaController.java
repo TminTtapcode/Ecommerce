@@ -24,7 +24,7 @@ public class MediaController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UploadResponse>> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
-            // 1. Validate file rỗng
+
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(ApiResponse.<UploadResponse>builder()
                         .status(HttpStatus.BAD_REQUEST.value())
@@ -32,7 +32,6 @@ public class MediaController {
                         .build());
             }
 
-            // 2. Validate định dạng (Tùy chọn: chỉ cho phép ảnh)
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
                 return ResponseEntity.badRequest().body(ApiResponse.<UploadResponse>builder()
@@ -41,10 +40,8 @@ public class MediaController {
                         .build());
             }
 
-            // 3. Gọi service để đẩy lên Cloudinary
             FileStorageService.FileStorageResponse storageResponse = fileStorageService.uploadImage(file);
 
-            // 4. Trả về chuẩn JSON để Frontend dễ parse
             return ResponseEntity.ok(ApiResponse.<UploadResponse>builder()
                     .status(HttpStatus.OK.value())
                     .message("Upload thành công")
@@ -52,7 +49,7 @@ public class MediaController {
                     .build());
 
         } catch (Exception e) {
-            // Log lỗi ra console để debug (thực tế nên dùng @Slf4j)
+
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.<UploadResponse>builder()

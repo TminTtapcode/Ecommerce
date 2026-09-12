@@ -19,7 +19,6 @@ public class VoucherController {
 
     private final VoucherService voucherService;
 
-    // API tạo Voucher dành cho Admin hoặc Vendor
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDOR')")
     public ResponseEntity<ApiResponse<VoucherResponse>> createVoucher(
@@ -41,7 +40,7 @@ public class VoucherController {
             @com.tmt.ecommerce.common.annotation.CurrentUserId Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Page<VoucherResponse> voucherPage = voucherService.getShopVouchers(userId, page, size);
         return ResponseEntity.ok(ApiResponse.<Page<VoucherResponse>>builder()
                 .status(HttpStatus.OK.value())
@@ -56,7 +55,7 @@ public class VoucherController {
             @com.tmt.ecommerce.common.annotation.CurrentUserId Long userId,
             @PathVariable Long id,
             @jakarta.validation.Valid @RequestBody com.tmt.ecommerce.voucher.dto.request.VoucherUpdateRequest request) {
-        
+
         VoucherResponse response = voucherService.updateVoucher(userId, id, request);
         return ResponseEntity.ok(ApiResponse.<VoucherResponse>builder()
                 .status(HttpStatus.OK.value())
@@ -70,7 +69,7 @@ public class VoucherController {
     public ResponseEntity<ApiResponse<Void>> deleteShopVoucher(
             @com.tmt.ecommerce.common.annotation.CurrentUserId Long userId,
             @PathVariable Long id) {
-        
+
         voucherService.deleteVoucher(userId, id);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .status(HttpStatus.OK.value())

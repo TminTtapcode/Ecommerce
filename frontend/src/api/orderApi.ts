@@ -33,8 +33,6 @@ export const orderApi = {
         return response.data;
     },
 
-    // === VENDOR ORDER MANAGEMENT ===
-
     getVendorOrders: async (params?: { page?: number; size?: number; status?: string }): Promise<ApiResponse<PageResponse<OrderResponse>>> => {
         const response = await apiClient.get<ApiResponse<PageResponse<OrderResponse>>>('/api/v1/vendor/orders', { params });
         return response.data;

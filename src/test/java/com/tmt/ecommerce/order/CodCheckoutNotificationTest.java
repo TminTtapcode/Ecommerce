@@ -69,21 +69,17 @@ public class CodCheckoutNotificationTest {
         orderRepository.deleteAll();
         notificationRepository.deleteAll();
 
-        // Mock cart items
         CartItemInternalDto mockCartItem = new CartItemInternalDto(
                 1L, 10L, shopId, "Test Product",
                 new BigDecimal("50000"), 2, new BigDecimal("100000"), true
         );
         when(cartInternalService.getCartItems(buyerUserId)).thenReturn(List.of(mockCartItem));
 
-        // Mock product deduct stock (do nothing/return true)
         doNothing().when(productInternalService).deductStock(any(Long.class), any(Integer.class));
 
-        // Mock shop internal service
         when(shopInternalService.getUserIdByShopId(shopId)).thenReturn(Optional.of(vendorUserId));
         when(shopInternalService.isShopOwner(shopId, vendorUserId)).thenReturn(true);
-        
-        // Mock identity internal service
+
         when(identityInternalService.getUserFullNameOrDefault(any())).thenReturn("Test User");
     }
 
@@ -99,22 +95,19 @@ public class CodCheckoutNotificationTest {
 
         CheckoutResponse response = orderService.checkout(buyerUserId, request);
 
-        // 1. Assert Order ban đầu ở trạng thái PENDING
         assertNotNull(response);
         assertEquals(1, response.getOrders().size());
-        
+
         Long orderId = response.getOrders().get(0).id();
         Order order = orderRepository.findById(orderId).orElseThrow();
         assertEquals(OrderStatus.PENDING, order.getStatus(), "COD order should initially be in PENDING status");
         assertEquals("COD", order.getPaymentMethod());
 
-        // 2. Vendor xác nhận đơn hàng -> Chuyển sang CONFIRMED và phát OrderConfirmedEvent
         orderService.updateVendorOrderStatus(vendorUserId, orderId, new VendorOrderStatusUpdateRequest(OrderStatus.CONFIRMED, null));
 
         Order confirmedOrder = orderRepository.findById(orderId).orElseThrow();
         assertEquals(OrderStatus.CONFIRMED, confirmedOrder.getStatus(), "Order should be CONFIRMED after vendor confirmation");
 
-        // 3. Assert exactly 1 notification for buyer, containing COD in message
         List<Notification> buyerNotifications = notificationRepository.findAll().stream()
                 .filter(n -> n.getUserId().equals(buyerUserId))
                 .toList();
@@ -123,21 +116,18 @@ public class CodCheckoutNotificationTest {
         assertEquals(NotificationType.ORDER_CONFIRMED, buyerNotif.getType());
         assertTrue(buyerNotif.getMessage().contains("COD"), "Notification message should contain payment method COD");
 
-        // 4. Assert exactly 1 notification for vendor
         List<Notification> vendorNotifications = notificationRepository.findAll().stream()
                 .filter(n -> n.getUserId().equals(vendorUserId))
                 .toList();
         assertEquals(1, vendorNotifications.size(), "Vendor should receive exactly 1 notification");
         Notification vendorNotif = vendorNotifications.get(0);
         assertEquals(NotificationType.NEW_ORDER, vendorNotif.getType());
-        
-        // 5. Assert no duplicates if event published again (simulating duplicate IPN logic)
-        com.tmt.ecommerce.order.api.event.OrderConfirmedEvent duplicateEvent = 
+
+        com.tmt.ecommerce.order.api.event.OrderConfirmedEvent duplicateEvent =
                 new com.tmt.ecommerce.order.api.event.OrderConfirmedEvent(
                         orderId, buyerUserId, shopId, "COD"
                 );
-        
-        // Use application event publisher to publish event manually
+
         eventPublisher.publishEvent(duplicateEvent);
     }
 }

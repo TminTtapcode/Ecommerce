@@ -127,7 +127,7 @@ public class NPlus1AuditTest {
         req2.setProductVariantId(variant2Id);
         req2.setQuantity(2);
         cartService.addToCart(userId, req2);
-        
+
         entityManager.flush();
         entityManager.clear();
     }
@@ -159,7 +159,7 @@ public class NPlus1AuditTest {
 
     @Test
     public void testProductListingBatchFetching() {
-        // Seed 3 more products with variants and images
+
         Category cat = categoryRepository.findById(categoryId).orElseThrow();
         for (int i = 0; i < 3; i++) {
             Product p = Product.builder()
@@ -200,10 +200,9 @@ public class NPlus1AuditTest {
         stats.setStatisticsEnabled(true);
         stats.clear();
 
-        org.springframework.data.domain.Page<com.tmt.ecommerce.product.dto.response.ProductResponse> productPage = 
+        org.springframework.data.domain.Page<com.tmt.ecommerce.product.dto.response.ProductResponse> productPage =
                 productService.getAllProducts(0, 10, listingPrefix);
 
-        // Fully access child collections and joined properties
         for (com.tmt.ecommerce.product.dto.response.ProductResponse prod : productPage.getContent()) {
             org.junit.jupiter.api.Assertions.assertNotNull(prod.categoryName());
             prod.variants().size();
@@ -212,15 +211,15 @@ public class NPlus1AuditTest {
 
         long queryCount = stats.getPrepareStatementCount();
         System.out.println("====== PRODUCT LISTING QUERY COUNT: " + queryCount + " ======");
-        // Expected bounded queries: 1 count + 1 product/category join + 1 batch variants + 1 batch images = 4
-        org.junit.jupiter.api.Assertions.assertTrue(queryCount <= 6, 
+
+        org.junit.jupiter.api.Assertions.assertTrue(queryCount <= 6,
                 "Product listing queries should be bounded by batch fetching, but was " + queryCount);
     }
 
     @Test
     public void testOrderListingBatchFetching() {
         Long orderUserId = userId;
-        // Create 4 orders for this user, each with 2 items
+
         for (int i = 0; i < 4; i++) {
             com.tmt.ecommerce.order.entity.Order order = com.tmt.ecommerce.order.entity.Order.builder()
                     .userId(orderUserId)
@@ -265,7 +264,7 @@ public class NPlus1AuditTest {
         stats.setStatisticsEnabled(true);
         stats.clear();
 
-        org.springframework.data.domain.Page<com.tmt.ecommerce.order.dto.response.OrderResponse> orderPage = 
+        org.springframework.data.domain.Page<com.tmt.ecommerce.order.dto.response.OrderResponse> orderPage =
                 orderService.getMyOrders(orderUserId, null, 0, 10);
 
         for (com.tmt.ecommerce.order.dto.response.OrderResponse ord : orderPage.getContent()) {
@@ -275,16 +274,15 @@ public class NPlus1AuditTest {
 
         long queryCount = stats.getPrepareStatementCount();
         System.out.println("====== ORDER LISTING QUERY COUNT: " + queryCount + " ======");
-        // Expected measured queries: 1 count + 1 orders page + 1 batch items (@BatchSize) + 1 bulk variant-to-product mapping + user full name lookups = 7 queries
-        org.junit.jupiter.api.Assertions.assertTrue(queryCount <= 8, 
+
+        org.junit.jupiter.api.Assertions.assertTrue(queryCount <= 8,
                 "Order listing queries should be bounded by batch size and bulk API, but was " + queryCount);
     }
 
     @Test
     public void testReviewEligibilityBulkQuery() {
         Long reviewUserId = (long) (Math.random() * 1000000 + 700000);
-        
-        // Create 3 delivered orders containing variant1 (product1) and 1 order containing variant2 (product2)
+
         com.tmt.ecommerce.order.entity.Order order1 = com.tmt.ecommerce.order.entity.Order.builder()
                 .userId(reviewUserId)
                 .shopId(2001L)
@@ -324,7 +322,6 @@ public class NPlus1AuditTest {
                 .order(order3).productVariantId(variant2Id).productName("P2").quantity(1).unitPrice(BigDecimal.valueOf(200)).subTotal(BigDecimal.valueOf(200)).build());
         order3 = orderRepository.save(order3);
 
-        // Add an existing review for order1 and product1
         com.tmt.ecommerce.review.entity.Review review = com.tmt.ecommerce.review.entity.Review.builder()
                 .userId(reviewUserId)
                 .orderId(order1.getId())
@@ -346,13 +343,11 @@ public class NPlus1AuditTest {
 
         long queryCount = stats.getPrepareStatementCount();
         System.out.println("====== REVIEW ELIGIBILITY QUERY COUNT: " + queryCount + " ======");
-        
-        // Assertions: only order2 is eligible (order1 was already reviewed, order3 does not contain product1)
+
         org.junit.jupiter.api.Assertions.assertEquals(1, eligibleOrderIds.size());
         org.junit.jupiter.api.Assertions.assertEquals(order2.getId(), eligibleOrderIds.get(0));
 
-        // Exact queries: 1 projection + 1 bulk variant-to-product + 1 bulk findReviewedOrderIds = 3 queries
-        org.junit.jupiter.api.Assertions.assertEquals(3, queryCount, 
+        org.junit.jupiter.api.Assertions.assertEquals(3, queryCount,
                 "Review eligibility should execute exactly 3 queries (projection, bulk variant mapping, bulk review existence check)");
     }
 }

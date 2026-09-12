@@ -1,11 +1,11 @@
 import apiClient from './apiClient';
-import type { 
-  ProductResponse, 
-  PageResponse, 
-  ProductCreateRequest, 
-  ProductUpdateRequest 
+import type {
+  ProductResponse,
+  PageResponse,
+  ProductCreateRequest,
+  ProductUpdateRequest
 } from './types/product.types';
-import type { ApiResponse } from './types/auth.types'; // Reuse ApiResponse structure
+import type { ApiResponse } from './types/auth.types';
 
 export interface ProductSearchParams {
   page?: number;
@@ -15,7 +15,7 @@ export interface ProductSearchParams {
   shopId?: number;
   minPrice?: number;
   maxPrice?: number;
-  /** 'price_asc' | 'price_desc' | 'id_desc' (default) */
+
   sortBy?: string;
 }
 

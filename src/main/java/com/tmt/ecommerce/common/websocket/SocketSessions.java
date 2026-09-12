@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import java.util.concurrent.*;
 
-/** Transport sessions, including idle subscribers, expire independently of inbound traffic. */
 @Component
 public class SocketSessions {
     private static final class State {

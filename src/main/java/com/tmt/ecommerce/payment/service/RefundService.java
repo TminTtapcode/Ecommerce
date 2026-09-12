@@ -44,7 +44,7 @@ public class RefundService {
 
     @Transactional(readOnly = true)
     public List<RefundAttemptResponse> listForOrder(Long orderId) {
-        // Keep the external order identifier non-enumerable only for non-admin routes; this service is Admin-only at controller.
+
         return refunds.findByOrderIdOrderByCreatedAtDesc(orderId).stream().map(RefundAttemptResponse::from).toList();
     }
 

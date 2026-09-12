@@ -13,7 +13,6 @@ const apiClient = axios.create({
   },
 });
 
-// Add a request interceptor to attach the auth token
 apiClient.interceptors.request.use(
   (config) => {
     const explicit = config.headers?.Authorization;
@@ -29,7 +28,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add a response interceptor to handle 401 Unauthorized
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -37,9 +35,9 @@ apiClient.interceptors.response.use(
     if (session && (!authSessionGuard.accepts(session.generation) || session.token !== localStorage.getItem('token'))) return Promise.reject(error);
     const details = getApiError(error);
     if (details.status === 401 || details.errorCode === ERROR_CODES.UNAUTHORIZED) {
-      // Clear token and redirect to login if unauthorized
+
       localStorage.removeItem('token');
-      // Keep authentication forms mounted so they can display credential errors.
+
       if (!error.config?.url?.startsWith('/api/v1/auth/')) window.location.href = '/login';
     }
     return Promise.reject(error);

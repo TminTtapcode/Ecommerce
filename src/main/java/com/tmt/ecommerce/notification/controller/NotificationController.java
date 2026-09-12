@@ -24,7 +24,7 @@ public class NotificationController {
             @CurrentUserId Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Page<NotificationResponse> notifications = notificationService.getUserNotifications(userId, page, size);
         return ResponseEntity.ok(ApiResponse.<Page<NotificationResponse>>builder()
                 .status(200)

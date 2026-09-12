@@ -1,4 +1,3 @@
-// Mirrors the backend ErrorCode enum. Unknown server codes still fall back to message.
 export const ERROR_CODES = {
   SHOP_PRIOR_STATUS_MISSING: 'SHOP_PRIOR_STATUS_MISSING',
   UNAUTHORIZED: 'UNAUTHORIZED',

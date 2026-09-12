@@ -8,7 +8,7 @@ import lombok.Data;
 public class ChatMessageRequest {
     @NotNull(message = "Room ID is required")
     private Long roomId;
-    
+
     @NotBlank(message = "Content is required")
     private String content;
 }

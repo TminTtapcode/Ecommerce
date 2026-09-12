@@ -40,15 +40,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Integration test for Admin Dashboard Statistics (P1-05 / Feature 2).
- * Verifies:
- * - Security: Non-admin rejected (401/403), Admin authorized (200)
- * - Baseline counts: users, shops, products
- * - Order metrics: orders by status, delivered revenue only (no unpaid/cancelled counted), AOV
- * - Date range filter: startDate and endDate filter orders without affecting baseline counts
- * - Daily chart & recent orders payload correctness
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AdminStatisticsIntegrationTest {
 
@@ -87,7 +78,6 @@ class AdminStatisticsIntegrationTest {
 
         String suffix = UUID.randomUUID().toString().substring(0, 8);
 
-        // 1. Admin user
         User adminUser = userRepository.save(User.builder()
                 .email("admin-" + suffix + "@test.com")
                 .fullName("Admin Test")
@@ -97,7 +87,6 @@ class AdminStatisticsIntegrationTest {
                 .build());
         adminToken = jwtService.generateToken(new CustomUserDetails(adminUser));
 
-        // 2. Regular user (BUYER)
         User normalUser = userRepository.save(User.builder()
                 .email("user-" + suffix + "@test.com")
                 .fullName("Buyer Test")
@@ -108,7 +97,6 @@ class AdminStatisticsIntegrationTest {
         userToken = jwtService.generateToken(new CustomUserDetails(normalUser));
         testUserId = normalUser.getId();
 
-        // 3. Vendor user
         User vendorUser = userRepository.save(User.builder()
                 .email("vendor-" + suffix + "@test.com")
                 .fullName("Vendor Test")
@@ -118,7 +106,6 @@ class AdminStatisticsIntegrationTest {
                 .build());
         vendorToken = jwtService.generateToken(new CustomUserDetails(vendorUser));
 
-        // 4. Test shop
         Shop shop = shopRepository.save(Shop.builder()
                 .name("Shop-" + suffix)
                 .userId(vendorUser.getId())
@@ -126,7 +113,6 @@ class AdminStatisticsIntegrationTest {
                 .build());
         testShopId = shop.getId();
 
-        // 5. Test category & product
         Category category = categoryRepository.save(Category.builder().name("Cat-" + suffix).build());
         productRepository.save(Product.builder()
                 .shopId(testShopId)
@@ -190,7 +176,7 @@ class AdminStatisticsIntegrationTest {
 
     @Test
     void statisticsAccuracy_DeliveredRevenueOnlyAndAOVCalculation() throws Exception {
-        // Create 2 DELIVERED orders (100.00 and 200.00), 1 CANCELLED (50.00), 1 PENDING (50.00)
+
         createOrder(OrderStatus.DELIVERED, new BigDecimal("100.00"), LocalDateTime.now());
         createOrder(OrderStatus.DELIVERED, new BigDecimal("200.00"), LocalDateTime.now());
         createOrder(OrderStatus.CANCELLED, new BigDecimal("50.00"), LocalDateTime.now());
@@ -207,7 +193,6 @@ class AdminStatisticsIntegrationTest {
         assertThat(ordersByStatus.get("CANCELLED").asLong()).isGreaterThanOrEqualTo(1);
         assertThat(ordersByStatus.get("PENDING").asLong()).isGreaterThanOrEqualTo(1);
 
-        // Revenue must only sum DELIVERED orders, and AOV = deliveredRevenue / deliveredCount
         BigDecimal revenue = new BigDecimal(data.get("deliveredRevenue").asText());
         BigDecimal aov = new BigDecimal(data.get("averageOrderValue").asText());
         long deliveredCount = ordersByStatus.get("DELIVERED").asLong();
@@ -221,7 +206,7 @@ class AdminStatisticsIntegrationTest {
 
     @Test
     void dateRangeFiltering_FiltersOrdersAndKeepsBaselineCounts() throws Exception {
-        // Query future range where no orders could exist
+
         LocalDate futureStart = LocalDate.now().plusDays(10);
         LocalDate futureEnd = LocalDate.now().plusDays(20);
 
@@ -231,12 +216,10 @@ class AdminStatisticsIntegrationTest {
 
         JsonNode data = objectMapper.readTree(res.body()).get("data");
 
-        // Baseline counts must still reflect all registered users/shops/products
         assertThat(data.get("totalUsers").asLong()).isGreaterThanOrEqualTo(3);
         assertThat(data.get("totalShops").asLong()).isGreaterThanOrEqualTo(1);
         assertThat(data.get("totalProducts").asLong()).isGreaterThanOrEqualTo(1);
 
-        // Order metrics in future range should be 0
         assertThat(data.get("totalOrders").asLong()).isEqualTo(0);
         assertThat(new BigDecimal(data.get("deliveredRevenue").asText())).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(new BigDecimal(data.get("averageOrderValue").asText())).isEqualByComparingTo(BigDecimal.ZERO);
@@ -275,7 +258,6 @@ class AdminStatisticsIntegrationTest {
                 .build();
         o = orderRepository.save(o);
 
-        // In case createdAt is auto-generated and we want specific timestamp:
         if (createdAt != null) {
             jdbcTemplate.update("UPDATE orders SET created_at = ? WHERE id = ?", createdAt, o.getId());
         }

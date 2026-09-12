@@ -5,17 +5,17 @@ export const getNotificationRoute = (type: string, referenceId?: string | null):
     case 'ORDER_CONFIRMED':
     case 'ORDER_SHIPPED':
     case 'ORDER_DELIVERED':
-      // Buyer notifications
-      return `/orders`; // Or specific order page if available: `/orders/${referenceId}`
-    
+
+      return `/orders`;
+
     case 'NEW_ORDER':
-      // Vendor notifications
-      return `/vendor/orders`; // The vendor order management page
-      
+
+      return `/vendor/orders`;
+
     case 'NEW_REVIEW':
-      // Could point to product page or a future review management page
+
       return `/products/${referenceId}`;
-      
+
     default:
       return null;
   }

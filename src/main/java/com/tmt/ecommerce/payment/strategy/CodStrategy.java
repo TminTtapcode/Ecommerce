@@ -18,7 +18,6 @@ public class CodStrategy implements PaymentStrategy {
         return PaymentMethod.COD;
     }
 
-    // Đã thêm tham số txnRef
     @Override
     public String createPaymentUrl(PaymentOrderData orderData, String ipAddress, String txnRef) {
         return frontendUrl + "/checkout/success?paymentGroupId=" + orderData.paymentGroupId();

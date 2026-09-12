@@ -40,11 +40,10 @@ function App() {
         <BrowserRouter>
           <RealtimeProvider><NotificationProvider><ChatProvider>
             <Routes>
-          {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<Navigate to="/products" replace />} />
-          
+
           <Route element={<PublicLayout />}>
             <Route path="/products" element={<ProductListPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
@@ -57,8 +56,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute requireAdmin={false}><ProfilePage /></ProtectedRoute>} />
             <Route path="/chat-test" element={<ProtectedRoute requireAdmin={false}><ChatTestPage /></ProtectedRoute>} />
           </Route>
-          
-          {/* Vendor Routes */}
+
           <Route element={<PublicLayout />}>
             <Route path="/vendor/products" element={<ProtectedRoute requireAdmin={false}><RequireShop allowBanned><VendorProductListPage /></RequireShop></ProtectedRoute>} />
             <Route path="/vendor/products/new" element={<ProtectedRoute requireAdmin={false}><RequireShop><VendorProductFormPage /></RequireShop></ProtectedRoute>} />
@@ -69,8 +67,7 @@ function App() {
             <Route path="/vendor" element={<Navigate to="/vendor/products" replace />} />
             <Route path="/seller" element={<Navigate to="/vendor/products" replace />} />
           </Route>
-          
-          {/* Admin Protected Routes */}
+
           <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboardPage />} />
             <Route path="products" element={<AdminProductListPage />} />

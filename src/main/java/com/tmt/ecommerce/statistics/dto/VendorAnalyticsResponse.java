@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-/** Public response for the authenticated vendor's own shop only. */
 public record VendorAnalyticsResponse(
         String dateBasis,
         LocalDate startDate,

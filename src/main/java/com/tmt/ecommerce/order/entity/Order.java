@@ -65,8 +65,6 @@ public class Order {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    // Quan hệ 1-N với OrderItem.
-    // Dùng cascade = ALL để khi lưu Order sẽ tự động lưu luôn các OrderItem bên trong.
     @org.hibernate.annotations.BatchSize(size = 50)
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -90,7 +88,6 @@ public class Order {
     @Column(name = "delivery_confirmation_source")
     private DeliveryConfirmationSource deliveryConfirmationSource;
 
-    // Helper method: Tiện ích để thêm item vào đơn hàng hai chiều cho chuẩn JPA
     public void addOrderItem(OrderItem item) {
         items.add(item);
         item.setOrder(this);

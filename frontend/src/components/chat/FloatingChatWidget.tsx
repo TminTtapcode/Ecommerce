@@ -41,14 +41,12 @@ export const FloatingChatWidget: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto scroll to bottom of messages
   useEffect(() => {
     if (activeRoomId && messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, activeRoomId]);
 
-  // Focus input when active room changes
   useEffect(() => {
     if (activeRoomId) {
       inputRef.current?.focus();
@@ -71,7 +69,6 @@ export const FloatingChatWidget: React.FC = () => {
     }
   };
 
-  // Filter rooms based on search and type
   const filteredRooms = rooms.filter((r) => {
     const nameMatch = (r.shopName || `Shop #${r.shopId}`)
       .toLowerCase()
@@ -99,7 +96,6 @@ export const FloatingChatWidget: React.FC = () => {
     }
   };
 
-  // If user is not authenticated and clicks widget, redirect to login
   const handleWidgetClick = () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -110,7 +106,6 @@ export const FloatingChatWidget: React.FC = () => {
 
   return (
     <div className="fixed bottom-0 right-6 z-50 select-none font-sans">
-      {/* 1. COLLAPSED FLOATING PILL BUTTON */}
       {!isOpen && (
         <button
           onClick={handleWidgetClick}
@@ -128,10 +123,8 @@ export const FloatingChatWidget: React.FC = () => {
         </button>
       )}
 
-      {/* 2. EXPANDED SHOPEE CHAT MODAL */}
       {isOpen && (
         <div className="w-[720px] max-w-[calc(100vw-32px)] h-[540px] max-h-[calc(100vh-80px)] bg-white rounded-t-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-          {/* Top Yellow Announcement Banner */}
           <div className="bg-[#fffbe6] border-b border-[#ffe58f] px-3.5 py-1.5 flex items-center gap-2 text-xs text-[#d48806] shrink-0">
             <AlertCircle className="w-3.5 h-3.5 text-[#faad14] shrink-0" />
             <span className="truncate">
@@ -139,7 +132,6 @@ export const FloatingChatWidget: React.FC = () => {
             </span>
           </div>
 
-          {/* Chat Header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-white shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold text-[#ee4d2d] tracking-tight">Chat</span>
@@ -177,11 +169,8 @@ export const FloatingChatWidget: React.FC = () => {
             </div>
           </div>
 
-          {/* Main 2-Column Content */}
           <div className="flex-1 flex overflow-hidden">
-            {/* LEFT COLUMN: Conversation List */}
             <div className="w-[280px] border-r border-gray-100 flex flex-col bg-white shrink-0">
-              {/* Search & Filter Bar */}
               <div className="p-2.5 border-b border-gray-100 flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -203,7 +192,6 @@ export const FloatingChatWidget: React.FC = () => {
                 </select>
               </div>
 
-              {/* Room List Scrollable */}
               <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
                 {isLoadingRooms ? (
                   <div className="p-4 text-center text-xs text-gray-400">Đang tải cuộc trò chuyện...</div>
@@ -226,12 +214,10 @@ export const FloatingChatWidget: React.FC = () => {
                             : 'hover:bg-gray-50'
                         }`}
                       >
-                        {/* Avatar */}
                         <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-red-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
 
-                        {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span
@@ -263,12 +249,10 @@ export const FloatingChatWidget: React.FC = () => {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Active Chat or Empty State */}
             <div className="flex-1 flex flex-col bg-[#F9FAFB] overflow-hidden">
               {!activeRoom ? (
-                /* EMPTY STATE (matching user screenshot) */
+
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                  {/* Laptop Illustration */}
                   <div className="relative mb-6">
                     <svg
                       className="w-48 h-36 text-gray-300"
@@ -276,7 +260,6 @@ export const FloatingChatWidget: React.FC = () => {
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                     >
-                      {/* Laptop Screen Body */}
                       <rect
                         x="30"
                         y="20"
@@ -287,17 +270,13 @@ export const FloatingChatWidget: React.FC = () => {
                         stroke="#9CA3AF"
                         strokeWidth="3"
                       />
-                      {/* Screen Content */}
                       <rect x="40" y="30" width="120" height="72" rx="4" fill="white" />
-                      {/* Inner Blue Window */}
                       <rect x="48" y="38" width="54" height="26" rx="2" fill="#3B82F6" />
                       <line x1="54" y1="46" x2="80" y2="46" stroke="white" strokeWidth="2" strokeLinecap="round" />
                       <line x1="54" y1="52" x2="90" y2="52" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                      {/* Inner Content Lines */}
                       <line x1="48" y1="72" x2="110" y2="72" stroke="#E5E7EB" strokeWidth="3" strokeLinecap="round" />
                       <line x1="48" y1="80" x2="95" y2="80" stroke="#E5E7EB" strokeWidth="3" strokeLinecap="round" />
                       <line x1="48" y1="88" x2="105" y2="88" stroke="#E5E7EB" strokeWidth="3" strokeLinecap="round" />
-                      {/* Laptop Base */}
                       <path
                         d="M15 116C15 113.791 16.7909 112 19 112H181C183.209 112 185 113.791 185 116V120C185 122.209 183.209 124 181 124H19C16.7909 124 15 122.209 15 120V116Z"
                         fill="#D1D5DB"
@@ -307,7 +286,6 @@ export const FloatingChatWidget: React.FC = () => {
                       <rect x="85" y="112" width="30" height="4" rx="2" fill="#9CA3AF" />
                     </svg>
 
-                    {/* Popping Chat Bubble on Laptop */}
                     <div className="absolute top-10 right-4 bg-[#ee4d2d] text-white rounded-xl rounded-bl-none px-2.5 py-1.5 shadow-lg flex items-center gap-1 animate-bounce">
                       <div className="w-1.5 h-1.5 rounded-full bg-white opacity-80" />
                       <div className="w-1.5 h-1.5 rounded-full bg-white opacity-80" />
@@ -315,7 +293,6 @@ export const FloatingChatWidget: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Text from screenshot */}
                   <h3 className="text-base font-bold text-gray-800">
                     Chào mừng bạn đến với Shopee Chat
                   </h3>
@@ -324,9 +301,8 @@ export const FloatingChatWidget: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                /* ACTIVE ROOM CHAT WINDOW */
+
                 <>
-                  {/* Chat Sub-Header */}
                   <div className="px-4 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between shrink-0 shadow-xs">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-xs">
@@ -351,7 +327,6 @@ export const FloatingChatWidget: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Messages Area */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F9FA]">
                     {isLoadingMessages ? (
                       <div className="flex justify-center items-center h-full text-xs text-gray-400">
@@ -395,9 +370,7 @@ export const FloatingChatWidget: React.FC = () => {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Input Footer */}
                   <div className="p-2.5 bg-white border-t border-gray-100 shrink-0">
-                    {/* Toolbar Icons */}
                     <div className="flex items-center gap-3 px-1 mb-2 text-gray-400">
                       <button
                         type="button"
@@ -415,7 +388,6 @@ export const FloatingChatWidget: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Input Field & Send Button */}
                     <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                       <input
                         ref={inputRef}

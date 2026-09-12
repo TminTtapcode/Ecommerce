@@ -11,12 +11,6 @@ public interface ProductService {
     ProductResponse getVendorProductById(Long userId, Long id);
     ProductResponse createProduct(Long userId, ProductCreateRequest request);
 
-    /**
-     * Tìm kiếm sản phẩm với các filter tùy chọn.
-     * D7.1: giá lọc theo product.price. D7.2: categoryId bao gồm descendants.
-     * D7.4: sortBy whitelist [price_asc, price_desc, id_desc (default)].
-     * Tất cả params đều optional; null/blank bị bỏ qua.
-     */
     Page<ProductResponse> getAllProducts(int page, int size, String keyword,
                                         Long categoryId, Long shopId, BigDecimal minPrice, BigDecimal maxPrice,
                                         String sortBy);
@@ -29,15 +23,8 @@ public interface ProductService {
 
     ProductResponse getProductById(Long id);
 
-    /**
-     * Hybrid Product Recommendation: Content-Based + Trending
-     */
     Page<ProductResponse> getRecommendedProducts(Long userId, int limit);
 
-    /**
-     * P2-02 baseline recommendation: public products in the seed's exact
-     * category, excluding the seed and catalogue-ineligible products.
-     */
     java.util.List<ProductResponse> getRelatedProducts(Long productId, Integer limit);
 
     void deleteProduct(Long userId, Long id);

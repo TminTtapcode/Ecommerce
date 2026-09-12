@@ -47,7 +47,7 @@ public class VoucherInternalServiceImpl implements VoucherInternalService {
             }
             eligibleAmount = shopTotals.get(voucher.getShopId());
         } else {
-            // SYSTEM scope
+
             for (BigDecimal amount : shopTotals.values()) {
                 eligibleAmount = eligibleAmount.add(amount);
             }
@@ -67,27 +67,24 @@ public class VoucherInternalServiceImpl implements VoucherInternalService {
             totalDiscount = voucher.getDiscountValue();
         }
 
-        // Tối đa discount không vượt quá eligibleAmount
         if (totalDiscount.compareTo(eligibleAmount) > 0) {
             totalDiscount = eligibleAmount;
         }
 
         Map<Long, BigDecimal> discountPerShop = new HashMap<>();
-        
+
         if (totalDiscount.compareTo(BigDecimal.ZERO) > 0) {
             if (voucher.getScope() == com.tmt.ecommerce.voucher.entity.VoucherScope.SHOP) {
                 discountPerShop.put(voucher.getShopId(), totalDiscount);
             } else {
-                // SYSTEM scope - Proportional split
+
                 for (Map.Entry<Long, BigDecimal> entry : shopTotals.entrySet()) {
                     Long shopId = entry.getKey();
                     BigDecimal shopOrderTotal = entry.getValue();
-                    
-                    // shopDiscount = totalDiscount * (shopOrderTotal / eligibleAmount)
-                    // Dùng phép nhân trước rồi chia để tránh lỗi scale làm tròn sai
+
                     BigDecimal shopDiscount = totalDiscount.multiply(shopOrderTotal)
                             .divide(eligibleAmount, 0, java.math.RoundingMode.HALF_UP);
-                            
+
                     if (shopDiscount.compareTo(shopOrderTotal) > 0) {
                         shopDiscount = shopOrderTotal;
                     }

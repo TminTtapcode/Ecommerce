@@ -31,11 +31,11 @@ export const ProductDetailPage: React.FC = () => {
         const response = await productApi.getProductById(parseInt(id, 10));
         const p = response.data.data;
         setProduct(p || null);
-        
+
         if (p?.variants && p.variants.length > 0) {
           setSelectedVariant(p.variants[0]);
         }
-        
+
         const allImages = p?.images || p?.imageResponses || [];
         const thumbnail = allImages.find(img => img.isThumbnail) || allImages[0];
         if (thumbnail) {
@@ -59,11 +59,11 @@ export const ProductDetailPage: React.FC = () => {
     currency: 'VND',
   });
 
-  const displayPrice = selectedVariant 
+  const displayPrice = selectedVariant
     ? (selectedVariant.salePrice ?? selectedVariant.price ?? selectedVariant.originalPrice ?? 0)
     : (product?.salePrice ?? product?.price ?? product?.originalPrice ?? 0);
-  const displayOriginalPrice = selectedVariant 
-    ? selectedVariant.originalPrice 
+  const displayOriginalPrice = selectedVariant
+    ? selectedVariant.originalPrice
     : product?.originalPrice;
   const hasDiscount = displayOriginalPrice && displayPrice && displayOriginalPrice > displayPrice;
   const displayStock = selectedVariant ? selectedVariant.stockQuantity : product?.stockQuantity || 0;
@@ -107,8 +107,7 @@ export const ProductDetailPage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Breadcrumb */}
+
         <nav className="flex text-sm text-gray-500 mb-8" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-3">
             <li className="inline-flex items-center">
@@ -137,18 +136,16 @@ export const ProductDetailPage: React.FC = () => {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex flex-col md:flex-row">
-            
-            {/* Image Gallery */}
+
             <div className="md:w-1/2 p-6 border-b md:border-b-0 md:border-r border-gray-100">
               <div className="aspect-w-1 aspect-h-1 rounded-xl overflow-hidden bg-gray-100 mb-4 h-80 sm:h-96 relative">
-                <img 
-                  src={activeImage} 
-                  alt={product.name} 
+                <img
+                  src={activeImage}
+                  alt={product.name}
                   className="w-full h-full object-contain"
                 />
               </div>
-              
-              {/* Image Gallery Thumbnails */}
+
               {(() => {
                 const galleryImages = product.images || product.imageResponses || [];
                 return galleryImages.length > 0 ? (
@@ -169,10 +166,9 @@ export const ProductDetailPage: React.FC = () => {
               })()}
             </div>
 
-            {/* Product Info */}
             <div className="md:w-1/2 p-6 md:p-10 flex flex-col">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-              
+
               <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
                 <span className="text-3xl font-bold text-orange-600">
                   {formatter.format(displayPrice)}
@@ -187,7 +183,6 @@ export const ProductDetailPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Variants */}
               {product.variants && product.variants.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Tùy chọn sản phẩm</h3>
@@ -216,7 +211,6 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Description */}
               <div className="mb-8 flex-1">
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Mô tả sản phẩm</h3>
                 <div className="text-gray-600 text-sm leading-relaxed prose prose-sm max-w-none">
@@ -228,24 +222,23 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="pt-6 border-t border-gray-100 mt-auto">
                 <div className="flex items-center gap-4 mb-4">
                   <span className="text-sm font-medium text-gray-700">Số lượng:</span>
                   <div className="flex items-center border border-gray-300 rounded-md">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
                       disabled={displayStock <= 0}
                     >-</button>
-                    <input 
-                      type="number" 
-                      value={quantity} 
-                      readOnly 
+                    <input
+                      type="number"
+                      value={quantity}
+                      readOnly
                       className="w-12 text-center text-sm font-medium border-x border-gray-300 py-1.5 focus:outline-none"
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setQuantity(Math.min(displayStock, quantity + 1))}
                       className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
@@ -255,7 +248,7 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => product.shopId && openChatWithShop(product.shopId)}
                     className="border-2 border-[#ee4d2d] bg-orange-50 hover:bg-orange-100 text-[#ee4d2d] font-semibold py-3 px-6 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
@@ -263,7 +256,7 @@ export const ProductDetailPage: React.FC = () => {
                     <MessageSquare className="w-5 h-5" />
                     Chat ngay
                   </button>
-                  <button 
+                  <button
                     disabled={displayStock <= 0 || !selectedVariant}
                     onClick={() => selectedVariant && addToCart(selectedVariant.id, quantity)}
                     className="bg-orange-100 hover:bg-orange-200 text-orange-600 border border-orange-500 font-medium py-3 px-6 rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
@@ -273,7 +266,7 @@ export const ProductDetailPage: React.FC = () => {
                     </svg>
                     Thêm vào giỏ
                   </button>
-                  <button 
+                  <button
                     disabled={displayStock <= 0 || !selectedVariant}
                     onClick={async () => {
                       if (!selectedVariant) return;
@@ -314,13 +307,10 @@ export const ProductDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Shop Info Section */}
         {product?.shopId && <ShopInfoSection shopId={product.shopId} />}
 
-        {/* Reviews Section */}
         {product && <ProductReviewSection productId={product.id} />}
 
-        {/* P2-02: independent of the product-detail request and review flow. */}
         {product && <RelatedProductsSection productId={product.id} />}
       </div>
     </div>

@@ -32,15 +32,12 @@ public class OrderDataInitializer implements CommandLineRunner {
 
         log.info("=== STARTING ORDER SEED DATA ===");
 
-        // Order Group 1: Delivered Order
         Order order1 = createOrder(SeedDataIds.CUSTOMER_1_ID, SeedDataIds.SHOP_1_ID, SeedDataIds.PAYMENT_GROUP_1, OrderStatus.DELIVERED, "123 Đường Nguyễn Huệ, Q1, TP.HCM", "VNPAY", new BigDecimal("29990000"));
         addOrderItem(order1, SeedDataIds.VARIANT_P1_1_ID, "iPhone 15 Pro Max 256GB", 1, new BigDecimal("29990000"));
 
-        // Order Group 2: Confirmed Order (Ready for vendor processing)
         Order order2 = createOrder(SeedDataIds.CUSTOMER_2_ID, SeedDataIds.SHOP_2_ID, SeedDataIds.PAYMENT_GROUP_2, OrderStatus.CONFIRMED, "456 Đường Cầu Giấy, Hà Nội", "COD", new BigDecimal("890000"));
         addOrderItem(order2, SeedDataIds.VARIANT_P3_1_ID, "Áo Polo Nam Nike Dri-FIT", 1, new BigDecimal("890000"));
 
-        // Order Group 3: Shipped Order
         Order order3 = createOrder(SeedDataIds.CUSTOMER_3_ID, SeedDataIds.SHOP_3_ID, SeedDataIds.PAYMENT_GROUP_3, OrderStatus.SHIPPED, "789 Đường Trần Hưng Đạo, Đà Nẵng", "VNPAY", new BigDecimal("1850000"));
         addOrderItem(order3, SeedDataIds.VARIANT_P5_1_ID, "Nồi chiên không dầu Sony AirFryer 5.5L", 1, new BigDecimal("1850000"));
 

@@ -19,6 +19,5 @@ public record ProductVariantRequest(
         @Min(value = 0, message = "Số lượng tồn kho không được nhỏ hơn 0")
         Integer stockQuantity,
 
-        // Thuộc tính động có thể rỗng nếu sản phẩm không có biến thể phức tạp
         Map<String, Object> attributes
 ) {}

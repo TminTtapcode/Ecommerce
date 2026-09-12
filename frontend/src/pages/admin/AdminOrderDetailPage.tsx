@@ -114,7 +114,7 @@ export const AdminOrderDetailPage: React.FC = () => {
             <p className="text-gray-600"><span className="text-gray-400">Shop ID:</span> #{order.shopId}</p>
           </div>
         </div>
-        
+
         <div className="bg-gray-50 border border-gray-200 p-5 rounded-xl">
           <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
             📋 Thông tin Đơn hàng
@@ -225,7 +225,6 @@ export const AdminOrderDetailPage: React.FC = () => {
         )}
       </section>
 
-      {/* F10 Refund Section */}
       {order.status === 'CANCELLED' && order.paymentMethod === 'VNPAY' && (
         <section className="bg-amber-50/60 border border-amber-200 rounded-xl p-5 mb-6">
           <h3 className="text-base font-bold text-amber-800 mb-2">💳 Hoàn Tiền (VNPAY)</h3>

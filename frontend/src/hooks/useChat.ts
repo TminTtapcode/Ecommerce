@@ -23,7 +23,6 @@ export const useChat = (initialRoomId?: number | null) => {
   useEffect(() => websocketService.onStatusChange(setIsConnected), []);
   useEffect(() => { setRooms([]); setMessages([]); setActiveRoomId(null); setIsLoadingRooms(false); setIsLoadingMessages(false); }, [session]);
 
-  // Load rooms
   const loadRooms = useCallback(async () => {
     if (!session || !current()) return;
     setIsLoadingRooms(true);
@@ -45,7 +44,6 @@ export const useChat = (initialRoomId?: number | null) => {
     }
   }, [session, loadRooms]);
 
-  // Load messages when activeRoomId changes
   const loadMessages = useCallback(async (roomId: number) => {
     if (!session || !current()) return;
     setIsLoadingMessages(true);
@@ -53,13 +51,13 @@ export const useChat = (initialRoomId?: number | null) => {
       const res = await chatApi.getMessages(roomId, 0, 50, session);
       if (!current() || activeRoomIdRef.current !== roomId) return;
       if (res.data.data?.content) {
-        // Reverse because backend returns descending order
+
         setMessages([...res.data.data.content].reverse());
       }
-      // Mark as read
+
       await chatApi.markAsRead(roomId, session!);
       if (!current()) return;
-      // Update room unread count locally
+
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, unreadCount: 0 } : r))
       );
@@ -78,18 +76,17 @@ export const useChat = (initialRoomId?: number | null) => {
     }
   }, [activeRoomId, loadMessages]);
 
-  // Listen to incoming messages
   useEffect(() => {
     const unsubMsg = websocketService.subscribe((incomingMsg: ChatMessage) => {
       if (!session || !current()) return;
-      // If it's for the currently active room, append or replace optimistic message
+
       if (Number(incomingMsg.roomId) === Number(activeRoomIdRef.current)) {
         setMessages((prev) => {
-          // Avoid duplicate if already present with same real id
+
           if (prev.some((m) => m.id === incomingMsg.id)) {
             return prev;
           }
-          // If it matches an optimistic message sent by me, replace it
+
           const optIndex = prev.findIndex(
             (m) => m.id < 0 && m.senderId === incomingMsg.senderId && m.content === incomingMsg.content
           );
@@ -101,11 +98,9 @@ export const useChat = (initialRoomId?: number | null) => {
           return [...prev, incomingMsg];
         });
 
-        // Mark as read if received while room is active
         chatApi.markAsRead(incomingMsg.roomId, session!).catch(() => {});
       }
 
-      // Update rooms list last message and bump to top
       setRooms((prev) => {
         const existing = prev.find((r) => Number(r.id) === Number(incomingMsg.roomId));
         if (existing) {
@@ -121,7 +116,7 @@ export const useChat = (initialRoomId?: number | null) => {
           };
           return [updated, ...prev.filter((r) => Number(r.id) !== Number(incomingMsg.roomId))];
         } else {
-          // If new room, reload room list
+
           loadRooms();
           return prev;
         }
@@ -133,7 +128,6 @@ export const useChat = (initialRoomId?: number | null) => {
     };
   }, [loadRooms, session, current]);
 
-  // Send message
   const sendMessage = useCallback(
     (content: string, targetRoomId?: number) => {
       if (!current() || !websocketService.isConnected()) return false;
@@ -142,7 +136,6 @@ export const useChat = (initialRoomId?: number | null) => {
 
       const trimmed = content.trim();
 
-      // Optimistically append message to active conversation immediately
       if (roomId === activeRoomId && user?.userId) {
         const optimisticMsg: ChatMessage = {
           id: -Date.now(),
@@ -154,7 +147,6 @@ export const useChat = (initialRoomId?: number | null) => {
         };
         setMessages((prev) => [...prev, optimisticMsg]);
 
-        // Optimistically update conversation preview in left sidebar
         setRooms((prev) => {
           const existing = prev.find((r) => Number(r.id) === Number(roomId));
           if (!existing) return prev;
@@ -176,7 +168,6 @@ export const useChat = (initialRoomId?: number | null) => {
     [activeRoomId, user?.userId, current]
   );
 
-  // Open / create room with a shop
   const openChatWithShop = useCallback(
     async (shopId: number) => {
       if (!session || !current()) return null;
@@ -185,7 +176,7 @@ export const useChat = (initialRoomId?: number | null) => {
         if (current() && res.data.data) {
           const room = res.data.data;
           setActiveRoomId(room.id);
-          // Prepend or select in rooms list
+
           setRooms((prev) => {
             if (prev.some((r) => r.id === room.id)) {
               return prev;

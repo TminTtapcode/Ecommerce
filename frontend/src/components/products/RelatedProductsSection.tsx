@@ -8,7 +8,6 @@ interface RelatedProductsSectionProps {
   productId: number;
 }
 
-/** P2-02: related products remain a non-blocking enhancement to product detail. */
 export const RelatedProductsSection = ({ productId }: RelatedProductsSectionProps) => {
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [loading, setLoading] = useState(true);

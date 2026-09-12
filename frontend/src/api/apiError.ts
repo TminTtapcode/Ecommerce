@@ -15,7 +15,7 @@ export function getApiError(error: unknown, fallback = 'Không thể thực hi�
   if (!axios.isAxiosError(error)) return { message: fallback };
   const body: unknown = error.response?.data;
   if (!isRecord(body)) return { status: error.response?.status, message: fallback };
-  // Legacy validation data is accepted during deployment; all new responses use fieldErrors.
+
   const fields = body.fieldErrors ?? (error.response?.status === 400 ? body.data : undefined);
   const fieldErrors = isRecord(fields)
     ? Object.fromEntries(Object.entries(fields).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))

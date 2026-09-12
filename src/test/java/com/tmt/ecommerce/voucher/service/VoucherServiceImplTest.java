@@ -170,7 +170,7 @@ class VoucherServiceImplTest {
     @Test
     void updateVoucher_shopVoucher_wrongOwner_throwsAccessDenied() {
         when(voucherRepository.findById(2L)).thenReturn(Optional.of(shopVoucher));
-        when(shopInternalService.getShopIdByUserId(9L)).thenReturn(88L); // Different shop
+        when(shopInternalService.getShopIdByUserId(9L)).thenReturn(88L);
 
         VoucherUpdateRequest req = VoucherUpdateRequest.builder()
                 .type(VoucherType.FIXED_AMOUNT)

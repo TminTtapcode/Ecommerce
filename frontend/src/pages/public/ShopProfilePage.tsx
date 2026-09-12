@@ -10,13 +10,13 @@ import { ProductCard } from '../../components/products/ProductCard';
 export const ShopProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const shopId = id ? parseInt(id, 10) : 0;
-  
+
   const [shop, setShop] = useState<ShopResponse | null>(null);
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [loadingShop, setLoadingShop] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const size = 12;
@@ -89,17 +89,16 @@ export const ShopProfilePage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Shop Header */}
+
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="w-24 h-24 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
               <Store className="w-12 h-12" />
             </div>
-            
+
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{shop.name}</h1>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-8 mt-6">
                 <div className="flex items-center gap-2 text-gray-600 sm:col-span-2">
                   <span>{shop.description || 'Chưa có mô tả'}</span>
@@ -113,12 +112,11 @@ export const ShopProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Shop Products */}
         <div>
           <div className="flex items-center gap-2 mb-6">
             <h2 className="text-xl font-bold text-gray-900">Sản phẩm của Shop</h2>
           </div>
-          
+
           {loadingProducts ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-pulse">
               {[1, 2, 3, 4].map(i => (
@@ -132,8 +130,7 @@ export const ShopProfilePage: React.FC = () => {
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-              
-              {/* Pagination */}
+
               {totalPages > 1 && (
                 <div className="flex justify-center mt-12 gap-2">
                   <button
@@ -162,7 +159,7 @@ export const ShopProfilePage: React.FC = () => {
             </div>
           )}
         </div>
-        
+
       </div>
     </div>
   );

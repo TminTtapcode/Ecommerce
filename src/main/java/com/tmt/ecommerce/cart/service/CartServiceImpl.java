@@ -29,7 +29,6 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public void addToCart(Long userId, CartItemRequest request) {
 
-        // 1. Giao tiếp lỏng lẻo với module Product thông qua Internal API
         ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(request.getProductVariantId());
 
         if (!"ACTIVE".equals(variantInfo.status())) {
@@ -40,14 +39,12 @@ public class CartServiceImpl implements CartService {
             throw new IllegalStateException("Số lượng tồn kho không đủ. Chỉ còn " + variantInfo.stockQuantity() + " sản phẩm.");
         }
 
-        // 2. Lấy giỏ hàng của User (Nếu chưa có thì tạo mới)
         Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseGet(() -> {
                     Cart newCart = Cart.builder().userId(userId).build();
                     return cartRepository.save(newCart);
                 });
 
-        // 3. Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
         shopInternalService.requireNotBannedForSale(variantInfo.shopId());
 
         Optional<CartItem> existingItemOpt = cart.getItems().stream()
@@ -71,18 +68,16 @@ public class CartServiceImpl implements CartService {
             cart.getItems().add(newItem);
         }
 
-        // 4. Lưu lại
         cartRepository.save(cart);
     }
-    // Trả về toàn bộ thông tin giỏ hàng của User
+
     @Transactional(readOnly = true)
     public CartResponse getCart(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseGet(() -> Cart.builder().userId(userId).build()); // Trả về giỏ rỗng nếu chưa có
+                .orElseGet(() -> Cart.builder().userId(userId).build());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        // Cần import java.util.List và java.util.ArrayList
         List<CartItemResponse> itemResponses = new ArrayList<>();
 
         List<Long> variantIds = cart.getItems().stream().map(CartItem::getProductVariantId).toList();
@@ -93,10 +88,8 @@ public class CartServiceImpl implements CartService {
             ProductVariantInfoDto variantInfo = variantInfoMap.get(item.getProductVariantId());
             if (variantInfo == null) continue;
 
-            // Tính thành tiền của từng món (Dùng hàm .multiply() của BigDecimal)
             BigDecimal subTotal = variantInfo.price().multiply(BigDecimal.valueOf(item.getQuantity()));
 
-            // Kiểm tra trạng thái khả dụng
             boolean isAvailable = !bannedShopIds.contains(variantInfo.shopId()) && "ACTIVE".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();
 
             if (isAvailable) {
@@ -106,7 +99,7 @@ public class CartServiceImpl implements CartService {
             itemResponses.add(new CartItemResponse(
                     item.getId(),
                     variantInfo.variantId(),
-                    variantInfo.shopId(), // THÊM TRƯỜNG NÀY ĐỂ MAP VỚI RECORD
+                    variantInfo.shopId(),
                     variantInfo.productName(),
                     variantInfo.sku(),
                     variantInfo.price(),

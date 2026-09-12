@@ -19,7 +19,7 @@ export const VendorShopRegistrationPage: React.FC<{ onRegistered: () => void }> 
     } catch (err: any) {
       const details = getApiError(err);
       if (details.fieldErrors) {
-        // Validation errors
+
         const errs = details.fieldErrors;
         const msgs = Object.values(errs).join(', ');
         setError(msgs);

@@ -129,7 +129,7 @@ public class TransactionAuditIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up database tables in order
+
         notificationRepository.deleteAll();
         reviewRepository.deleteAll();
         paymentRepository.deleteAll();
@@ -141,7 +141,6 @@ public class TransactionAuditIntegrationTest {
         categoryRepository.deleteAll();
         shopRepository.deleteAll();
 
-        // Ensure roles exist
         roleUser = roleRepository.findByName("ROLE_USER").orElseGet(() -> {
             Role r = new Role();
             r.setName("ROLE_USER");
@@ -154,14 +153,12 @@ public class TransactionAuditIntegrationTest {
             return roleRepository.save(r);
         });
 
-        // Ensure test category
         testCategory = categoryRepository.save(
                 Category.builder()
                         .name("Test Category " + System.currentTimeMillis())
                         .build()
         );
 
-        // Configure mock VNPay strategy
         when(paymentStrategyFactory.getStrategy(PaymentMethod.VNPAY)).thenReturn(mockVnPayStrategy);
         when(mockVnPayStrategy.getPaymentMethod()).thenReturn(PaymentMethod.VNPAY);
         when(mockVnPayStrategy.verifyIpnSignature(any())).thenReturn(true);
@@ -214,13 +211,10 @@ public class TransactionAuditIntegrationTest {
         return productVariantRepository.save(variant);
     }
 
-    // =========================================================================
-    // 1. MULTI-SHOP CHECKOUT ROLLBACK (ALL-OR-NOTHING ATOMICITY)
-    // =========================================================================
     @Test
     @DisplayName("Multi-Shop Checkout: Atomicity & Rollback when Shop B has insufficient stock")
     void testMultiShopCheckout_RollbackWhenShopBInsufficientStock() {
-        // Setup Users & Shops
+
         User buyer = createTestUser("buyer_checkout", roleUser);
         User vendorA = createTestUser("vendor_a", roleVendor);
         User vendorB = createTestUser("vendor_b", roleVendor);
@@ -228,15 +222,12 @@ public class TransactionAuditIntegrationTest {
         Shop shopA = createTestShop(vendorA, "Shop A");
         Shop shopB = createTestShop(vendorB, "Shop B");
 
-        // Product A (Shop A) with stock = 10
         Product productA = createTestProduct(shopA, "Product A");
         ProductVariant variantA = createTestVariant(productA, "SKU-A", 10, new BigDecimal("100000"));
 
-        // Product B (Shop B) with insufficient stock = 1
         Product productB = createTestProduct(shopB, "Product B");
         ProductVariant variantB = createTestVariant(productB, "SKU-B", 1, new BigDecimal("100000"));
 
-        // Voucher with usedCount = 0
         String voucherCode = "VOUCHER_TX_" + System.currentTimeMillis();
         Voucher voucher = Voucher.builder()
                 .code(voucherCode)
@@ -251,27 +242,25 @@ public class TransactionAuditIntegrationTest {
                 .build();
         voucher = voucherRepository.save(voucher);
 
-        // Buyer cart containing items for BOTH Shop A and Shop B
         Cart cart = Cart.builder().userId(buyer.getId()).build();
         cart = cartRepository.save(cart);
 
         CartItem itemA = CartItem.builder()
                 .cart(cart)
                 .productVariantId(variantA.getId())
-                .quantity(2) // 2 <= 10 -> will succeed deduction
+                .quantity(2)
                 .build();
 
         CartItem itemB = CartItem.builder()
                 .cart(cart)
                 .productVariantId(variantB.getId())
-                .quantity(5) // 5 > 1 -> will fail deduction!
+                .quantity(5)
                 .build();
 
         cart.getItems().add(itemA);
         cart.getItems().add(itemB);
         cartRepository.save(cart);
 
-        // Execute checkout
         CheckoutRequest request = new CheckoutRequest(
                 "789 Delivery Rd, City",
                 "COD",
@@ -279,7 +268,6 @@ public class TransactionAuditIntegrationTest {
                 null
         );
 
-        // Expect exception due to Shop B insufficient stock
         Long buyerId = buyer.getId();
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
             orderService.checkout(buyerId, request);
@@ -288,37 +276,27 @@ public class TransactionAuditIntegrationTest {
         assertTrue(ex.getMessage().contains("hết hàng hoặc không đủ số lượng"),
                 "Exception message should indicate out of stock");
 
-        // --- VERIFY ALL-OR-NOTHING ATOMICITY ---
-
-        // 1. Orders: Zero orders should exist for Shop A or Shop B
         List<Order> ordersInDb = orderRepository.findAll();
         assertEquals(0, ordersInDb.size(),
                 "No orders should be persisted when multi-shop checkout fails");
 
-        // 2. Stock of Shop A: MUST remain 10 (rolled back, not decremented to 8)
         ProductVariant refreshedVariantA = productVariantRepository.findById(variantA.getId()).orElseThrow();
         assertEquals(10, refreshedVariantA.getStockQuantity(),
                 "Stock of Shop A variant must be rolled back to initial value (10)");
 
-        // 3. Stock of Shop B: MUST remain 1 (unchanged)
         ProductVariant refreshedVariantB = productVariantRepository.findById(variantB.getId()).orElseThrow();
         assertEquals(1, refreshedVariantB.getStockQuantity(),
                 "Stock of Shop B variant must remain 1");
 
-        // 4. Voucher: usedCount MUST remain 0 (not consumed)
         Voucher refreshedVoucher = voucherRepository.findById(voucher.getId()).orElseThrow();
         assertEquals(0, refreshedVoucher.getUsedCount(),
                 "Voucher usedCount must remain 0");
 
-        // 5. Cart items: MUST still be present in the user's cart (not deleted/cleared)
         Cart refreshedCart = cartRepository.findByUserId(buyer.getId()).orElseThrow();
         assertEquals(2, refreshedCart.getItems().size(),
                 "Cart items must not be cleared when checkout transaction rolls back");
     }
 
-    // =========================================================================
-    // 2. REVIEW NOTIFICATION AFTER_COMMIT & ROLLBACK BEHAVIOR
-    // =========================================================================
     @Test
     @DisplayName("Review Notification: AFTER_COMMIT creates notification in new transaction; Rollback does not")
     void testReviewNotification_AfterCommitAndRollback() {
@@ -328,7 +306,6 @@ public class TransactionAuditIntegrationTest {
         Product product = createTestProduct(shop, "Reviewable Product");
         ProductVariant variant = createTestVariant(product, "SKU-REV", 20, new BigDecimal("150000"));
 
-        // Create a DELIVERED order for the buyer containing this product variant
         Order deliveredOrder = Order.builder()
                 .userId(buyer.getId())
                 .shopId(shop.getId())
@@ -353,7 +330,6 @@ public class TransactionAuditIntegrationTest {
         deliveredOrder.getItems().add(orderItem);
         deliveredOrder = orderRepository.save(deliveredOrder);
 
-        // --- SUBTEST A: SUCCESSFUL REVIEW -> COMMITS -> NOTIFICATION CREATED ---
         ReviewCreateRequest reviewReq = new ReviewCreateRequest(
                 product.getId(),
                 deliveredOrder.getId(),
@@ -364,12 +340,10 @@ public class TransactionAuditIntegrationTest {
 
         reviewService.createReview(buyer.getId(), reviewReq);
 
-        // Verify Review persisted
         List<Review> reviews = reviewRepository.findAll();
         assertEquals(1, reviews.size());
         assertEquals(buyer.getId(), reviews.get(0).getUserId());
 
-        // Verify Notification created for Vendor via AFTER_COMMIT + REQUIRES_NEW
         List<Notification> notifications = notificationRepository.findAll();
         assertEquals(1, notifications.size(), "Vendor should receive 1 notification for new review");
         Notification vendorNotif = notifications.get(0);
@@ -377,28 +351,23 @@ public class TransactionAuditIntegrationTest {
         assertEquals(NotificationType.NEW_REVIEW, vendorNotif.getType());
         assertEquals(String.valueOf(reviews.get(0).getId()), vendorNotif.getReferenceId());
 
-        // --- SUBTEST B: TRANSACTION ROLLBACK -> NO NOTIFICATION CREATED ---
         TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
         assertThrows(RuntimeException.class, () -> {
             txTemplate.execute(status -> {
-                // Publish event inside an uncommitted transaction
+
                 eventPublisher.publishEvent(new ReviewCreatedEvent(
                         99999L, buyer.getId(), shop.getId(), product.getId(), 5
                 ));
-                // Simulate an unexpected error causing rollback
+
                 throw new RuntimeException("Forced rollback in review transaction");
             });
         });
 
-        // Verify that no second notification was created because the transaction rolled back
         List<Notification> postRollbackNotifs = notificationRepository.findAll();
         assertEquals(1, postRollbackNotifs.size(),
                 "Notification count must not increase because AFTER_COMMIT listener only triggers on successful commit");
     }
 
-    // =========================================================================
-    // 3. VNPAY IPN TRANSACTION (SUCCESS, ROLLBACK, IDEMPOTENCY)
-    // =========================================================================
     @Test
     @DisplayName("VNPay IPN Transaction: Success commits both Payment and Orders; Exception rolls back both; Idempotency prevents duplicates")
     void testVnPayIpn_TransactionAtomicityAndIdempotency() {
@@ -410,7 +379,6 @@ public class TransactionAuditIntegrationTest {
 
         String paymentGroupId = "PG_VNP_" + System.currentTimeMillis();
 
-        // 2 Orders in PENDING status in the same payment group
         Order order1 = Order.builder()
                 .userId(buyer.getId())
                 .shopId(shop1.getId())
@@ -438,7 +406,6 @@ public class TransactionAuditIntegrationTest {
         orderRepository.save(order1);
         orderRepository.save(order2);
 
-        // 1 Payment in PENDING status for the entire group (Total: 250,000 VND)
         String txnRef = "TXN_" + System.currentTimeMillis();
         Payment payment = Payment.builder()
                 .paymentGroupId(paymentGroupId)
@@ -449,18 +416,16 @@ public class TransactionAuditIntegrationTest {
                 .build();
         paymentRepository.save(payment);
 
-        // --- CASE B: EXCEPTION / ROLLBACK (Invalid amount mismatch) ---
         Map<String, String> invalidParams = new HashMap<>();
         invalidParams.put("vnp_TxnRef", txnRef);
         invalidParams.put("vnp_ResponseCode", "00");
         invalidParams.put("vnp_TransactionNo", "GW_INVALID");
-        invalidParams.put("vnp_Amount", "99999900"); // Mismatched amount!
+        invalidParams.put("vnp_Amount", "99999900");
 
         assertThrows(IllegalArgumentException.class, () -> {
             paymentGatewayService.processVnPayIpn(invalidParams);
         }, "IPN should throw IllegalArgumentException when amount does not match");
 
-        // Verify neither Payment nor Orders were partially updated
         Payment paymentAfterFailedIpn = paymentRepository.findByTransactionId(txnRef).orElseThrow();
         assertEquals(PaymentStatus.PENDING, paymentAfterFailedIpn.getStatus(),
                 "Payment must remain PENDING after failed IPN transaction");
@@ -471,22 +436,19 @@ public class TransactionAuditIntegrationTest {
                     "Orders must remain PENDING after failed IPN transaction");
         }
 
-        // --- CASE A: SUCCESSFUL IPN -> COMMIT BOTH PAYMENT AND ORDERS ---
         Map<String, String> validParams = new HashMap<>();
         validParams.put("vnp_TxnRef", txnRef);
         validParams.put("vnp_ResponseCode", "00");
         validParams.put("vnp_TransactionNo", "GW_SUCCESS_12345");
-        validParams.put("vnp_Amount", "25000000"); // 250,000 VND * 100
+        validParams.put("vnp_Amount", "25000000");
 
         paymentGatewayService.processVnPayIpn(validParams);
 
-        // Verify Payment is now SUCCESS
         Payment paymentAfterSuccess = paymentRepository.findByTransactionId(txnRef).orElseThrow();
         assertEquals(PaymentStatus.SUCCESS, paymentAfterSuccess.getStatus(),
                 "Payment status must be SUCCESS");
         assertEquals("GW_SUCCESS_12345", paymentAfterSuccess.getGatewayTransactionId());
 
-        // Verify all Orders in payment group are now CONFIRMED
         List<Order> ordersAfterSuccess = orderRepository.findByPaymentGroupId(paymentGroupId);
         assertEquals(2, ordersAfterSuccess.size());
         for (Order o : ordersAfterSuccess) {
@@ -494,11 +456,8 @@ public class TransactionAuditIntegrationTest {
                     "Order in payment group must transition to CONFIRMED");
         }
 
-        // --- CASE C: DUPLICATE IPN (IDEMPOTENCY) ---
-        // Send identical IPN again
         paymentGatewayService.processVnPayIpn(validParams);
 
-        // Verify state remains consistent and idempotent
         Payment paymentAfterDuplicate = paymentRepository.findByTransactionId(txnRef).orElseThrow();
         assertEquals(PaymentStatus.SUCCESS, paymentAfterDuplicate.getStatus(),
                 "Duplicate IPN must keep Payment status as SUCCESS");

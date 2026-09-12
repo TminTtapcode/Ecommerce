@@ -124,10 +124,8 @@ export const VendorOrderListPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
-      {/* Navigation */}
       <VendorNav />
 
-      {/* Status Tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1 border-b border-gray-200">
         {STATUS_TABS.map((tab) => (
           <button
@@ -144,7 +142,6 @@ export const VendorOrderListPage = () => {
         ))}
       </div>
 
-      {/* Content */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <svg className="w-8 h-8 text-orange-400 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -165,7 +162,6 @@ export const VendorOrderListPage = () => {
             const badge = STATUS_BADGE[order.status] || { label: order.status, className: 'bg-gray-100 text-gray-600' };
             return (
               <div key={order.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                {/* Order Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-gray-50 border-b border-gray-100">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-gray-800">Đơn #{order.id}</span>
@@ -184,7 +180,6 @@ export const VendorOrderListPage = () => {
                   </div>
                 </div>
 
-                {/* Order Items */}
                 <div className="px-5 py-3">
                   <div className="space-y-2">
                     {order.items.map((item) => (
@@ -207,13 +202,11 @@ export const VendorOrderListPage = () => {
                     ))}
                   </div>
 
-                  {/* Shipping Info */}
                   <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
                     <span>📍 {order.shippingAddress}</span>
                   </div>
                 </div>
 
-                {/* Actions */}
                 {renderActionButtons(order) && (
                   <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-end">
                     {renderActionButtons(order)}
@@ -223,7 +216,6 @@ export const VendorOrderListPage = () => {
             );
           })}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 pt-4">
               <button
@@ -248,7 +240,6 @@ export const VendorOrderListPage = () => {
         </div>
       )}
 
-      {/* Cancel Modal */}
       {cancelModalOrderId !== null && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
@@ -279,7 +270,6 @@ export const VendorOrderListPage = () => {
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-[fadeIn_0.3s_ease-out]">
           ✅ {toast}

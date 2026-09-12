@@ -43,12 +43,10 @@ public class VendorOrderManagementTest {
     void setUp() {
         orderRepository.deleteAll();
 
-        // Setup Shop ownership mocks
         when(shopInternalService.getShopIdByUserId(vendorUserId)).thenReturn(shopId);
         when(shopInternalService.isShopOwner(shopId, vendorUserId)).thenReturn(true);
         when(shopInternalService.isShopOwner(shopId, otherUserId)).thenReturn(false);
 
-        // Create a test order for shopId
         testOrder = Order.builder()
                 .userId(50L)
                 .shopId(shopId)

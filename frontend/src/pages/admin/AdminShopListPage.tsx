@@ -146,8 +146,8 @@ export const AdminShopListPage: React.FC = () => {
                   <td className="px-5 py-4 text-xs text-gray-600 max-w-xs truncate">{shop.description || 'Chưa cập nhật'}</td>
                   <td className="px-5 py-4 whitespace-nowrap">
                     <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border
-                      ${shop.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
-                        shop.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
+                      ${shop.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        shop.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                         'bg-rose-50 text-rose-700 border-rose-200'}`}>
                       {shop.status === 'ACTIVE' ? 'Hoạt động' : shop.status === 'PENDING' ? 'Chờ duyệt' : 'Đã khóa'}
                       {shop.status === 'BANNED' && shop.priorStatus && (
@@ -191,7 +191,7 @@ export const AdminShopListPage: React.FC = () => {
               ))}
             </tbody>
           </table>
-          
+
           {totalPages > 1 && (
             <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
               <button

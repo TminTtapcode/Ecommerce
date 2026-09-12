@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL) // Bỏ qua các field null khi trả về JSON
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
     private int status;
     private String errorCode;
@@ -19,7 +19,6 @@ public class ApiResponse<T> {
     private T data;
     private Map<String, String> fieldErrors;
 
-    // Derive the flag so existing success builders cannot accidentally report false.
     public boolean isSuccess() {
         return status >= 200 && status < 300;
     }

@@ -13,6 +13,5 @@ public record CheckoutRequest(
 
         String voucherCode,
 
-        // Bổ sung: Chỉ thanh toán những sản phẩm được chọn
         java.util.List<Long> cartItemIds
 ) {}

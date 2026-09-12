@@ -11,12 +11,11 @@ export const VendorVoucherListPage: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  
-  // Create Modal state
+
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState('');
-  
+
   const [formData, setFormData] = useState<Partial<VoucherCreateRequest>>({
     code: '',
     scope: 'SHOP',
@@ -26,13 +25,11 @@ export const VendorVoucherListPage: React.FC = () => {
     endDate: ''
   });
 
-  // Edit Modal state
   const [editingVoucher, setEditingVoucher] = useState<VoucherResponse | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<VoucherUpdateRequest>>({});
   const [editError, setEditError] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
-  // Delete state
   const [deletingVoucher, setDeletingVoucher] = useState<VoucherResponse | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -67,7 +64,7 @@ export const VendorVoucherListPage: React.FC = () => {
     e.preventDefault();
     setCreateError('');
     setIsSubmitting(true);
-    
+
     try {
       const data: VoucherCreateRequest = {
         code: (formData.code || '').trim().toUpperCase(),
@@ -80,14 +77,13 @@ export const VendorVoucherListPage: React.FC = () => {
         endDate: formData.endDate + ':00',
         usageLimit: formData.usageLimit ? Number(formData.usageLimit) : undefined
       };
-      
+
       await voucherApi.createVoucher(data);
       setShowModal(false);
       setSuccessMsg(`Tạo mã voucher "${data.code}" thành công!`);
       setTimeout(() => setSuccessMsg(''), 4000);
       fetchVouchers();
-      
-      // Reset form
+
       setFormData({
         code: '',
         scope: 'SHOP',
@@ -286,7 +282,7 @@ export const VendorVoucherListPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-              
+
               {totalPages > 1 && (
                 <div className="flex justify-center p-4 border-t border-gray-200">
                   <Pagination
@@ -301,7 +297,6 @@ export const VendorVoucherListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal Create Voucher */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -321,7 +316,7 @@ export const VendorVoucherListPage: React.FC = () => {
                     ×
                   </button>
                 </div>
-                
+
                 {createError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 text-sm">{createError}</div>
                 )}
@@ -338,7 +333,7 @@ export const VendorVoucherListPage: React.FC = () => {
                       className="block w-full border border-gray-300 rounded-lg p-2.5 text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Loại Giảm Giá</label>
                     <select
@@ -418,7 +413,7 @@ export const VendorVoucherListPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Giới hạn số lần dùng</label>
                     <input
@@ -454,7 +449,6 @@ export const VendorVoucherListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Edit Voucher */}
       {editingVoucher && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -479,7 +473,7 @@ export const VendorVoucherListPage: React.FC = () => {
                     ×
                   </button>
                 </div>
-                
+
                 {editError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 text-sm">{editError}</div>
                 )}
@@ -563,7 +557,7 @@ export const VendorVoucherListPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Giới hạn số lần dùng</label>
                     <input
@@ -599,7 +593,6 @@ export const VendorVoucherListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deletingVoucher && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -613,7 +606,7 @@ export const VendorVoucherListPage: React.FC = () => {
               </div>
               <h3 className="text-lg font-bold text-gray-900">Xác Nhận Xóa Voucher</h3>
             </div>
-            
+
             <p className="text-sm text-gray-600 mb-6">
               Bạn có chắc chắn muốn xóa voucher{' '}
               <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">

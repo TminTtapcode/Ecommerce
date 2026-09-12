@@ -5,7 +5,7 @@ import type { OrderResponse } from './types/order.types';
 import type { VoucherResponse, VoucherUpdateRequest } from './types/voucher.types';
 
 export const adminApi = {
-  // Shop Management
+
   getShops: (status?: string, page = 0, size = 10) => {
     return apiClient.get<ApiResponse<PageResponse<ShopResponse>>>('/api/v1/admin/shops', {
       params: { status, page, size }
@@ -21,7 +21,6 @@ export const adminApi = {
     return apiClient.put<ApiResponse<void>>(`/api/v1/admin/shops/${shopId}/unban`);
   },
 
-  // Order Management
   getOrderActions: (id: number) => apiClient.get<ApiResponse<string[]>>(`/api/v1/admin/orders/${id}/allowed-transitions`),
   updateOrderStatus: (orderId: number, data: { expectedStatus: string; status: string; reason: string }) => {
     return apiClient.patch<ApiResponse<OrderResponse>>(`/api/v1/admin/orders/${orderId}/status`, data);
@@ -42,7 +41,6 @@ export const adminApi = {
     return apiClient.get<ApiResponse<OrderResponse>>(`/api/v1/admin/orders/${orderId}`);
   },
 
-  // Voucher Management
   getSystemVouchers: (page = 0, size = 10) => {
     return apiClient.get<ApiResponse<PageResponse<VoucherResponse>>>('/api/v1/admin/vouchers', {
       params: { page, size }
@@ -55,7 +53,6 @@ export const adminApi = {
     return apiClient.delete<ApiResponse<void>>(`/api/v1/admin/vouchers/${id}`);
   },
 
-  // Refund Management (F10)
   createRefund: (orderId: number, reason: string) => {
     return apiClient.post<ApiResponse<RefundAttemptResponse>>(`/api/v1/admin/orders/${orderId}/refunds`, { reason }, {
       headers: { 'Idempotency-Key': `refund-${orderId}-${Date.now()}` }
@@ -65,7 +62,6 @@ export const adminApi = {
     return apiClient.get<ApiResponse<RefundAttemptResponse[]>>(`/api/v1/admin/orders/${orderId}/refunds`);
   },
 
-  // Statistics / Dashboard (P1-05)
   getDashboardStats: (startDate?: string, endDate?: string) => {
     return apiClient.get<ApiResponse<AdminDashboardStats>>('/api/v1/admin/statistics/dashboard', {
       params: { startDate, endDate }
@@ -94,8 +90,6 @@ export interface RefundAttemptResponse {
   updatedAt: string;
 }
 
-// ── Statistics types ──────────────────────────────────────────────────────────
-
 export interface AdminDashboardStats {
   totalUsers: number;
   totalShops: number;
@@ -109,7 +103,7 @@ export interface AdminDashboardStats {
 }
 
 export interface DailyChartPoint {
-  date: string;       // "YYYY-MM-DD"
+  date: string;
   orderCount: number;
   revenue: number;
 }

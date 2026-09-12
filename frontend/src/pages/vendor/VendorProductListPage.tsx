@@ -43,7 +43,7 @@ export const VendorProductListPage: React.FC = () => {
 
   useEffect(() => {
     fetchVendorProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [page, size, keyword]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -91,7 +91,6 @@ export const VendorProductListPage: React.FC = () => {
       <VendorNav />
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {/* Header & Filter */}
         <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Danh Sách Sản Phẩm</h2>
@@ -134,7 +133,6 @@ export const VendorProductListPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Content Table */}
         {isLoading ? (
           <div className="p-12 text-center text-gray-500 flex flex-col items-center justify-center">
             <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-3"></div>
@@ -261,7 +259,7 @@ export const VendorProductListPage: React.FC = () => {
                         <button
                           onClick={() => handleDelete(product.id)}
                           disabled={banned || deletingId === product.id}
-                          
+
                           className="inline-flex items-center px-2.5 py-1.5 border border-red-200 rounded text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
                         >
                           {deletingId === product.id ? '...' : 'Ẩn'}
@@ -275,7 +273,6 @@ export const VendorProductListPage: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="p-4 border-t border-gray-200 flex justify-center">
             <Pagination

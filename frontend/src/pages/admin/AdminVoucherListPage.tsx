@@ -10,12 +10,11 @@ export const AdminVoucherListPage: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  
-  // Create Modal state
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState('');
-  
+
   const [formData, setFormData] = useState<Partial<VoucherCreateRequest>>({
     code: '',
     scope: 'SYSTEM',
@@ -25,13 +24,11 @@ export const AdminVoucherListPage: React.FC = () => {
     endDate: ''
   });
 
-  // Edit Modal state
   const [editingVoucher, setEditingVoucher] = useState<VoucherResponse | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<VoucherUpdateRequest>>({});
   const [editError, setEditError] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
-  // Delete state
   const [deletingVoucher, setDeletingVoucher] = useState<VoucherResponse | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -66,7 +63,7 @@ export const AdminVoucherListPage: React.FC = () => {
     e.preventDefault();
     setCreateError('');
     setIsSubmitting(true);
-    
+
     try {
       const data: VoucherCreateRequest = {
         code: (formData.code || '').trim().toUpperCase(),
@@ -79,14 +76,13 @@ export const AdminVoucherListPage: React.FC = () => {
         endDate: formData.endDate + ':00',
         usageLimit: formData.usageLimit ? Number(formData.usageLimit) : undefined
       };
-      
+
       await voucherApi.createVoucher(data);
       setShowCreateModal(false);
       setSuccessMsg(`Tạo mã voucher "${data.code}" thành công!`);
       setTimeout(() => setSuccessMsg(''), 4000);
       fetchVouchers();
-      
-      // Reset form
+
       setFormData({
         code: '',
         scope: 'SYSTEM',
@@ -167,7 +163,6 @@ export const AdminVoucherListPage: React.FC = () => {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-gray-900">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent flex items-center gap-2">
@@ -188,7 +183,6 @@ export const AdminVoucherListPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Notifications */}
       {successMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-4 text-sm flex items-center gap-2">
           <span>✅</span>
@@ -203,7 +197,6 @@ export const AdminVoucherListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Table Container */}
       {loading ? (
         <div className="text-center py-12 text-gray-400">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mb-2"></div>
@@ -321,7 +314,6 @@ export const AdminVoucherListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Create Voucher */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -343,7 +335,7 @@ export const AdminVoucherListPage: React.FC = () => {
                     ×
                   </button>
                 </div>
-                
+
                 {createError && (
                   <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl mb-4 text-xs">
                     {createError}
@@ -362,7 +354,7 @@ export const AdminVoucherListPage: React.FC = () => {
                       className="block w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 font-mono uppercase text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Loại Giảm Giá</label>
                     <select
@@ -443,7 +435,7 @@ export const AdminVoucherListPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Giới Hạn Số Lần Dùng</label>
                     <input
@@ -479,7 +471,6 @@ export const AdminVoucherListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Edit Voucher */}
       {editingVoucher && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -506,7 +497,7 @@ export const AdminVoucherListPage: React.FC = () => {
                     ×
                   </button>
                 </div>
-                
+
                 {editError && (
                   <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl mb-4 text-xs">
                     {editError}
@@ -593,7 +584,7 @@ export const AdminVoucherListPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 uppercase mb-1.5">Giới Hạn Số Lần Dùng</label>
                     <input
@@ -629,7 +620,6 @@ export const AdminVoucherListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deletingVoucher && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -643,7 +633,7 @@ export const AdminVoucherListPage: React.FC = () => {
               </div>
               <h3 className="text-lg font-bold text-gray-900">Xác Nhận Xóa Voucher</h3>
             </div>
-            
+
             <p className="text-sm text-gray-600 mb-6">
               Bạn có chắc chắn muốn xóa vĩnh viễn voucher{' '}
               <span className="font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">

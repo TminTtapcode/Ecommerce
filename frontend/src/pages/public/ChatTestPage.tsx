@@ -24,12 +24,10 @@ export const ChatTestPage: React.FC = () => {
   const [eventLogs, setEventLogs] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll messages to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Log incoming messages
   useEffect(() => {
     const unsub = websocketService.subscribe((msg) => {
       addLog(`[STOMP MESSAGE IN] Room ${msg.roomId} | From: User #${msg.senderId} | "${msg.content}"`);
@@ -71,7 +69,6 @@ export const ChatTestPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Header Info */}
       <div className="bg-white rounded-lg shadow-sm border p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
@@ -104,7 +101,6 @@ export const ChatTestPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Room List & Actions */}
         <div className="bg-white rounded-lg shadow-sm border p-4 space-y-4 flex flex-col h-[600px]">
           <div>
             <h2 className="font-semibold text-gray-800 mb-2">1. Mở Chat với Shop</h2>
@@ -181,7 +177,6 @@ export const ChatTestPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Column: Active Chat Window */}
         <div className="bg-white rounded-lg shadow-sm border p-4 flex flex-col h-[600px]">
           <div className="border-b pb-3 mb-3 flex justify-between items-center">
             <div>
@@ -196,7 +191,6 @@ export const ChatTestPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Messages Feed */}
           <div className="flex-1 overflow-y-auto space-y-3 p-2 bg-gray-50 rounded mb-3">
             {isLoadingMessages ? (
               <div className="text-center text-sm text-gray-400 p-8">Đang tải tin nhắn...</div>
@@ -228,7 +222,6 @@ export const ChatTestPage: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Send Input Form */}
           <form onSubmit={handleSend} className="flex gap-2">
             <input
               type="text"
@@ -248,7 +241,6 @@ export const ChatTestPage: React.FC = () => {
           </form>
         </div>
 
-        {/* Right Column: STOMP Event Logs */}
         <div className="bg-gray-900 rounded-lg shadow-sm border border-gray-800 p-4 flex flex-col h-[600px] text-gray-200">
           <div className="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
             <h2 className="font-mono text-sm font-semibold text-green-400">4. STOMP Event Log</h2>

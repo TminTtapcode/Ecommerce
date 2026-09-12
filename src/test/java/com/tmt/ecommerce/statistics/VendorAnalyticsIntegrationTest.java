@@ -36,7 +36,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** HTTP/MySQL evidence for the vendor-only, shop-scoped analytics endpoint. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class VendorAnalyticsIntegrationTest {
     @LocalServerPort int port;
@@ -188,8 +187,7 @@ class VendorAnalyticsIntegrationTest {
                 .paymentMethod("COD").paymentGroupId("analytics-" + UUID.randomUUID())
                 .originalTotalAmount(new BigDecimal(original)).discountAmount(new BigDecimal(discount))
                 .totalAmount(new BigDecimal(total)).shippingAddress("Test address").build());
-        // Use a DATETIME literal so this fixture does not introduce a JDBC timezone
-        // conversion different from the LocalDateTime API contract under test.
+
         jdbc.update("UPDATE orders SET created_at = CAST(? AS DATETIME) WHERE id = ?",
                 createdAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), order.getId());
         return order;

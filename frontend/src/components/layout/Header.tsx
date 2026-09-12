@@ -13,7 +13,7 @@ export const Header: React.FC = () => {
   const [keyword, setKeyword] = useState('');
 
   useEffect(() => {
-    // Sync search input with URL if it exists
+
     const currentKeyword = searchParams.get('keyword');
     if (currentKeyword) {
       setKeyword(currentKeyword);
@@ -38,7 +38,6 @@ export const Header: React.FC = () => {
 
   return (
     <header className="bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md z-50 sticky top-0">
-      {/* Top Bar */}
       <div className="container mx-auto px-4 max-w-7xl h-8 flex items-center justify-between text-sm font-medium">
         <div className="flex items-center space-x-4">
           <Link to="/seller" className="hover:text-white/80 transition-colors">Kênh Người Bán</Link>
@@ -70,7 +69,7 @@ export const Header: React.FC = () => {
             <span>Tiếng Việt</span>
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
           </div>
-          
+
           {isAuthenticated ? (
             <div className="flex items-center space-x-4 relative group">
               <div className="flex items-center space-x-2 cursor-pointer hover:text-white/80">
@@ -79,8 +78,7 @@ export const Header: React.FC = () => {
                 </div>
                 <span>Tài khoản của tôi</span>
               </div>
-              
-              {/* Dropdown Menu */}
+
               <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="bg-white text-gray-800 rounded-sm shadow-lg w-40 overflow-hidden border border-gray-100">
                   <Link to="/profile" className="block px-4 py-2 hover:bg-gray-50 hover:text-orange-500 text-sm">Tài khoản của tôi</Link>
@@ -103,9 +101,7 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Header */}
       <div className="container mx-auto px-4 max-w-7xl h-[85px] flex items-center py-4">
-        {/* Logo */}
         <Link to="/" className="flex items-center space-x-2 text-white w-48 shrink-0 mr-8">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3.1-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z"/>
@@ -114,12 +110,11 @@ export const Header: React.FC = () => {
           <span className="text-3xl font-bold tracking-tighter">MintMark</span>
         </Link>
 
-        {/* Search Bar */}
         <div className="flex-1 flex flex-col justify-center">
           <form onSubmit={handleSearch} className="relative flex items-center w-full h-10 bg-white rounded-sm shadow-sm p-1">
-            <input 
-              type="text" 
-              placeholder="Sale khủng giá cực sốc hôm nay" 
+            <input
+              type="text"
+              placeholder="Sale khủng giá cực sốc hôm nay"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               className="flex-1 h-full px-3 text-gray-800 text-sm outline-none bg-transparent"
@@ -128,7 +123,6 @@ export const Header: React.FC = () => {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
           </form>
-          {/* Quick links below search */}
           <div className="flex space-x-3 mt-1 text-xs text-white/90">
             <span className="hover:text-white cursor-pointer">Áo Nữ</span>
             <span className="hover:text-white cursor-pointer">Săn iPhone 0 Đồng</span>
@@ -137,7 +131,6 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Cart */}
         <div className="w-24 shrink-0 flex justify-center items-start mt-2">
           <Link to="/cart" className="relative group p-2">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

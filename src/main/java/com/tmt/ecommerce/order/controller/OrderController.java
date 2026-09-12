@@ -27,7 +27,6 @@ public class OrderController {
             @CurrentUserId Long userId,
             @Valid @RequestBody CheckoutRequest request) {
 
-        // Gọi xuống Service để xử lý logic tách đơn
         CheckoutResponse checkoutResponse = orderService.checkout(userId, request);
 
         ApiResponse<CheckoutResponse> response = ApiResponse.<CheckoutResponse>builder()
@@ -36,7 +35,6 @@ public class OrderController {
                 .data(checkoutResponse)
                 .build();
 
-        // Trả về HTTP Status 201 (Created) cùng với kết quả checkout
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

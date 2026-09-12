@@ -1,11 +1,11 @@
 import apiClient from './apiClient';
 import type { ApiResponse, PageResponse } from './types/common.types';
-import type { 
-  ReviewCreateRequest, 
+import type {
+  ReviewCreateRequest,
   ReviewUpdateRequest,
-  VendorReplyRequest, 
-  ReviewResponse, 
-  RatingSummaryResponse 
+  VendorReplyRequest,
+  ReviewResponse,
+  RatingSummaryResponse
 } from './types/review.types';
 
 export const reviewApi = {
@@ -23,7 +23,6 @@ export const reviewApi = {
     const response = await apiClient.delete<ApiResponse<void>>(`/api/v1/reviews/${reviewId}`);
     return response.data;
   },
-
 
   getProductReviews: async (productId: number, params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<ReviewResponse>>> => {
     const response = await apiClient.get<ApiResponse<PageResponse<ReviewResponse>>>(`/api/v1/products/${productId}/reviews`, { params });

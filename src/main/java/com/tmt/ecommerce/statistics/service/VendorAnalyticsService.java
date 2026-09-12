@@ -13,10 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Resolves the shop from the authenticated vendor. No caller-controlled shop ID
- * crosses this service boundary.
- */
 @Service
 @RequiredArgsConstructor
 public class VendorAnalyticsService {

@@ -17,21 +17,20 @@ public class VoucherCreateRequest {
     private String code;
 
     @NotNull(message = "Phạm vi voucher không được để trống")
-    private VoucherScope scope; // SYSTEM, SHOP
+    private VoucherScope scope;
 
-    // Bắt buộc nếu scope = SHOP
-    private Long shopId; 
+    private Long shopId;
 
     @NotNull(message = "Loại voucher không được để trống")
-    private VoucherType type; // PERCENTAGE, FIXED_AMOUNT
+    private VoucherType type;
 
     @NotNull(message = "Giá trị giảm không được để trống")
     @Positive(message = "Giá trị giảm phải lớn hơn 0")
-    private BigDecimal discountValue; 
+    private BigDecimal discountValue;
 
-    private BigDecimal maxDiscount; 
+    private BigDecimal maxDiscount;
 
-    private BigDecimal minOrderValue; 
+    private BigDecimal minOrderValue;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
     private LocalDateTime startDate;

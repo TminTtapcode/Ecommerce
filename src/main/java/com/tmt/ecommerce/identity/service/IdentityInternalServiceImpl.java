@@ -29,7 +29,7 @@ public class IdentityInternalServiceImpl implements IdentityInternalService {
             user.getRoles().add(shopRole);
             userRepository.save(user);
         }
-        
+
         return user.getEmail();
     }
 

@@ -18,14 +18,14 @@ export const PaymentResultPage: React.FC = () => {
                 setStatus('success');
                 setMessage('Thanh toán thành công! Đơn hàng của bạn đã được xác nhận.');
                 sessionStorage.removeItem('pendingPaymentGroupId');
-                return true; // stop polling
+                return true;
             } else if (currentStatus === 'FAILED') {
                 setStatus('failed');
                 setMessage('Thanh toán thất bại hoặc đã bị hủy.');
                 sessionStorage.removeItem('pendingPaymentGroupId');
-                return true; // stop polling
+                return true;
             }
-            return false; // Still PENDING
+            return false;
         } catch (error) {
             console.error("Error checking payment status:", error);
             return false;
@@ -41,18 +41,17 @@ export const PaymentResultPage: React.FC = () => {
 
         let intervalId: ReturnType<typeof setInterval>;
 
-        // Run initial check immediately
         checkPayment(paymentGroupId).then((stopped) => {
             if (stopped) return;
 
             intervalId = setInterval(async () => {
                 pollCount++;
                 const shouldStop = await checkPayment(paymentGroupId);
-                
+
                 if (shouldStop || pollCount >= maxPolls) {
                     clearInterval(intervalId);
                     if (!shouldStop) {
-                        // Max polls reached without SUCCESS/FAILED
+
                         setStatus('timeout');
                         setMessage('Giao dịch đang được xử lý bởi ngân hàng / VNPAY (IPN có thể bị trễ một vài phút).');
                     }
@@ -68,7 +67,7 @@ export const PaymentResultPage: React.FC = () => {
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
         const paymentGroupId = searchParams.get('paymentGroupId') || sessionStorage.getItem('pendingPaymentGroupId');
-        
+
         if (!paymentGroupId) {
             navigate('/orders', { replace: true });
             return;
@@ -78,8 +77,7 @@ export const PaymentResultPage: React.FC = () => {
         let cleanup: (() => void) | undefined;
 
         const initPolling = async () => {
-            // Mẹo cho môi trường Local: IPN Webhook của VNPay không thể gọi tới localhost
-            // Do đó chúng ta tự động gửi tham số trả về (vnp_*) lên Endpoint IPN để cập nhật DB đồng bộ.
+
             if (location.search.includes('vnp_ResponseCode')) {
                 try {
                     await paymentApi.syncVnpayIpn(location.search);
@@ -89,7 +87,7 @@ export const PaymentResultPage: React.FC = () => {
             }
             cleanup = startPolling(paymentGroupId);
         };
-        
+
         initPolling();
 
         return () => {
@@ -109,7 +107,7 @@ export const PaymentResultPage: React.FC = () => {
                     <p className="text-sm text-gray-500">{message}</p>
                 </div>
             )}
-            
+
             {status === 'success' && (
                 <div>
                     <svg className="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -143,7 +141,7 @@ export const PaymentResultPage: React.FC = () => {
                     </div>
                 </div>
             )}
-            
+
             {(status === 'failed' || status === 'error') && (
                 <div>
                     <svg className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

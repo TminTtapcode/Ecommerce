@@ -7,10 +7,10 @@ export const OrderHistoryPage: React.FC = () => {
     const [orders, setOrders] = useState<OrderResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [status, setStatus] = useState<string>(''); // empty means all
+    const [status, setStatus] = useState<string>('');
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
-    
+
     const TABS = [
         { label: 'Tất cả', value: '' },
         { label: 'Chờ xác nhận', value: 'PENDING' },
@@ -73,16 +73,15 @@ export const OrderHistoryPage: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto py-8 px-4">
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Đơn Mua Của Tôi</h1>
-            
-            {/* Tabs */}
+
             <div className="flex bg-white shadow-sm rounded-sm mb-4 border-b border-gray-200">
                 {TABS.map(tab => (
                     <button
                         key={tab.value}
                         onClick={() => { setStatus(tab.value); setPage(0); }}
                         className={`flex-1 py-4 text-center text-sm font-medium transition-colors ${
-                            status === tab.value 
-                                ? 'text-orange-500 border-b-2 border-orange-500' 
+                            status === tab.value
+                                ? 'text-orange-500 border-b-2 border-orange-500'
                                 : 'text-gray-600 hover:text-orange-500'
                         }`}
                     >
@@ -91,7 +90,6 @@ export const OrderHistoryPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* List */}
             {loading ? (
                 <div className="text-center py-12 text-gray-500">Đang tải danh sách đơn hàng...</div>
             ) : error ? (
@@ -106,7 +104,6 @@ export const OrderHistoryPage: React.FC = () => {
                 <div className="space-y-4">
                     {orders.map(order => (
                         <div key={order.id} className="bg-white rounded-sm shadow-sm overflow-hidden">
-                            {/* Order Header */}
                             <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50">
                                 <div className="text-sm">
                                     <span className="font-medium">Mã đơn: #{order.id}</span>
@@ -117,17 +114,16 @@ export const OrderHistoryPage: React.FC = () => {
                                     {getStatusText(order.status)}
                                 </div>
                             </div>
-                            
-                            {/* Order Items */}
+
                             <div className="p-4 border-b border-gray-100">
                                 {order.items.map(item => (
                                     <div key={item.id} className="flex gap-4 py-3 first:pt-0 last:pb-0">
                                         <div className="w-20 h-20 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center text-gray-400 shrink-0 overflow-hidden">
                                             {item.imageUrl ? (
-                                                <img 
-                                                    src={item.imageUrl} 
-                                                    alt={item.productName} 
-                                                    className="w-full h-full object-cover" 
+                                                <img
+                                                    src={item.imageUrl}
+                                                    alt={item.productName}
+                                                    className="w-full h-full object-cover"
                                                     onError={(e) => {
                                                         (e.target as HTMLElement).style.display = 'none';
                                                     }}
@@ -146,8 +142,7 @@ export const OrderHistoryPage: React.FC = () => {
                                     </div>
                                 ))}
                             </div>
-                            
-                            {/* Order Footer */}
+
                             <div className="p-4 bg-orange-50/30 flex justify-between items-center">
                                 <div className="text-sm text-gray-500">
                                     Thanh toán: <span className="font-medium text-gray-700">{order.paymentMethod}</span>
@@ -158,7 +153,7 @@ export const OrderHistoryPage: React.FC = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         {order.status === 'PENDING' && (
-                                            <button 
+                                            <button
                                                 onClick={async () => {
                                                     if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
                                                     try {
@@ -174,7 +169,7 @@ export const OrderHistoryPage: React.FC = () => {
                                             </button>
                                         )}
                                         {order.status === 'SHIPPED' && (
-                                            <button 
+                                            <button
                                                 onClick={async () => {
                                                     if (!window.confirm('Bạn xác nhận đã nhận đủ hàng? Thao tác này sẽ chuyển đơn sang Hoàn thành và mở quyền đánh giá.')) return;
                                                     try {
@@ -198,10 +193,9 @@ export const OrderHistoryPage: React.FC = () => {
                         </div>
                     ))}
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="flex justify-center mt-6 space-x-2">
-                            <button 
+                            <button
                                 onClick={() => setPage(p => Math.max(0, p - 1))}
                                 disabled={page === 0}
                                 className="px-4 py-2 border rounded-sm hover:bg-gray-50 disabled:opacity-50"
@@ -211,7 +205,7 @@ export const OrderHistoryPage: React.FC = () => {
                             <div className="flex items-center px-4 font-medium text-gray-700">
                                 {page + 1} / {totalPages}
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                                 disabled={page === totalPages - 1}
                                 className="px-4 py-2 border rounded-sm hover:bg-gray-50 disabled:opacity-50"

@@ -25,7 +25,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         if (command == StompCommand.CONNECT) {
             try {
                 String header = a.getFirstNativeHeader("Authorization");
-                a.setNativeHeader("Authorization", null); // Never retain credentials in message/error logs.
+                a.setNativeHeader("Authorization", null);
                 if (header == null || !header.startsWith("Bearer ")) throw new IllegalArgumentException();
                 String token = header.substring(7);
                 var details = users.loadUserByUsername(jwt.extractUsername(token));

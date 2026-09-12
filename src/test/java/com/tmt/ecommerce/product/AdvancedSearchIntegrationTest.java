@@ -25,11 +25,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * P1-04 / F7 — Advanced Search integration test.
- * Real MySQL; fixtures isolated per test run by UUID prefix.
- * Verifies: keyword, categoryId+descendants, price range, sort, eligibility (HIDDEN/BANNED).
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AdvancedSearchIntegrationTest {
 
@@ -41,7 +36,6 @@ class AdvancedSearchIntegrationTest {
     @Autowired ShopRepository shopRepo;
     @Autowired JdbcTemplate jdbc;
 
-    // per-run prefix to isolate fixtures
     String prefix;
     Long activeShopId;
     Long bannedShopId;
@@ -50,7 +44,7 @@ class AdvancedSearchIntegrationTest {
 
     @BeforeEach
     void setup() {
-        // Guard: refuse to run against the application DB
+
         String db = jdbc.queryForObject("SELECT DATABASE()", String.class);
         assertNotNull(db);
         assertTrue(db.startsWith("ecommerce_s103_s104_s105"),
@@ -58,7 +52,6 @@ class AdvancedSearchIntegrationTest {
 
         prefix = "p104-" + UUID.randomUUID().toString().substring(0, 8);
 
-        // Shops
         long u1 = Math.abs(UUID.randomUUID().getMostSignificantBits());
         long u2 = Math.abs(UUID.randomUUID().getLeastSignificantBits());
         activeShopId = shopRepo.save(Shop.builder()
@@ -73,14 +66,11 @@ class AdvancedSearchIntegrationTest {
                 .status(ShopStatus.BANNED)
                 .build()).getId();
 
-        // Categories: parent → child
         parentCat = categoryRepo.save(Category.builder()
                 .name(prefix + "-parent-cat").build());
         childCat = categoryRepo.save(Category.builder()
                 .name(prefix + "-child-cat").parent(parentCat).build());
     }
-
-    // ── helpers ────────────────────────────────────────────────────────────
 
     Product product(String name, BigDecimal price, ProductStatus status, Long shopId, Category cat) {
         return productRepo.save(Product.builder()
@@ -95,11 +85,9 @@ class AdvancedSearchIntegrationTest {
         return productService.getAllProducts(0, 50, keyword, categoryId, null, minPrice, maxPrice, sortBy);
     }
 
-    // ── Tests ──────────────────────────────────────────────────────────────
-
     @Test
     void noFilters_ShouldReturnOnlyACTIVEFromNonBannedShops() {
-        // 3 products: active/active-shop, hidden/active-shop, active/banned-shop
+
         product(prefix + "-visible",   BigDecimal.TEN, ProductStatus.ACTIVE,  activeShopId, parentCat);
         product(prefix + "-hidden",    BigDecimal.TEN, ProductStatus.HIDDEN,  activeShopId, parentCat);
         product(prefix + "-from-ban",  BigDecimal.TEN, ProductStatus.ACTIVE,  bannedShopId, parentCat);
@@ -131,7 +119,7 @@ class AdvancedSearchIntegrationTest {
 
     @Test
     void categoryFilter_ShouldIncludeDescendants_D7_2() {
-        // parent → child; filtering by parent must include child products too
+
         product(prefix + "-in-parent",   BigDecimal.TEN, ProductStatus.ACTIVE, activeShopId, parentCat);
         product(prefix + "-in-child",    BigDecimal.TEN, ProductStatus.ACTIVE, activeShopId, childCat);
         Category other = categoryRepo.save(Category.builder().name(prefix + "-other-cat").build());
@@ -141,10 +129,9 @@ class AdvancedSearchIntegrationTest {
         var names = page.getContent().stream()
                 .map(com.tmt.ecommerce.product.dto.response.ProductResponse::name).toList();
 
-        // both parent and child products are included (D7.2)
         assertThat(names).anySatisfy(n -> assertThat(n).contains("in-parent"));
         assertThat(names).anySatisfy(n -> assertThat(n).contains("in-child"));
-        // product from unrelated category is excluded
+
         assertThat(names).noneMatch(n -> n.contains("in-other"));
     }
 
@@ -215,7 +202,6 @@ class AdvancedSearchIntegrationTest {
                         : BigDecimal.ZERO)
                 .toList();
 
-        // verify ascending — each price ≥ previous
         for (int i = 1; i < prices.size(); i++) {
             assertThat(prices.get(i)).isGreaterThanOrEqualTo(prices.get(i - 1));
         }
@@ -239,24 +225,24 @@ class AdvancedSearchIntegrationTest {
 
     @Test
     void unknownSortBy_ShouldFallbackToIdDesc_D7_4() {
-        // Should not throw; just use default id DESC
+
         assertDoesNotThrow(() -> search(null, null, null, null, "invalid_sort_value"));
     }
 
     @Test
     void sizeClamping_ShouldNeverExceed50_D7_5() {
-        // Create 10 products
+
         for (int i = 0; i < 10; i++) {
             product(prefix + "-clamp-" + i, BigDecimal.TEN, ProductStatus.ACTIVE, activeShopId, parentCat);
         }
-        // Request size 200 should be clamped to 50
+
         var page = productService.getAllProducts(0, 200, null, null, null, null, null, null);
         assertThat(page.getSize()).isLessThanOrEqualTo(50);
     }
 
     @Test
     void combinedFilters_KeywordAndCategoryAndPrice() {
-        // Should find: keyword match + in parentCat (or child) + price in range
+
         product(prefix + "-combo-match",  new BigDecimal("150000"), ProductStatus.ACTIVE, activeShopId, childCat);
         product(prefix + "-combo-tooCheap", new BigDecimal("1000"), ProductStatus.ACTIVE, activeShopId, childCat);
         product(prefix + "-combo-wrongCat", new BigDecimal("150000"), ProductStatus.ACTIVE, activeShopId,

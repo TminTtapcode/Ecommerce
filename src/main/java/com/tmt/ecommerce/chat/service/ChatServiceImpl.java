@@ -35,10 +35,10 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     public ChatRoomResponse createOrGetRoom(CreateChatRoomRequest request, Long buyerId) {
         Long shopId = request.getShopId();
-        
+
         shopInternalService.getUserIdByShopId(shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Shop not found"));
-                
+
         ChatRoom room = chatRoomRepository.findByBuyerIdAndShopId(buyerId, shopId)
                 .orElseGet(() -> {
                     ChatRoom newRoom = ChatRoom.builder()
@@ -47,7 +47,7 @@ public class ChatServiceImpl implements ChatService {
                             .build();
                     return chatRoomRepository.save(newRoom);
                 });
-                
+
         return mapToChatRoomResponse(room, buyerId);
     }
 
@@ -55,22 +55,22 @@ public class ChatServiceImpl implements ChatService {
     @Transactional(readOnly = true)
     public List<ChatRoomResponse> getMyRooms(Long userId) {
         List<ChatRoomResponse> responses = new ArrayList<>();
-        
+
         chatRoomRepository.findAllByBuyerIdOrderByUpdatedAtDesc(userId)
             .forEach(room -> responses.add(mapToChatRoomResponse(room, userId)));
-            
+
         shopInternalService.findShopIdByUserId(userId).ifPresent(shopId -> {
             chatRoomRepository.findAllByShopIdOrderByUpdatedAtDesc(shopId)
                 .forEach(room -> responses.add(mapToChatRoomResponse(room, userId)));
         });
-        
+
         responses.sort((r1, r2) -> {
             if (r1.getUpdatedAt() == null && r2.getUpdatedAt() == null) return 0;
             if (r1.getUpdatedAt() == null) return 1;
             if (r2.getUpdatedAt() == null) return -1;
             return r2.getUpdatedAt().compareTo(r1.getUpdatedAt());
         });
-        
+
         return responses;
     }
 
@@ -79,9 +79,9 @@ public class ChatServiceImpl implements ChatService {
     public Page<ChatMessageResponse> getMessages(Long roomId, Long userId, Pageable pageable) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ChatRoomNotFoundException("Chat room not found"));
-                
+
         validateAccess(room, userId);
-        
+
         return chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId, pageable)
                 .map(this::mapToChatMessageResponse);
     }
@@ -91,22 +91,22 @@ public class ChatServiceImpl implements ChatService {
     public void sendMessage(ChatMessageRequest request, Long senderId) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new ChatRoomNotFoundException("Chat room not found"));
-                
+
         validateAccess(room, senderId);
-        
+
         ChatMessage message = ChatMessage.builder()
                 .roomId(room.getId())
                 .senderId(senderId)
                 .content(request.getContent())
                 .build();
-                
+
         message = chatMessageRepository.save(message);
-        
+
         room.setUpdatedAt(LocalDateTime.now());
         chatRoomRepository.save(room);
-        
+
         Long recipientId = getRecipientId(room, senderId);
-        
+
         ChatMessageResponse response = mapToChatMessageResponse(message);
         messagingTemplate.convertAndSendToUser(
                 recipientId.toString(),
@@ -127,23 +127,23 @@ public class ChatServiceImpl implements ChatService {
     public void markMessagesAsRead(Long roomId, Long userId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ChatRoomNotFoundException("Chat room not found"));
-                
+
         validateAccess(room, userId);
-        
+
         chatMessageRepository.markAsReadByRoomIdAndNotSenderId(roomId, userId);
     }
-    
+
     private void validateAccess(ChatRoom room, Long userId) {
         boolean isBuyer = room.getBuyerId().equals(userId);
         boolean isVendor = shopInternalService.getUserIdByShopId(room.getShopId())
                 .filter(ownerId -> ownerId.equals(userId))
                 .isPresent();
-                
+
         if (!isBuyer && !isVendor) {
             throw new ChatAccessDeniedException("You do not have access to this chat room");
         }
     }
-    
+
     private Long getRecipientId(ChatRoom room, Long senderId) {
         if (room.getBuyerId().equals(senderId)) {
             return shopInternalService.getUserIdByShopId(room.getShopId())
@@ -152,19 +152,19 @@ public class ChatServiceImpl implements ChatService {
             return room.getBuyerId();
         }
     }
-    
+
     private ChatRoomResponse mapToChatRoomResponse(ChatRoom room, Long currentUserId) {
         String lastMessage = null;
         LocalDateTime lastMessageAt = null;
-        
+
         var messageOpt = chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(room.getId());
         if (messageOpt.isPresent()) {
             lastMessage = messageOpt.get().getContent();
             lastMessageAt = messageOpt.get().getCreatedAt();
         }
-        
+
         long unreadCount = chatMessageRepository.countByRoomIdAndSenderIdNotAndIsReadFalse(room.getId(), currentUserId);
-        
+
         String shopName = shopInternalService.getShopNameById(room.getShopId())
                 .orElse("Shop #" + room.getShopId());
 
@@ -179,7 +179,7 @@ public class ChatServiceImpl implements ChatService {
                 .updatedAt(room.getUpdatedAt() != null ? room.getUpdatedAt() : room.getCreatedAt())
                 .build();
     }
-    
+
     private ChatMessageResponse mapToChatMessageResponse(ChatMessage message) {
         return ChatMessageResponse.builder()
                 .id(message.getId())

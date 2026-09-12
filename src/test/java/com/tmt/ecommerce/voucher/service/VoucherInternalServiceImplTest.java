@@ -97,7 +97,7 @@ class VoucherInternalServiceImplTest {
         shopTotals.put(1L, new BigDecimal("100"));
 
         VoucherDiscountResult result = voucherInternalService.calculateDiscount(new VoucherCalculationRequest("TEST_CODE", shopTotals));
-        
+
         assertEquals(new BigDecimal("10"), result.discountPerShop().get(1L));
     }
 
@@ -110,7 +110,7 @@ class VoucherInternalServiceImplTest {
         shopTotals.put(1L, new BigDecimal("100"));
 
         VoucherDiscountResult result = voucherInternalService.calculateDiscount(new VoucherCalculationRequest("TEST_CODE", shopTotals));
-        
+
         assertEquals(new BigDecimal("20"), result.discountPerShop().get(1L));
     }
 
@@ -120,16 +120,16 @@ class VoucherInternalServiceImplTest {
         when(voucherRepository.findByCode(anyString())).thenReturn(Optional.of(voucher));
 
         Map<Long, BigDecimal> shopTotals = new HashMap<>();
-        shopTotals.put(1L, new BigDecimal("100")); // 50% = 50, nhưng max = 30
+        shopTotals.put(1L, new BigDecimal("100"));
 
         VoucherDiscountResult result = voucherInternalService.calculateDiscount(new VoucherCalculationRequest("TEST_CODE", shopTotals));
-        
+
         assertEquals(new BigDecimal("30"), result.discountPerShop().get(1L));
     }
 
     @Test
     void testProportionalSplit_Uneven100_3() {
-        // total = 100, discount = 10, chia cho 3 shop (33.33, 33.33, 33.34)
+
         Voucher voucher = createVoucher(VoucherScope.SYSTEM, VoucherType.FIXED_AMOUNT, new BigDecimal("10"), null, null);
         when(voucherRepository.findByCode(anyString())).thenReturn(Optional.of(voucher));
 
@@ -139,16 +139,10 @@ class VoucherInternalServiceImplTest {
         shopTotals.put(3L, new BigDecimal("33.34"));
 
         VoucherDiscountResult result = voucherInternalService.calculateDiscount(new VoucherCalculationRequest("TEST_CODE", shopTotals));
-        
-        // 10 * 33.33 / 100 = 3.333 -> 3
-        // 10 * 33.34 / 100 = 3.334 -> 3
-        // Tùy thuộc vào RoundingMode.HALF_UP (nửa lên, nửa xuống)
+
         assertEquals(new BigDecimal("3"), result.discountPerShop().get(1L));
         assertEquals(new BigDecimal("3"), result.discountPerShop().get(2L));
         assertEquals(new BigDecimal("3"), result.discountPerShop().get(3L));
-        
-        // Lưu ý: với phương pháp tính riêng biệt, tổng có thể là 9 thay vì 10 (mất 1 đồng) 
-        // Đề bài nói "sum(discountPerShop) == totalDiscount sau rounding". 
-        // Thuật toán hiện tại: shopDiscount = totalSystemDiscount.multiply(shopOrderTotal).divide(totalCartAmount, 0, java.math.RoundingMode.HALF_UP);
+
     }
 }

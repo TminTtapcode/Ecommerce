@@ -1,4 +1,3 @@
-// Display data only. Server authentication/authorization remains authoritative.
 export interface UserPayload { userId: number; fullName?: string; sub: string; roles: string[] }
 export function decodeUser(token: string | null): UserPayload | null {
   try {
@@ -11,7 +10,6 @@ export function decodeUser(token: string | null): UserPayload | null {
   } catch { return null; }
 }
 
-/** A new generation also invalidates requests when logging in again with the same token. */
 export function createSessionGuard() {
   let generation = 0;
   return { advance: () => ++generation, capture: () => generation, accepts: (captured: number) => captured === generation };

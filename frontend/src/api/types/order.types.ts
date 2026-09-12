@@ -52,7 +52,6 @@ export interface CartPreviewResponse {
   discount: number;
   total: number;
 
-  // Backward compatibility aliases
   totalOriginalPrice?: number;
   totalDiscount?: number;
   voucherDiscount?: number;

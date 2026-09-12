@@ -72,7 +72,7 @@ class RecommendedProductsIntegrationTest {
         assertThat(body.path("success").asBoolean()).isTrue();
 
         List<Long> ids = ids(body.path("data").path("content"));
-        // Newest fallback should at least return our active product
+
         assertThat(ids).contains(newest.getId());
         assertThat(ids).doesNotContain(hidden.getId());
         assertThat(ids).doesNotContain(banned.getId());
@@ -86,7 +86,7 @@ class RecommendedProductsIntegrationTest {
 
         JsonNode defaultData = mapper.readTree(get("").body()).path("data").path("content");
         JsonNode clampedData = mapper.readTree(get("?limit=999").body()).path("data").path("content");
-        
+
         assertThat(defaultData.size()).isLessThanOrEqualTo(12);
         assertThat(clampedData.size()).isLessThanOrEqualTo(50);
     }
@@ -124,4 +124,3 @@ class RecommendedProductsIntegrationTest {
         return ids;
     }
 }
-

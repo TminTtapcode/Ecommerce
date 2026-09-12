@@ -4,11 +4,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { productApi } from '../../api/productApi';
 import { mediaApi } from '../../api/mediaApi';
 import { categoryApi, type CategoryResponse } from '../../api/categoryApi';
-import type { 
-  ProductCreateRequest, 
-  ProductUpdateRequest, 
+import type {
+  ProductCreateRequest,
+  ProductUpdateRequest,
   ProductImageRequest,
-  ProductVariantRequest 
+  ProductVariantRequest
 } from '../../api/types/product.types';
 
 export const AdminProductFormPage: React.FC = () => {
@@ -21,7 +21,6 @@ export const AdminProductFormPage: React.FC = () => {
   const [globalError, setGlobalError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Form states
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState(0);
@@ -31,7 +30,6 @@ export const AdminProductFormPage: React.FC = () => {
   const [images, setImages] = useState<ProductImageRequest[]>([]);
   const [variants, setVariants] = useState<ProductVariantRequest[]>([]);
 
-  // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,12 +88,11 @@ export const AdminProductFormPage: React.FC = () => {
     initData();
   }, [id, isEdit]);
 
-  // Handle Image Upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     setIsUploading(true);
     const files = Array.from(e.target.files);
-    
+
     try {
       const newImages: ProductImageRequest[] = [];
       for (const file of files) {
@@ -131,7 +128,6 @@ export const AdminProductFormPage: React.FC = () => {
     setImages(updated.map((img, i) => ({ ...img, sortOrder: i })));
   };
 
-  // Handle Variants
   const handleAddVariant = () => {
     setVariants([...variants, { sku: '', price: 0, stockQuantity: 0, attributes: {} }]);
   };
@@ -161,8 +157,8 @@ export const AdminProductFormPage: React.FC = () => {
         alert('Cập nhật sản phẩm thành công!');
       } else {
         const createData: ProductCreateRequest = {
-          shopId: 1, // HARDCODED for now until Shop context is fully integrated in frontend
-          categoryId: categoryId || 1, // HARDCODED 1 if empty for safety
+          shopId: 1,
+          categoryId: categoryId || 1,
           name, description, price, stockQuantity, images, variants
         };
         await productApi.createProduct(createData);
@@ -172,7 +168,7 @@ export const AdminProductFormPage: React.FC = () => {
     } catch (err: any) {
       const details = getApiError(err);
       if (details.fieldErrors) {
-        // Validation errors
+
         setFieldErrors(details.fieldErrors);
         setGlobalError('Vui lòng kiểm tra lại thông tin nhập.');
       } else {
@@ -206,10 +202,9 @@ export const AdminProductFormPage: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Thông tin cơ bản</h2>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tên sản phẩm *</label>
@@ -259,7 +254,7 @@ export const AdminProductFormPage: React.FC = () => {
                 {fieldErrors.stockQuantity && <p className="mt-1 text-sm text-red-500">{fieldErrors.stockQuantity}</p>}
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục ngành hàng *</label>
               <select
@@ -280,7 +275,6 @@ export const AdminProductFormPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Images Manager */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -382,7 +376,6 @@ export const AdminProductFormPage: React.FC = () => {
           )}
         </div>
 
-        {/* Variants */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h2 className="text-lg font-semibold text-gray-900">Phân loại hàng (Variants)</h2>
@@ -416,21 +409,20 @@ export const AdminProductFormPage: React.FC = () => {
                     <label className="block text-xs font-medium text-gray-700 mb-1">Tồn kho</label>
                     <input type="number" min="0" value={variant.stockQuantity} onChange={(e) => handleVariantChange(index, 'stockQuantity', Number(e.target.value))} required className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-500" />
                   </div>
-                  {/* Simplification: Just storing raw JSON string in attributes for this UI MVP */}
                   <div className="w-full mt-2">
                     <label className="block text-xs font-medium text-gray-700 mb-1">Thuộc tính (JSON format, vd: {`{"Color":"Red"}`})</label>
-                    <input 
-                      type="text" 
-                      value={typeof variant.attributes === 'string' ? variant.attributes : JSON.stringify(variant.attributes || {})} 
+                    <input
+                      type="text"
+                      value={typeof variant.attributes === 'string' ? variant.attributes : JSON.stringify(variant.attributes || {})}
                       onChange={(e) => {
                         try {
                           handleVariantChange(index, 'attributes', JSON.parse(e.target.value));
                         } catch(err) {
-                          // Allow typing invalid json temporarily
+
                           handleVariantChange(index, 'attributes', e.target.value as any);
                         }
-                      }} 
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-500 font-mono" 
+                      }}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-500 font-mono"
                     />
                   </div>
                 </div>
@@ -439,7 +431,6 @@ export const AdminProductFormPage: React.FC = () => {
           )}
         </div>
 
-        {/* Submit */}
         <div className="flex justify-end gap-4 pt-4">
           <button
             type="button"

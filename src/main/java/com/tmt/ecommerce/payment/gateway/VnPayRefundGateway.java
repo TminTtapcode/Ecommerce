@@ -19,7 +19,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** VNPay WebAPI adapter. Business eligibility, locking, and state ownership remain in RefundService. */
 @Service
 @RequiredArgsConstructor
 public class VnPayRefundGateway implements PaymentRefundGateway {
@@ -87,7 +86,7 @@ public class VnPayRefundGateway implements PaymentRefundGateway {
             if (!verifyResponse(values)) return unknown("INVALID_SIGNATURE");
             return mapVerified(values);
         } catch (Exception ignored) {
-            // Once request transmission starts, a local exception cannot prove it was not accepted.
+
             return unknown("TRANSPORT_OR_PARSE_ERROR");
         }
     }
@@ -115,7 +114,7 @@ public class VnPayRefundGateway implements PaymentRefundGateway {
         if ("09".equals(status) || "95".equals(code) || "02".equals(code) || "03".equals(code)
                 || "91".equals(code) || "97".equals(code))
             return new RefundGatewayResult(RefundGatewayResult.Outcome.REJECTED, code, status, p.get("vnp_TransactionNo"), metadata);
-        // 94 and statuses 05/06 are documented as an already/in-progress gateway request; all other non-final cases stay unknown.
+
         return new RefundGatewayResult(RefundGatewayResult.Outcome.UNKNOWN, code, status, p.get("vnp_TransactionNo"), metadata);
     }
 

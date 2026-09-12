@@ -37,20 +37,17 @@ public class ProductDataInitializer implements CommandLineRunner {
 
         log.info("=== STARTING PRODUCT SEED DATA ===");
 
-        // Brands
         Brand brandApple = createBrand("Apple", "https://logo.clearbit.com/apple.com", "Tập đoàn công nghệ Apple");
         Brand brandSamsung = createBrand("Samsung", "https://logo.clearbit.com/samsung.com", "Tập đoàn điện tử Samsung");
         Brand brandSony = createBrand("Sony", "https://logo.clearbit.com/sony.com", "Thương hiệu Sony Nhật Bản");
         Brand brandNike = createBrand("Nike", "https://logo.clearbit.com/nike.com", "Thương hiệu thể thao Nike");
         Brand brandAdidas = createBrand("Adidas", "https://logo.clearbit.com/adidas.com", "Thương hiệu thể thao Adidas");
 
-        // Categories
         Category catElectronics = createCategory("Điện thoại & Phụ kiện", "Các dòng smartphone và phụ kiện đi kèm");
         Category catComputers = createCategory("Máy tính & Laptop", "Laptop, PC máy tính bàn và phụ kiện");
         Category catFashion = createCategory("Thời trang Nam/Nữ", "Quần áo, giày dép thời trang cao cấp");
         Category catHome = createCategory("Thiết bị Gia dụng", "Đồ dùng gia đình, thiết bị thông minh");
 
-        // Products, ProductImages, ProductVariants
         createProduct(
                 SeedDataIds.SHOP_1_ID, "iPhone 15 Pro Max 256GB", "Điện thoại Apple iPhone 15 Pro Max khung Titan, Chip A17 Pro",
                 new BigDecimal("29990000"), 50, catElectronics, brandApple,

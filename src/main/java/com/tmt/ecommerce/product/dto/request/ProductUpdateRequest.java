@@ -21,5 +21,5 @@ public record ProductUpdateRequest(
 
         List<ProductVariantUpdateRequest> variants,
 
-        List<ProductImageUpdateRequest> images // Thêm dòng này
+        List<ProductImageUpdateRequest> images
 ) {}

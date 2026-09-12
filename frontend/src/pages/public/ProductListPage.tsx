@@ -6,8 +6,6 @@ import type { ProductResponse } from '../../api/types/product.types';
 import { ProductCard } from '../../components/products/ProductCard';
 import { Pagination } from '../../components/common/Pagination';
 
-// ─── helpers ───────────────────────────────────────────────────────────────
-
 const SORT_OPTIONS = [
   { value: 'id_desc',    label: 'Mới nhất' },
   { value: 'price_asc',  label: 'Giá tăng dần' },
@@ -21,12 +19,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   'Ô Tô & Xe Máy': '🚗', 'Sách': '📚', 'Làm Đẹp': '💄',
 };
 
-// ─── component ─────────────────────────────────────────────────────────────
-
 export const ProductListPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // ── read URL state ──
   const page       = parseInt(searchParams.get('page')       || '0',  10);
   const size       = parseInt(searchParams.get('size')       || '12', 10);
   const keyword    = searchParams.get('keyword')    || '';
@@ -37,30 +32,26 @@ export const ProductListPage: React.FC = () => {
   const minPrice   = minPriceRaw ? Number(minPriceRaw) : undefined;
   const maxPrice   = maxPriceRaw ? Number(maxPriceRaw) : undefined;
 
-  // ── local UI state ──
   const [products,   setProducts]   = useState<ProductResponse[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
 
-  // price inputs in sidebar (controlled locally, committed on button press)
   const [minInput, setMinInput] = useState(minPriceRaw || '');
   const [maxInput, setMaxInput] = useState(maxPriceRaw || '');
   const [priceError, setPriceError] = useState<string | null>(null);
 
   const fetchRevision = useRef(0);
 
-  // ── fetch categories once ──
   useEffect(() => {
     categoryApi.getAllCategories()
       .then(res => { if (res.data.data) setCategories(res.data.data); })
-      .catch(() => {/* non-blocking */});
+      .catch(() => {});
   }, []);
 
   const isRecommendationMode = !keyword && !categoryId && !minPrice && !maxPrice && (!sortBy || sortBy === 'id_desc');
 
-  // ── fetch products whenever URL params change ──
   useEffect(() => {
     const rev = ++fetchRevision.current;
     setIsLoading(true);
@@ -96,14 +87,13 @@ export const ProductListPage: React.FC = () => {
     handleFetch();
   }, [page, size, keyword, categoryId, minPrice, maxPrice, sortBy, isRecommendationMode]);
 
-  // ── param helpers ──
   const updateParams = (updates: Record<string, string | undefined>) => {
     const next = new URLSearchParams(searchParams);
     Object.entries(updates).forEach(([k, v]) => {
       if (v === undefined || v === '') next.delete(k);
       else next.set(k, v);
     });
-    next.delete('page'); // reset về page 0 khi đổi filter
+    next.delete('page');
     setSearchParams(next);
   };
 
@@ -116,7 +106,7 @@ export const ProductListPage: React.FC = () => {
 
   const handleCategoryClick = (id: number) => {
     if (categoryId === id) {
-      updateParams({ categoryId: undefined }); // deselect
+      updateParams({ categoryId: undefined });
     } else {
       updateParams({ categoryId: id.toString() });
     }
@@ -150,7 +140,6 @@ export const ProductListPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-      {/* ── Banner ── */}
       <div className="flex gap-2 mb-6 h-48">
         <div className="w-2/3 bg-orange-100 rounded-sm overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-rose-400 flex flex-col justify-center px-10">
@@ -172,7 +161,6 @@ export const ProductListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Category chips ── */}
       <div className="bg-white rounded-sm shadow-sm mb-6 p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="uppercase text-gray-500 font-medium text-sm">Danh Mục</span>
@@ -208,10 +196,8 @@ export const ProductListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Main area: sidebar + product grid ── */}
       <div className="flex gap-4">
 
-        {/* ── Filter Sidebar ── */}
         <aside className="hidden lg:block w-56 shrink-0">
           <div className="bg-white rounded-sm shadow-sm p-4 sticky top-[90px]">
             <div className="flex items-center justify-between mb-4">
@@ -227,7 +213,6 @@ export const ProductListPage: React.FC = () => {
               )}
             </div>
 
-            {/* Sort */}
             <div className="mb-5">
               <p className="text-sm font-medium text-gray-600 mb-2">Sắp xếp</p>
               <div className="space-y-1.5">
@@ -248,7 +233,6 @@ export const ProductListPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Price Range */}
             <div>
               <p className="text-sm font-medium text-gray-600 mb-2">Khoảng giá (đ)</p>
               <div className="flex gap-2 mb-2">
@@ -295,10 +279,8 @@ export const ProductListPage: React.FC = () => {
           </div>
         </aside>
 
-        {/* ── Product grid ── */}
         <div className="flex-1 min-w-0">
 
-          {/* Sort bar (mobile + top bar) */}
           <div className="flex items-center justify-between mb-4 sticky top-[85px] bg-[#F5F5F5] z-10 py-2">
             <div className="bg-white px-4 py-3 border-b-4 border-orange-500 rounded-sm shadow-sm">
               <h2 className="text-orange-500 uppercase font-medium">
@@ -307,7 +289,6 @@ export const ProductListPage: React.FC = () => {
                   : keyword ? `Kết quả cho "${keyword}"` : 'Gợi Ý Hôm Nay'}
               </h2>
             </div>
-            {/* Mobile sort selector */}
             <select
               id="mobile-sort-select"
               value={sortBy}
@@ -318,7 +299,6 @@ export const ProductListPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Active filter badges */}
           {hasActiveFilters && (
             <div className="flex flex-wrap gap-2 mb-3">
               {categoryId && (
@@ -342,7 +322,6 @@ export const ProductListPage: React.FC = () => {
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
               <p className="text-sm text-red-700">{error}</p>
@@ -356,7 +335,6 @@ export const ProductListPage: React.FC = () => {
             </div>
           )}
 
-          {/* Loading skeletons */}
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
               {Array.from({ length: 10 }).map((_, i) => (
@@ -371,7 +349,7 @@ export const ProductListPage: React.FC = () => {
               ))}
             </div>
           ) : products.length === 0 ? (
-            /* Empty state */
+
             <div className="text-center py-16 bg-white rounded-sm">
               <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -393,7 +371,7 @@ export const ProductListPage: React.FC = () => {
               )}
             </div>
           ) : (
-            /* Product grid */
+
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {products.map(product => (

@@ -22,9 +22,9 @@ public class AdminVoucherController {
     public ResponseEntity<ApiResponse<Page<VoucherResponse>>> getSystemVouchers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Page<VoucherResponse> voucherPage = voucherService.getSystemVouchers(page, size);
-        
+
         return ResponseEntity.ok(ApiResponse.<Page<VoucherResponse>>builder()
                 .status(HttpStatus.OK.value())
                 .message("Lấy danh sách mã giảm giá hệ thống thành công")
@@ -38,7 +38,7 @@ public class AdminVoucherController {
             @com.tmt.ecommerce.common.annotation.CurrentUserId Long userId,
             @PathVariable Long id,
             @jakarta.validation.Valid @RequestBody com.tmt.ecommerce.voucher.dto.request.VoucherUpdateRequest request) {
-        
+
         VoucherResponse response = voucherService.updateVoucher(userId, id, request);
         return ResponseEntity.ok(ApiResponse.<VoucherResponse>builder()
                 .status(HttpStatus.OK.value())
@@ -52,7 +52,7 @@ public class AdminVoucherController {
     public ResponseEntity<ApiResponse<Void>> deleteVoucher(
             @com.tmt.ecommerce.common.annotation.CurrentUserId Long userId,
             @PathVariable Long id) {
-        
+
         voucherService.deleteVoucher(userId, id);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .status(HttpStatus.OK.value())

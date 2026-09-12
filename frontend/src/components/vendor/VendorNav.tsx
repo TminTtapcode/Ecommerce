@@ -14,7 +14,7 @@ export const VendorNav: React.FC = () => {
         }
       })
       .catch(() => {
-        // Silently fail if not vendor or error
+
       });
   }, []);
 
@@ -52,7 +52,6 @@ export const VendorNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex space-x-8 px-6 text-sm font-medium border-t border-gray-50">
         <NavLink
           to="/vendor/products"

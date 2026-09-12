@@ -36,7 +36,7 @@ export const AdminProductListPage: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [page, size, keyword]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -84,8 +84,8 @@ export const AdminProductListPage: React.FC = () => {
             Theo dõi và kiểm duyệt toàn bộ danh mục sản phẩm trên sàn
           </p>
         </div>
-        <Link 
-          to="/admin/products/create" 
+        <Link
+          to="/admin/products/create"
           className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,14 +191,14 @@ export const AdminProductListPage: React.FC = () => {
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        <Link 
-                          to={`/admin/products/${product.id}/edit`} 
+                        <Link
+                          to={`/admin/products/${product.id}/edit`}
                           className="px-3 py-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 text-xs font-semibold transition-colors"
                         >
                           Sửa
                         </Link>
-                        <button 
-                          onClick={() => handleDelete(product.id)} 
+                        <button
+                          onClick={() => handleDelete(product.id)}
                           className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
                         >
                           Xóa

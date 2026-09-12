@@ -34,7 +34,6 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        // Tìm role mặc định là ROLE_USER (nếu chưa có trong DB thì tự động tạo mới)
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
 
@@ -55,7 +54,7 @@ public class AuthenticationService {
     }
 
     public AuthResponse authenticate(UserLoginRequest request) {
-        // AuthenticationManager sẽ tự động đối chiếu mật khẩu băm trong DB
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),

@@ -40,7 +40,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void markAsRead(Long userId, Long notificationId) {
         Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
                 .orElseThrow(() -> new com.tmt.ecommerce.common.exception.AppException(com.tmt.ecommerce.common.exception.ErrorCode.NOT_FOUND));
-        
+
         if (!notification.isRead()) {
             notification.setRead(true);
             notificationRepository.save(notification);

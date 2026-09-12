@@ -37,4 +37,3 @@ export interface VoucherUpdateRequest {
   endDate: string;
   usageLimit?: number;
 }
-

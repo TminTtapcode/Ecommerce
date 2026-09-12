@@ -36,8 +36,7 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex font-['Outfit',sans-serif]">
-      {/* Sidebar */}
-      <div 
+      <div
         className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col hidden md:flex z-10 shadow-xs`}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
@@ -49,8 +48,8 @@ export const AdminLayout: React.FC = () => {
               </span>
             )}
           </Link>
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="text-gray-400 hover:text-orange-600 focus:outline-none transition-colors cursor-pointer"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,8 +66,8 @@ export const AdminLayout: React.FC = () => {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center px-4 py-3 mx-2 rounded-xl transition-all ${
-                  isActive 
-                    ? 'bg-orange-50 text-orange-600 border border-orange-200 shadow-xs font-semibold' 
+                  isActive
+                    ? 'bg-orange-50 text-orange-600 border border-orange-200 shadow-xs font-semibold'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
                 }`}
                 title={!isSidebarOpen ? item.name : ''}
@@ -82,36 +81,31 @@ export const AdminLayout: React.FC = () => {
           })}
         </nav>
       </div>
-      
-      {/* Main Content Area */}
+
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Topbar */}
         <header className="relative z-30 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-xs">
           <div className="flex-1 flex items-center">
-            {/* Global Search */}
             <div className="max-w-md w-full hidden sm:block relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <input 
-                type="text" 
-                placeholder="Tìm kiếm nhanh..." 
+              <input
+                type="text"
+                placeholder="Tìm kiếm nhanh..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 text-gray-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-orange-500 focus:border-orange-500 sm:text-sm transition-all"
               />
             </div>
           </div>
-          
+
           <div className="ml-4 flex items-center space-x-4">
-            {/* Notifications */}
             <div className="relative text-gray-500 hover:text-orange-600 mt-1 cursor-pointer">
               <NotificationDropdown iconClassName="h-6 w-6" />
             </div>
-            
-            {/* Profile dropdown / Avatar */}
+
             <div className="relative group" ref={profileRef}>
-              <button 
+              <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center max-w-xs text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 cursor-pointer"
               >
@@ -120,20 +114,20 @@ export const AdminLayout: React.FC = () => {
                   AD
                 </div>
               </button>
-              <div 
+              <div
                 className={`origin-top-right absolute right-0 mt-2 w-48 rounded-xl shadow-lg py-1 bg-white border border-gray-200 z-50 transition-all ${isProfileOpen ? 'block' : 'hidden group-hover:block'}`}
               >
                 <div className="px-4 py-2 text-xs text-orange-600 border-b border-gray-100 font-bold uppercase tracking-wider">
                   Quản trị viên
                 </div>
-                <Link 
-                  to="/" 
+                <Link
+                  to="/"
                   onClick={() => setIsProfileOpen(false)}
                   className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
                 >
                   Về trang chủ
                 </Link>
-                <button 
+                <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     handleLogout();
@@ -147,7 +141,6 @@ export const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Main content */}
         <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none bg-gray-50">
           <div className="py-6 px-4 sm:px-6 lg:px-8 w-full max-w-[1600px] mx-auto">
             <Outlet />

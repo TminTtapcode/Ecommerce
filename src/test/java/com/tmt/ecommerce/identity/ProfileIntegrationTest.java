@@ -116,7 +116,7 @@ class ProfileIntegrationTest {
     }
     @Test void staleManagedUserDoesNotOverwriteConcurrentSensitiveColumns() {
         new TransactionTemplate(manager).executeWithoutResult(s -> {
-            users.findById(user.getId()).orElseThrow(); // Managed snapshot intentionally predates changes.
+            users.findById(user.getId()).orElseThrow();
             jdbc.update("update users set password_hash=?,status=? where id=?", "new-hash", "INACTIVE", user.getId());
             var result = authenticated(() -> profiles.update(request("Changed", null)));
             assertEquals("Changed", result.fullName());

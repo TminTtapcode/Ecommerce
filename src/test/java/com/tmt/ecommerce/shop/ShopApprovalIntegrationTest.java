@@ -59,7 +59,7 @@ public class ShopApprovalIntegrationTest {
                 .fullName("Test " + roleName)
                 .status("ACTIVE")
                 .build();
-        
+
         Role role = roleRepository.findByName(roleName).orElseGet(() -> {
             Role r = new Role();
             r.setName(roleName);
@@ -72,12 +72,11 @@ public class ShopApprovalIntegrationTest {
     @Test
     @DisplayName("Shop Approval Flow: User requests shop -> Admin approves -> User becomes VENDOR")
     void testShopApprovalFlow() throws Exception {
-        // 1. Setup User and Admin
+
         String uniqueSuffix = System.currentTimeMillis() + "";
         User user = createTestUser("user_" + uniqueSuffix + "@example.com", "ROLE_USER");
         User admin = createTestUser("admin_" + uniqueSuffix + "@example.com", "ROLE_ADMIN");
 
-        // Ensure ROLE_VENDOR exists for assignment
         if (roleRepository.findByName("ROLE_VENDOR").isEmpty()) {
             Role r = new Role();
             r.setName("ROLE_VENDOR");
@@ -87,7 +86,6 @@ public class ShopApprovalIntegrationTest {
         String userToken = jwtService.generateToken(new com.tmt.ecommerce.identity.security.CustomUserDetails(user));
         String adminToken = jwtService.generateToken(new com.tmt.ecommerce.identity.security.CustomUserDetails(admin));
 
-        // 2. User tries to access Vendor API -> Should be 403 Forbidden
         HttpRequest getVendorOrdersReq = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + "/api/v1/vendor/orders"))
                 .header("Authorization", "Bearer " + userToken)
@@ -96,7 +94,6 @@ public class ShopApprovalIntegrationTest {
         HttpResponse<String> vendorResp1 = httpClient.send(getVendorOrdersReq, HttpResponse.BodyHandlers.ofString());
         assertEquals(403, vendorResp1.statusCode(), "User without VENDOR role should get 403");
 
-        // 3. User creates a Shop
         ShopCreateRequest createShopReq = new ShopCreateRequest();
         createShopReq.setName("My Test Shop " + uniqueSuffix);
         createShopReq.setDescription("A shop for testing");
@@ -110,7 +107,6 @@ public class ShopApprovalIntegrationTest {
         HttpResponse<String> createShopResp = httpClient.send(createShopHttpReq, HttpResponse.BodyHandlers.ofString());
         assertEquals(201, createShopResp.statusCode(), "Shop should be created successfully");
 
-        // Verify Shop is PENDING in DB
         List<Shop> shops = shopRepository.findAll().stream()
                 .filter(s -> s.getUserId().equals(user.getId()))
                 .toList();
@@ -119,7 +115,6 @@ public class ShopApprovalIntegrationTest {
         assertEquals(ShopStatus.PENDING, createdShop.getStatus());
         assertEquals(user.getId(), createdShop.getUserId());
 
-        // 4. Admin approves the Shop
         HttpRequest approveShopReq = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + "/api/v1/admin/shops/" + createdShop.getId() + "/approve"))
                 .header("Authorization", "Bearer " + adminToken)
@@ -128,7 +123,6 @@ public class ShopApprovalIntegrationTest {
         HttpResponse<String> approveShopResp = httpClient.send(approveShopReq, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, approveShopResp.statusCode(), "Admin should approve shop successfully");
 
-        // 5. Verify DB state: Shop is ACTIVE, User has ROLE_VENDOR
         Shop updatedShop = shopRepository.findById(createdShop.getId()).orElseThrow();
         assertEquals(ShopStatus.ACTIVE, updatedShop.getStatus());
 
@@ -139,7 +133,6 @@ public class ShopApprovalIntegrationTest {
         boolean hasShopOwnerRole = updatedUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_SHOP_OWNER"));
         assertFalse(hasShopOwnerRole, "System should not use ROLE_SHOP_OWNER anymore");
 
-        // 6. User accesses Vendor API again with NEW TOKEN (roles updated)
         String newUserToken = jwtService.generateToken(new com.tmt.ecommerce.identity.security.CustomUserDetails(updatedUser));
         HttpRequest getVendorOrdersReq2 = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + "/api/v1/vendor/orders"))

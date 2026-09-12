@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = localStorage.getItem('token');
     const identity = decodeUser(token);
     if (!identity || !token) return null;
-    // Concurrent hydration GETs may share a version; only a write invalidates older reads.
+
     const version = body ? ++requestVersion.current : requestVersion.current;
     try {
       const session = { token, generation };
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const saveProfile = useCallback((body: ProfileUpdate) => profileRequest(body), [profileRequest]);
   const invalidateRequests = useCallback(() => { ++requestVersion.current; }, []);
   useEffect(() => {
-    void loadProfile().catch(() => { /* Profile page offers retry; network failure is not logout. */ });
+    void loadProfile().catch(() => {  });
     return invalidateRequests;
   }, [loadProfile, invalidateRequests]);
   useEffect(() => {
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const identity = decodeUser(token);
       setUser(identity);
       setSession(token && identity ? { token, generation: authSessionGuard.capture() } : null);
-      if (identity) void loadProfile().catch(() => { /* Network errors keep the session. */ });
+      if (identity) void loadProfile().catch(() => {  });
     };
     window.addEventListener('storage', changed);
     return () => window.removeEventListener('storage', changed);
@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('token', token);
     setUser(decodeUser(token));
     setSession(decodeUser(token) ? { token, generation: authSessionGuard.capture() } : null);
-    void loadProfile().catch(() => { /* Keep authenticated identity; allow profile retry. */ });
+    void loadProfile().catch(() => {  });
   };
   const logout = () => {
     authSessionGuard.advance();

@@ -27,17 +27,15 @@ public class ProductController {
     public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
             @CurrentUserId Long userId,
             @Valid @RequestBody ProductCreateRequest request) {
-        // @Valid sẽ tự động kiểm tra dữ liệu trước khi chạy vào hàm này
+
         ProductResponse createdProduct = productService.createProduct(userId, request);
 
-        // Bọc dữ liệu vào ApiResponse để đồng bộ với các API khác
         ApiResponse<ProductResponse> response = ApiResponse.<ProductResponse>builder()
                 .status(HttpStatus.CREATED.value())
                 .message("Tạo mới sản phẩm thành công")
                 .data(createdProduct)
                 .build();
 
-        // Trả về HTTP Status 201 (Created)
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @GetMapping
@@ -51,7 +49,6 @@ public class ProductController {
             @RequestParam(required = false) java.math.BigDecimal maxPrice,
             @RequestParam(required = false) String sortBy) {
 
-        // D7.5: reject nếu min > max (cả hai đều được cung cấp)
         if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.<Page<ProductResponse>>builder()
@@ -73,7 +70,6 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
-    // API Lấy chi tiết 1 sản phẩm
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
         ProductResponse product = productService.getProductById(id);
@@ -87,7 +83,6 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
-    /** P2-02: public, exact-category related products. */
     @GetMapping("/{id}/related")
     public ResponseEntity<ApiResponse<java.util.List<ProductResponse>>> getRelatedProducts(
             @PathVariable Long id,
@@ -100,16 +95,13 @@ public class ProductController {
                 .build());
     }
 
-    /**
-     * P2-04: Hybrid Product Recommendation
-     */
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<Page<ProductResponse>>> getRecommendations(
             @CurrentUserId(required = false) Long userId,
             @RequestParam(defaultValue = "12") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(50) Integer limit) {
-        
+
         Page<ProductResponse> recommendationPage = productService.getRecommendedProducts(userId, limit);
-        
+
         return ResponseEntity.ok(ApiResponse.<Page<ProductResponse>>builder()
                 .status(HttpStatus.OK.value())
                 .message("Lấy danh sách gợi ý sản phẩm thành công")

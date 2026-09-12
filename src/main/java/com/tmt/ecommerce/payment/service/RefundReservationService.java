@@ -36,7 +36,7 @@ class RefundReservationService {
             return existing;
         }
         List<Payment> candidates = payments.findSuccessfulVnpayByGroupForUpdate(order.paymentGroupId());
-        // A competing command may have inserted its idempotency row while this command waited on Payment.
+
         replay = refunds.findByIdempotencyKey(idempotencyKey);
         if (replay.isPresent()) {
             RefundAttempt existing = replay.get();

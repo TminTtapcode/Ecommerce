@@ -73,7 +73,7 @@ export const OrderDetailPage: React.FC = () => {
             const myReviews = res.data ?? [];
             existingReview = myReviews.find(r => r.orderId === orderId) || null;
         } catch (e) {
-            // ignore error
+
         }
 
         setReviewModalState({
@@ -137,7 +137,6 @@ export const OrderDetailPage: React.FC = () => {
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <button onClick={() => navigate('/orders')} className="text-gray-500 hover:text-orange-500 flex items-center gap-1 text-sm font-medium">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
@@ -150,7 +149,6 @@ export const OrderDetailPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Order Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-white p-6 rounded-sm shadow-sm">
                     <h3 className="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Địa Chỉ Nhận Hàng</h3>
@@ -168,7 +166,6 @@ export const OrderDetailPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Order Items */}
             <div className="bg-white rounded-sm shadow-sm mb-6">
                 <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                     <h3 className="text-lg font-medium text-gray-800">Sản Phẩm</h3>
@@ -178,10 +175,10 @@ export const OrderDetailPage: React.FC = () => {
                         <div key={item.id} className="flex gap-4 p-6 border-b border-gray-50 last:border-0">
                             <div className="w-24 h-24 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center text-gray-400 shrink-0 overflow-hidden">
                                 {item.imageUrl ? (
-                                    <img 
-                                        src={item.imageUrl} 
-                                        alt={item.productName} 
-                                        className="w-full h-full object-cover" 
+                                    <img
+                                        src={item.imageUrl}
+                                        alt={item.productName}
+                                        className="w-full h-full object-cover"
                                         onError={(e) => {
                                             (e.target as HTMLElement).style.display = 'none';
                                         }}
@@ -213,7 +210,6 @@ export const OrderDetailPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Order Summary */}
             <div className="bg-white rounded-sm shadow-sm p-6 text-sm">
                 <div className="flex justify-end mb-3">
                     <div className="w-64 flex justify-between text-gray-600">
@@ -233,8 +229,7 @@ export const OrderDetailPage: React.FC = () => {
                         <span className="text-2xl font-bold text-orange-500">{formatPrice(order.totalAmount)}</span>
                     </div>
                 </div>
-                
-                {/* State Machine: Cancel button only available while PENDING */}
+
                 {order.status === 'PENDING' && (
                     <div className="flex justify-end pt-4 mt-4 border-t">
                         <button
@@ -260,7 +255,6 @@ export const OrderDetailPage: React.FC = () => {
                 )}
             </div>
 
-            {/* In-page Review Modal */}
             {reviewModalState.isOpen && (
                 <CreateReviewModal
                     isOpen={reviewModalState.isOpen}

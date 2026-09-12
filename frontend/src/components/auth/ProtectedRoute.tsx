@@ -8,8 +8,8 @@ export interface ProtectedRouteProps {
   requireVendor?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
   requireAdmin,
   requireVendor
 }) => {

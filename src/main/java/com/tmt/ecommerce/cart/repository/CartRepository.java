@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Long> {
-    // Tìm giỏ hàng hiện tại của User
+
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"items"})
     Optional<Cart> findByUserId(Long userId);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)

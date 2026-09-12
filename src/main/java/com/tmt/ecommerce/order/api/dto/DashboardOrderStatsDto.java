@@ -4,10 +4,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-/**
- * DTO aggregate thống kê từ Order module, dùng cho dashboard Admin.
- * Đây là contract nội bộ giữa module order và statistics controller.
- */
 public record DashboardOrderStatsDto(
     long totalOrders,
     Map<String, Long> ordersByStatus,

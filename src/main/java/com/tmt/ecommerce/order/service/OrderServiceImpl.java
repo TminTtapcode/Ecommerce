@@ -64,10 +64,6 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         private final VoucherInternalService voucherInternalService;
         private final ApplicationEventPublisher eventPublisher;
 
-        /**
-         * Ma trận chuyển đổi trạng thái hợp lệ cho Vendor.
-         * Key: trạng thái hiện tại, Value: danh sách trạng thái có thể chuyển sang.
-         */
         private static final Map<OrderStatus, List<OrderStatus>> VENDOR_STATE_TRANSITIONS = Map.of(
                 OrderStatus.PENDING, List.of(OrderStatus.CONFIRMED),
                 OrderStatus.CONFIRMED, List.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED)
@@ -78,9 +74,8 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         public CheckoutResponse checkout(Long userId, CheckoutRequest request) {
                 String paymentGroupId = java.util.UUID.randomUUID().toString();
 
-                // 1. Lấy thông tin giỏ hàng thông qua Internal API
                 List<CartItemInternalDto> allCartItems = cartInternalService.getCartItems(userId);
-                
+
                 List<CartItemInternalDto> cartItems;
                 if (request.cartItemIds() != null && !request.cartItemIds().isEmpty()) {
                         cartItems = allCartItems.stream()
@@ -96,18 +91,15 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                         }
                 }
 
-                // 2. LOGIC TÁCH ĐƠN: Dùng cú pháp của Record
-                // Lock selected shops before stock/voucher changes; stable order coordinates with ban.
                 cartItems.stream().map(CartItemInternalDto::shopId).distinct().sorted()
                         .forEach(shopInternalService::requireNotBannedForSale);
 
                 Map<Long, List<CartItemInternalDto>> itemsByShop = cartItems.stream()
                                 .collect(Collectors.groupingBy(CartItemInternalDto::shopId));
 
-                // 3. VOUCHER LOGIC (Sử dụng API mới của Voucher module)
                 VoucherDiscountResult voucherDiscount = null;
                 if (request.voucherCode() != null && !request.voucherCode().trim().isEmpty()) {
-                        // Tính toán subtotal cho từng shop
+
                         Map<Long, BigDecimal> shopTotals = new java.util.HashMap<>();
                         for (Map.Entry<Long, List<CartItemInternalDto>> entry : itemsByShop.entrySet()) {
                                 BigDecimal subTotal = BigDecimal.ZERO;
@@ -119,8 +111,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
 
                         VoucherCalculationRequest calcRequest = new VoucherCalculationRequest(request.voucherCode(), shopTotals);
                         voucherDiscount = voucherInternalService.calculateDiscount(calcRequest);
-                        
-                        // Tăng usage (Atomic Conditional Update), fail fast
+
                         boolean reserved = voucherInternalService.incrementUsage(voucherDiscount.voucherId());
                         if (!reserved) {
                                 throw new IllegalStateException("Mã giảm giá đã hết lượt sử dụng (có người vừa dùng lượt cuối cùng)");
@@ -129,11 +120,9 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
 
                 List<Order> savedOrders = new ArrayList<>();
 
-                // Snapshot thông tin hình ảnh của các sản phẩm biến thể
                 List<Long> allCheckoutVariantIds = cartItems.stream().map(CartItemInternalDto::productVariantId).distinct().toList();
                 Map<Long, ProductVariantInfoDto> checkoutVariantInfoMap = productInternalService.getVariantInfos(allCheckoutVariantIds);
 
-                // 4. Xử lý từng cụm Shop
                 for (Map.Entry<Long, List<CartItemInternalDto>> entry : itemsByShop.entrySet()) {
                         Long shopId = entry.getKey();
                         List<CartItemInternalDto> shopItems = entry.getValue();
@@ -173,11 +162,10 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                                 order.addOrderItem(orderItem);
                         }
 
-                        // Tính discount cho Shop này (Sử dụng kết quả từ Voucher module)
                         BigDecimal shopDiscount = BigDecimal.ZERO;
                         if (voucherDiscount != null && voucherDiscount.discountPerShop().containsKey(shopId)) {
                                 shopDiscount = voucherDiscount.discountPerShop().get(shopId);
-                                
+
                                 if (shopDiscount.compareTo(BigDecimal.ZERO) > 0) {
                                         order.setAppliedVoucherId(voucherDiscount.voucherId());
                                         order.setAppliedVoucherCode(voucherDiscount.code());
@@ -191,11 +179,9 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                         savedOrders.add(orderRepository.save(order));
                 }
 
-                // 5. Dọn dẹp: Xóa các sản phẩm đã thanh toán khỏi giỏ hàng
                 List<Long> checkedOutItemIds = cartItems.stream().map(CartItemInternalDto::cartItemId).toList();
                 cartInternalService.removeCartItems(userId, checkedOutItemIds);
 
-                // 6. Build DTO trả về (đơn hàng mới tạo luôn ở trạng thái PENDING chờ xác nhận)
                 List<OrderResponse> orderResponses = mapToOrderResponses(savedOrders);
                 return new CheckoutResponse(paymentGroupId, orderResponses);
         }
@@ -203,9 +189,9 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         @Override
         @Transactional(readOnly = true)
         public CartPreviewResponse previewCheckout(Long userId, CartPreviewRequest request) {
-                // 1. Lấy thông tin giỏ hàng thông qua Internal API
+
                 List<CartItemInternalDto> allCartItems = cartInternalService.getCartItems(userId);
-                
+
                 List<CartItemInternalDto> cartItems;
                 if (request.cartItemIds() != null && !request.cartItemIds().isEmpty()) {
                         cartItems = allCartItems.stream()
@@ -232,7 +218,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                 BigDecimal totalDiscount = BigDecimal.ZERO;
 
                 if (request.voucherCode() != null && !request.voucherCode().trim().isEmpty()) {
-                        // Tính toán subtotal cho từng shop
+
                         Map<Long, BigDecimal> shopTotals = new java.util.HashMap<>();
                         for (Map.Entry<Long, List<CartItemInternalDto>> entry : itemsByShop.entrySet()) {
                                 BigDecimal subTotal = BigDecimal.ZERO;
@@ -244,8 +230,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
 
                         VoucherCalculationRequest calcRequest = new VoucherCalculationRequest(request.voucherCode(), shopTotals);
                         VoucherDiscountResult voucherDiscount = voucherInternalService.calculateDiscount(calcRequest);
-                        
-                        // Tính tổng discount áp dụng cho toàn đơn hàng
+
                         for (BigDecimal discount : voucherDiscount.discountPerShop().values()) {
                                 totalDiscount = totalDiscount.add(discount);
                         }
@@ -326,7 +311,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                                 OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
                                 orderPage = orderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, orderStatus, pageable);
                         } catch (IllegalArgumentException e) {
-                                // Nếu status không hợp lệ, fallback về lấy tất cả (hoặc throw lỗi 400 Bad Request)
+
                                 orderPage = orderRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
                         }
                 } else {
@@ -342,12 +327,11 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         public OrderResponse getOrderDetail(Long userId, Long orderId) {
                 Order order = orderRepository.findById(orderId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
-                
-                // Kiểm tra quyền sở hữu đơn hàng
+
                 if (!order.getUserId().equals(userId)) {
                         throw new AccessDeniedException("Bạn không có quyền xem đơn hàng này");
                 }
-                
+
                 return mapToOrderResponses(List.of(order)).get(0);
         }
 
@@ -356,17 +340,17 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         public OrderResponse cancelOrder(Long userId, Long orderId) {
                 Order order = orderRepository.findByIdForUpdate(orderId)
                                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-                
+
                 if (!order.getUserId().equals(userId)) {
                         throw new AppException(ErrorCode.ORDER_NOT_FOUND);
                 }
-                
+
                 if (order.getStatus() != OrderStatus.PENDING) {
                         throw new AppException(ErrorCode.INVALID_ORDER_STATE_TRANSITION);
                 }
-                
+
                 log.info("Buyer userId={} canceled orderId={}", userId, orderId);
-                
+
                 return applyOrderTransition(order, OrderStatus.CANCELLED);
         }
 
@@ -375,7 +359,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         public OrderResponse confirmDelivery(Long userId, Long orderId) {
                 Order order = orderRepository.findByIdForUpdate(orderId)
                                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-                // Return the same not-found result for a foreign order, so order IDs do not leak.
+
                 if (!order.getUserId().equals(userId)) {
                         throw new AppException(ErrorCode.ORDER_NOT_FOUND);
                 }
@@ -426,8 +410,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         @Override
         @Transactional
         public void confirmPendingOrdersByGroup(String paymentGroupId) {
-                // Payment row is locked by the caller; all Order rows are locked in ID order.
-                // This is a current locking read, shared with vendor cancellation/shipping.
+
                 List<Order> orders = orderRepository.findByPaymentGroupIdForUpdate(paymentGroupId);
                 Map<Long, OrderStatus> skipped = new java.util.LinkedHashMap<>();
                 for (Order order : orders) {
@@ -441,7 +424,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                 }
                 boolean missingGroup = orders.isEmpty();
                 if (missingGroup || !skipped.isEmpty()) {
-                        // Snapshot values, not managed entities, for reconciliation after successful commit.
+
                         org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
                                 new org.springframework.transaction.support.TransactionSynchronization() {
                                         @Override public void afterCommit() {
@@ -451,8 +434,6 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                                 });
                 }
         }
-
-        // === ADMIN ORDER MANAGEMENT ===
 
         @Override
         @Transactional(readOnly = true)
@@ -482,8 +463,6 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
                 return mapToOrderResponses(List.of(order)).get(0);
         }
-
-        // === VENDOR ORDER MANAGEMENT ===
 
         @Override
         @Transactional(readOnly = true)
@@ -523,17 +502,15 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         @Override
         @Transactional
         public OrderResponse updateVendorOrderStatus(Long userId, Long orderId, VendorOrderStatusUpdateRequest request) {
-                // All vendor transitions serialize on the same row, including cancellation vs shipping.
+
                 Order order = orderRepository.findByIdForUpdate(orderId)
                                 .orElseThrow(() -> new AppException(
                                         ErrorCode.ORDER_NOT_FOUND));
 
-                // Kiểm tra quyền sở hữu Shop
                 if (!shopInternalService.isShopOwner(order.getShopId(), userId)) {
                         throw new AccessDeniedException("Bạn không có quyền cập nhật đơn hàng này.");
                 }
 
-                // Kiểm tra tính hợp lệ của chuyển đổi trạng thái
                 validateVendorStateTransition(order.getStatus(), request.status());
 
                 log.info("Vendor userId={} cập nhật đơn hàng #{} từ {} sang {}",
@@ -542,7 +519,6 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                 return applyOrderTransition(order, request.status());
         }
 
-        // Same-module shared side effects. Callers must hold the Order lock and validate their own policy.
         OrderResponse applyOrderTransition(Order order, OrderStatus target) {
                 return applyOrderTransition(order, target, null, null);
         }
@@ -557,7 +533,6 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                                 order.getStatus().name(), order.getTotalAmount());
         }
 
-        // Callers must hold the Order lock and pass evidence for every SHIPPED -> DELIVERED transition.
         OrderResponse applyOrderTransition(Order order, OrderStatus target,
                         DeliveryConfirmationSource deliverySource, Long deliveryActorUserId) {
                 OrderStatus oldStatus = order.getStatus();
@@ -576,7 +551,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                                 throw new AppException(
                                         ErrorCode.INTERNAL_SERVER_ERROR);
                         }
-                        // Stable item order; Product joins this transaction and must fail closed.
+
                         for (OrderItem item : order.getItems().stream()
                                 .sorted(java.util.Comparator.comparing(OrderItem::getProductVariantId,
                                         java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
@@ -585,7 +560,7 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                         }
                 }
                 Order updatedOrder = orderRepository.save(order);
-                
+
                 OrderStatus newStatus = updatedOrder.getStatus();
                 if (oldStatus == OrderStatus.PENDING && newStatus == OrderStatus.CONFIRMED) {
                         eventPublisher.publishEvent(new OrderConfirmedEvent(
@@ -610,13 +585,10 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                                 updatedOrder.getId(), updatedOrder.getUserId(), updatedOrder.getShopId(), cancelItems
                         ));
                 }
-                
+
                 return mapToOrderResponses(List.of(updatedOrder)).get(0);
         }
 
-        /**
-         * Kiểm tra chuyển đổi trạng thái có hợp lệ theo Ma trận State Machine hay không.
-         */
         private void validateVendorStateTransition(OrderStatus currentStatus, OrderStatus newStatus) {
                 List<OrderStatus> allowedTransitions = VENDOR_STATE_TRANSITIONS.get(currentStatus);
                 if (allowedTransitions == null || !allowedTransitions.contains(newStatus)) {
@@ -648,9 +620,9 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
         @Override
         @Transactional(readOnly = true)
         public List<com.tmt.ecommerce.order.api.dto.DeliveredOrderData> getDeliveredOrdersWithVariantsByUserId(Long userId) {
-                List<com.tmt.ecommerce.order.repository.OrderVariantProjection> projections = 
+                List<com.tmt.ecommerce.order.repository.OrderVariantProjection> projections =
                         orderRepository.findDeliveredOrderVariants(userId, OrderStatus.DELIVERED);
-                
+
                 Map<Long, List<Long>> grouped = projections.stream()
                         .collect(Collectors.groupingBy(
                                 com.tmt.ecommerce.order.repository.OrderVariantProjection::getOrderId,
@@ -665,51 +637,42 @@ public class OrderServiceImpl implements OrderService, OrderInternalService {
                         .collect(Collectors.toList());
         }
 
-        // ── P1-05: Admin Dashboard Statistics ────────────────────────────────────
-
         @Override
         @Transactional(readOnly = true)
         public com.tmt.ecommerce.order.api.dto.DashboardOrderStatsDto getDashboardOrderStats(
                 java.time.LocalDateTime startDate, java.time.LocalDateTime endDate) {
 
-            // Default: all-time if no range provided
             java.time.LocalDateTime start = startDate != null ? startDate : java.time.LocalDateTime.of(2000, 1, 1, 0, 0);
             java.time.LocalDateTime end   = endDate   != null ? endDate   : java.time.LocalDateTime.now().plusYears(1);
 
-            // 1. Total orders in range
             long totalOrders = orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.PENDING, start, end)
                 + orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.CONFIRMED, start, end)
                 + orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.SHIPPED, start, end)
                 + orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.DELIVERED, start, end)
                 + orderRepository.countByStatusAndCreatedAtBetween(OrderStatus.CANCELLED, start, end);
 
-            // 2. Orders by status
             Map<String, Long> ordersByStatus = new java.util.LinkedHashMap<>();
             for (OrderStatus s : OrderStatus.values()) {
                 ordersByStatus.put(s.name(), orderRepository.countByStatusAndCreatedAtBetween(s, start, end));
             }
 
-            // 3. Revenue = SUM(totalAmount) for DELIVERED orders in range
             BigDecimal deliveredRevenue = orderRepository.sumDeliveredRevenueByCreatedAtBetween(start, end);
             if (deliveredRevenue == null) deliveredRevenue = BigDecimal.ZERO;
 
-            // 4. AOV
             long deliveredCount = ordersByStatus.getOrDefault(OrderStatus.DELIVERED.name(), 0L);
             BigDecimal aov = deliveredCount > 0
                 ? deliveredRevenue.divide(BigDecimal.valueOf(deliveredCount), 2, java.math.RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
-            // 5. Daily chart data
             List<com.tmt.ecommerce.order.api.dto.DashboardOrderStatsDto.DailyChartPointDto> dailyChart =
                 orderRepository.getDailyOrderChartData(start, end).stream()
                     .map(row -> new com.tmt.ecommerce.order.api.dto.DashboardOrderStatsDto.DailyChartPointDto(
                         row[0].toString(),
                         ((Number) row[1]).longValue(),
-                        BigDecimal.ZERO // daily revenue not queried here (chart shows order count only)
+                        BigDecimal.ZERO
                     ))
                     .collect(Collectors.toList());
 
-            // 6. Recent 10 orders (not date-filtered — always latest)
             List<com.tmt.ecommerce.order.api.dto.DashboardOrderStatsDto.RecentOrderDto> recent =
                 orderRepository.findTop10ByOrderByCreatedAtDesc().stream()
                     .map(o -> new com.tmt.ecommerce.order.api.dto.DashboardOrderStatsDto.RecentOrderDto(

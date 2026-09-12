@@ -23,7 +23,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCart(null);
       return;
     }
-    
+
     setLoading(true);
     try {
       const response = await cartApi.getCart();
@@ -66,7 +66,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       alert("Vui lòng đăng nhập để thêm vào giỏ hàng");
       return;
     }
-    
+
     try {
       await cartApi.addToCart({ variantId, quantity });
       await fetchCart();

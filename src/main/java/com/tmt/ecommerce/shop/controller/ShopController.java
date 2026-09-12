@@ -1,6 +1,6 @@
 package com.tmt.ecommerce.shop.controller;
 
-import com.tmt.ecommerce.common.annotation.CurrentUserId; // <-- Import Annotation mới
+import com.tmt.ecommerce.common.annotation.CurrentUserId;
 import com.tmt.ecommerce.common.dto.ApiResponse;
 import com.tmt.ecommerce.shop.dto.ShopCreateRequest;
 import com.tmt.ecommerce.shop.service.ShopService;
@@ -19,7 +19,7 @@ public class ShopController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<Void>> registerShop(
-            @CurrentUserId Long userId, // <-- Xịn xò chưa! Mọi thứ tự động được Spring bơm vào đây
+            @CurrentUserId Long userId,
             @Valid @RequestBody ShopCreateRequest request) {
 
         shopService.createShop(userId, request);

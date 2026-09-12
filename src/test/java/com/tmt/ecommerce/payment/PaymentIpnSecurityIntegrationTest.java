@@ -61,7 +61,7 @@ public class PaymentIpnSecurityIntegrationTest {
     void setUp() {
         httpClient = HttpClient.newHttpClient();
         objectMapper = new ObjectMapper();
-        
+
         when(paymentStrategyFactory.getStrategy(PaymentMethod.VNPAY)).thenReturn(mockVnPayStrategy);
         when(mockVnPayStrategy.createPaymentUrl(any(), any(), any())).thenReturn("http://vnpay.sandbox.vn/pay");
     }
@@ -149,7 +149,6 @@ public class PaymentIpnSecurityIntegrationTest {
         Payment payment = paymentRepository.findByPaymentGroupIdOrderByCreatedAtDesc(paymentGroupId).get(0);
         String txnRef = payment.getTransactionId();
 
-        // First IPN call
         String url1 = UriComponentsBuilder.fromUriString(getBaseUrl())
                 .queryParam("vnp_TxnRef", txnRef)
                 .queryParam("vnp_ResponseCode", "00")
@@ -168,15 +167,13 @@ public class PaymentIpnSecurityIntegrationTest {
         Payment updatedPayment = paymentRepository.findById(payment.getId()).orElseThrow();
         assertEquals(PaymentStatus.SUCCESS, updatedPayment.getStatus());
 
-        // Second IPN call (Duplicate)
         HttpRequest request2 = HttpRequest.newBuilder().uri(URI.create(url1)).GET().build();
         HttpResponse<String> response2 = httpClient.send(request2, HttpResponse.BodyHandlers.ofString());
 
         assertEquals(200, response2.statusCode());
         Map<String, String> body2 = objectMapper.readValue(response2.body(), Map.class);
-        assertEquals("00", body2.get("RspCode")); // Should still return 00
+        assertEquals("00", body2.get("RspCode"));
 
-        // Verify state is still SUCCESS
         Payment finalPayment = paymentRepository.findById(payment.getId()).orElseThrow();
         assertEquals(PaymentStatus.SUCCESS, finalPayment.getStatus());
     }

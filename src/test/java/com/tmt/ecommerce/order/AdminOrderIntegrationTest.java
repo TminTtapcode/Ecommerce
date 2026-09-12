@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Real MySQL, committed fixtures, separate connections/transactions for competing requests. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AdminOrderIntegrationTest {
     @org.springframework.boot.test.web.server.LocalServerPort int port;
@@ -63,7 +62,7 @@ class AdminOrderIntegrationTest {
     String token;
 
     @BeforeEach void setup() {
-        // Refuse accidental use of the application database before inserting fixtures.
+
         assertTrue(jdbc.queryForObject("select database()", String.class).startsWith("ecommerce_s103_s104_s105"));
         tx = new TransactionTemplate(manager);
         var vendorRole = roles.findByName("ROLE_VENDOR").orElseGet(() -> roles.save(
@@ -206,7 +205,7 @@ class AdminOrderIntegrationTest {
         assertState(order, OrderStatus.CONFIRMED, 10, 20, 30); assertEquals(0, auditCount());
     }
     @Test void databaseHistoryInsertFailureRollsBackRestoredStock() {
-        // Real DB failure scoped to this fixture; never alters application schema.
+
         jdbc.execute("ALTER TABLE order_admin_status_history ADD CONSTRAINT p101_history_failure CHECK (order_id <> " + order + ")");
         try {
             assertThrows(RuntimeException.class, () -> admin(OrderStatus.CONFIRMED, OrderStatus.CANCELLED));
@@ -317,7 +316,7 @@ class AdminOrderIntegrationTest {
                 payments.findByTransactionIdForUpdate(pending.getTransactionId()).orElseThrow(); paymentLocked.countDown();
                 gateway.processVnPayIpn(params);
             }));
-            // Neither worker can finish if Admin adds a Payment lock after taking Order.
+
             admin.get(5, TimeUnit.SECONDS); ipn.get(5, TimeUnit.SECONDS);
             assertState(order, priorSuccess ? OrderStatus.SHIPPED : OrderStatus.CONFIRMED, 10, 20, 30);
             assertEquals(priorSuccess ? 1 : 0, auditCount());

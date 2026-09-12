@@ -46,7 +46,6 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    // ĐÃ CHỈNH SỬA: Tự động trích xuất Role từ UserDetails và đưa vào Token
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
 
@@ -56,12 +55,11 @@ public class JwtService {
             extraClaims.put("fullName", principal.getFullName());
         }
 
-        // Lấy danh sách quyền (Roles) và chuyển thành List<String>
         var roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        extraClaims.put("roles", roles); // Nhét Roles vào Payload của JWT
+        extraClaims.put("roles", roles);
 
         return generateToken(extraClaims, userDetails);
     }

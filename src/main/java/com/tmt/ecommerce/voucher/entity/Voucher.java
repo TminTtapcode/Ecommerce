@@ -22,27 +22,27 @@ public class Voucher {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String code; // e.g. "SUMMER2026"
+    private String code;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private VoucherScope scope; // SYSTEM, SHOP
+    private VoucherScope scope;
 
     @Column(name = "shop_id")
-    private Long shopId; // Null if scope == SYSTEM
+    private Long shopId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private VoucherType type; // PERCENTAGE, FIXED_AMOUNT
+    private VoucherType type;
 
     @Column(name = "discount_value", nullable = false)
-    private BigDecimal discountValue; // e.g., 10 (for 10%), or 20000 (VND)
+    private BigDecimal discountValue;
 
     @Column(name = "max_discount")
-    private BigDecimal maxDiscount; // Max cap for PERCENTAGE
+    private BigDecimal maxDiscount;
 
     @Column(name = "min_order_value")
-    private BigDecimal minOrderValue; // Minimum spend required
+    private BigDecimal minOrderValue;
 
     @Column(name = "start_date")
     private LocalDateTime startDate;

@@ -22,7 +22,7 @@ public class AdminShopController {
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Page<com.tmt.ecommerce.shop.dto.ShopResponse> shopPage = shopService.getAdminShops(status, page, size);
 
         return ResponseEntity.ok(ApiResponse.<Page<com.tmt.ecommerce.shop.dto.ShopResponse>>builder()
@@ -33,7 +33,7 @@ public class AdminShopController {
     }
 
     @PutMapping("/{shopId}/approve")
-    // Chỉ những User mang token có ROLE_ADMIN mới được gọi API này
+
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> approveShop(@PathVariable Long shopId) {
 

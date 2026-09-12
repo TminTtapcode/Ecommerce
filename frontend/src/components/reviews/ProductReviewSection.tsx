@@ -15,13 +15,11 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  
-  // State for vendor reply
+
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyComment, setReplyComment] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
-  // State for Review features
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<ReviewResponse | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<number>(0);
@@ -66,7 +64,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
   }, [productId, page, user]);
 
   useEffect(() => {
-    // Check if we need to open modal automatically from URL params
+
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
     const orderIdStr = params.get('orderId');
@@ -77,8 +75,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
       if (variantIdStr) {
         setCurrentVariantId(parseInt(variantIdStr, 10));
       }
-      
-      // Call getMyReviews to see if user already reviewed this order
+
       const token = localStorage.getItem('token');
       if (token) {
         reviewApi.getMyReviews(productId).then(res => {
@@ -94,15 +91,14 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
         setEditingReview(null);
         setIsModalOpen(true);
       }
-      
-      // Clean up URL to avoid reopening on refresh
+
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [productId]);
 
   const handleReplySubmit = async (reviewId: number) => {
     if (!replyComment.trim()) return;
-    
+
     setIsSubmittingReply(true);
     try {
       const response = await reviewApi.replyReview(reviewId, { replyComment });
@@ -165,11 +161,10 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
           </button>
         )}
       </div>
-      
+
       {summary && summary.totalReviews > 0 ? (
         <>
           <div className="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b border-gray-200">
-            {/* Rating Summary */}
             <div className="flex flex-col items-center justify-center md:w-1/3">
               <div className="text-5xl font-bold text-gray-800 mb-2">
                 {summary.averageRating.toFixed(1)}
@@ -185,8 +180,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
                 {summary.totalReviews} đánh giá
               </div>
             </div>
-            
-            {/* Rating Breakdown */}
+
             <div className="flex-1">
               {[5, 4, 3, 2, 1].map((star) => {
                 const count = summary.ratingCounts[star] || 0;
@@ -204,7 +198,6 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
             </div>
           </div>
 
-          {/* Review List */}
           <div className="space-y-6">
             {reviews.map((review) => (
               <div key={review.id} className="border-b border-gray-100 pb-6 last:border-0 relative">
@@ -224,8 +217,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
                       </span>
                     </div>
                   </div>
-                  
-                  {/* Actions for review owner */}
+
                   {user && user.userId === review.userId && (
                     <div className="flex space-x-3">
                       <button onClick={() => handleEditClick(review)} className="text-sm text-blue-500 hover:text-blue-700 font-medium">Sửa</button>
@@ -233,10 +225,9 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
                     </div>
                   )}
                 </div>
-                
+
                 <p className="text-gray-700 mt-2 whitespace-pre-line">{review.comment}</p>
-                
-                {/* Images */}
+
                 {review.imageUrls && review.imageUrls.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {review.imageUrls.map((url, idx) => (
@@ -246,8 +237,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
                     ))}
                   </div>
                 )}
-                
-                {/* Vendor Reply Display */}
+
                 {review.vendorReply && (
                   <div className="mt-4 bg-gray-50 p-4 rounded-md border-l-4 border-blue-500 ml-4">
                     <div className="flex justify-between">
@@ -259,18 +249,16 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
                     <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">{review.vendorReply}</p>
                   </div>
                 )}
-                
-                {/* Vendor Reply Action */}
+
                 {isVendor && !review.vendorReply && replyingTo !== review.id && (
-                  <button 
+                  <button
                     onClick={() => setReplyingTo(review.id)}
                     className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
                   >
                     Phản hồi đánh giá này
                   </button>
                 )}
-                
-                {/* Vendor Reply Input */}
+
                 {replyingTo === review.id && (
                   <div className="mt-4 ml-4">
                     <textarea
@@ -281,13 +269,13 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
                       onChange={(e) => setReplyComment(e.target.value)}
                     ></textarea>
                     <div className="flex justify-end space-x-2 mt-2">
-                      <button 
+                      <button
                         onClick={() => { setReplyingTo(null); setReplyComment(''); }}
                         className="px-3 py-1 text-sm border rounded text-gray-600 hover:bg-gray-50"
                       >
                         Hủy
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleReplySubmit(review.id)}
                         disabled={isSubmittingReply || !replyComment.trim()}
                         className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
@@ -300,8 +288,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
               </div>
             ))}
           </div>
-          
-          {/* Pagination */}
+
           {totalPages > 1 && (
             <div className="mt-8 flex justify-center space-x-2">
               <button
@@ -347,7 +334,6 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({ prod
         </div>
       )}
 
-      {/* Review Modal */}
       <CreateReviewModal
         productId={productId}
         orderId={currentOrderId}

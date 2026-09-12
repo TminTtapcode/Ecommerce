@@ -44,7 +44,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentUserId,
   } = useChat();
 
-  // Calculate total unread messages
   const totalUnreadCount = useMemo(() => {
     return rooms.reduce((acc, r) => acc + (r.unreadCount || 0), 0);
   }, [rooms]);
@@ -77,7 +76,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [chatOpenShop, setActiveRoomId]
   );
 
-  // Close chat on logout
   useEffect(() => {
     if (!isAuthenticated) {
       setIsOpen(false);

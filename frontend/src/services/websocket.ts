@@ -36,11 +36,11 @@ class WebSocketService {
           if (!current()) { void client.deactivate({ force: true }); return; }
           client.subscribe('/user/queue/messages', frame => {
             if (!current()) return;
-            try { const value = JSON.parse(frame.body); this.messages.forEach(cb => cb(value)); } catch { /* Invalid frame ignored. */ }
+            try { const value = JSON.parse(frame.body); this.messages.forEach(cb => cb(value)); } catch {  }
           });
           client.subscribe('/user/queue/notifications', frame => {
             if (!current()) return;
-            try { const value = JSON.parse(frame.body); if (Number.isSafeInteger(value.id)) this.notifications.forEach(cb => cb(value)); } catch { /* Invalid frame ignored. */ }
+            try { const value = JSON.parse(frame.body); if (Number.isSafeInteger(value.id)) this.notifications.forEach(cb => cb(value)); } catch {  }
           });
           this.status(true);
         },

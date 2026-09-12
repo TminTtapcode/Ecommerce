@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Real MySQL, committed fixtures, separate connections/transactions for competing requests. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class InventoryCancellationIntegrationTest {
     @org.springframework.boot.test.web.server.LocalServerPort int port;
@@ -56,7 +55,7 @@ class InventoryCancellationIntegrationTest {
     String token;
 
     @BeforeEach void setup() {
-        // Refuse accidental use of the application database before inserting fixtures.
+
         assertTrue(jdbc.queryForObject("select database()", String.class).startsWith("ecommerce_s103"));
         tx = new TransactionTemplate(manager);
         var vendorRole = roles.findByName("ROLE_VENDOR").orElseGet(() -> roles.save(
@@ -129,7 +128,7 @@ class InventoryCancellationIntegrationTest {
         assertState(broken, OrderStatus.CONFIRMED, 10, 20, 30);
     }
     @Test void databaseFailureOnSecondProductUpdateRollsBackEverything() {
-        // First restoration fits, second exceeds the real INT column. Exercises DB failure after variant UPDATE.
+
         jdbc.update("update products set stock_quantity = ? where id = ?", Integer.MAX_VALUE - 2, product);
         assertThrows(RuntimeException.class, () -> transition(order, OrderStatus.CANCELLED));
         assertState(order, OrderStatus.CONFIRMED, 10, 20, Integer.MAX_VALUE - 2);

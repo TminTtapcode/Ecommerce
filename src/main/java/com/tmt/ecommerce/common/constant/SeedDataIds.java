@@ -4,7 +4,6 @@ public final class SeedDataIds {
 
     private SeedDataIds() {}
 
-    // Users
     public static final Long ADMIN_USER_ID = 1L;
     public static final Long VENDOR_1_ID = 2L;
     public static final Long VENDOR_2_ID = 3L;
@@ -16,25 +15,21 @@ public final class SeedDataIds {
     public static final Long CUSTOMER_5_ID = 9L;
     public static final Long CUSTOMER_6_ID = 10L;
 
-    // Shops
     public static final Long SHOP_1_ID = 1L;
     public static final Long SHOP_2_ID = 2L;
     public static final Long SHOP_3_ID = 3L;
 
-    // Categories
     public static final Long CAT_ELECTRONICS_ID = 1L;
     public static final Long CAT_COMPUTERS_ID = 2L;
     public static final Long CAT_FASHION_ID = 3L;
     public static final Long CAT_HOME_ID = 4L;
 
-    // Brands
     public static final Long BRAND_APPLE_ID = 1L;
     public static final Long BRAND_SAMSUNG_ID = 2L;
     public static final Long BRAND_SONY_ID = 3L;
     public static final Long BRAND_NIKE_ID = 4L;
     public static final Long BRAND_ADIDAS_ID = 5L;
 
-    // Product Variants (Assuming they are created in order in ProductDataInitializer)
     public static final Long VARIANT_P1_1_ID = 1L;
     public static final Long VARIANT_P1_2_ID = 2L;
     public static final Long VARIANT_P2_1_ID = 3L;
@@ -43,7 +38,6 @@ public final class SeedDataIds {
     public static final Long VARIANT_P4_1_ID = 6L;
     public static final Long VARIANT_P5_1_ID = 7L;
 
-    // Orders & Payments
     public static final Long ORDER_1_ID = 1L;
     public static final Long ORDER_2_ID = 2L;
     public static final Long ORDER_3_ID = 3L;

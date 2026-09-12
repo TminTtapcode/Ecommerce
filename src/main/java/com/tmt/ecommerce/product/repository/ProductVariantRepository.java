@@ -20,12 +20,10 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"product"})
     List<ProductVariant> findByIdIn(List<Long> ids);
 
-    // Kỹ thuật Atomic Update: Trừ kho biến thể
     @Modifying
     @Query("UPDATE ProductVariant pv SET pv.stockQuantity = pv.stockQuantity - :quantity WHERE pv.id = :id AND pv.stockQuantity >= :quantity")
     int deductStock(@Param("id") Long id, @Param("quantity") Integer quantity);
 
-    // Kỹ thuật Atomic Update: Hoàn trả kho biến thể khi hủy đơn
     @Modifying
     @Query("UPDATE ProductVariant pv SET pv.stockQuantity = pv.stockQuantity + :quantity WHERE pv.id = :id")
     int restoreStock(@Param("id") Long id, @Param("quantity") Integer quantity);

@@ -40,7 +40,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
         setComment(initialData.comment);
         setImageUrls(initialData.imageUrls || []);
       } else {
-        setRating(5); // Default to 5 stars for better UX
+        setRating(5);
         setComment('');
         setImageUrls([]);
       }
@@ -54,7 +54,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       setImageFiles((prev) => [...prev, ...filesArray]);
-      
+
       const newPreviews = filesArray.map(file => URL.createObjectURL(file));
       setImagePreviews((prev) => [...prev, ...newPreviews]);
     }
@@ -84,11 +84,11 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
       setError('Vui lòng nhập nội dung đánh giá');
       return;
     }
-    
+
     setIsSubmitting(true);
     setError(null);
     try {
-      // 1. Upload new images if any
+
       const newUploadedUrls: string[] = [];
       for (const file of imageFiles) {
         const uploadRes = await mediaApi.uploadImage(file);
@@ -98,14 +98,14 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
       const finalImageUrls = [...imageUrls, ...newUploadedUrls];
 
       if (initialData) {
-        // Edit mode
+
         await reviewApi.updateReview(initialData.id, {
           rating,
           comment,
           imageUrls: finalImageUrls,
         });
       } else {
-        // Create mode
+
         await reviewApi.createReview({
           productId,
           orderId,
@@ -115,7 +115,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
           imageUrls: finalImageUrls,
         });
       }
-      
+
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -200,7 +200,6 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-semibold mb-1.5">Thêm hình ảnh (Tuỳ chọn)</label>
             <div className="flex flex-wrap gap-2.5 mb-2">
-              {/* Existing Images */}
               {imageUrls.map((url, index) => (
                 <div key={`existing-${index}`} className="relative group">
                   <img src={url} alt="Review" className="w-16 h-16 object-cover rounded-xl border border-gray-200" />
@@ -215,8 +214,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
                   </button>
                 </div>
               ))}
-              
-              {/* New Previews */}
+
               {imagePreviews.map((preview, index) => (
                 <div key={`new-${index}`} className="relative group">
                   <img src={preview} alt="Preview" className="w-16 h-16 object-cover rounded-xl border border-gray-200" />
@@ -231,7 +229,7 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
                   </button>
                 </div>
               ))}
-              
+
               <label className="w-16 h-16 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-500 hover:bg-orange-50/30 transition-colors">
                 <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
                 <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

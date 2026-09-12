@@ -22,7 +22,7 @@ public class Notification {
     private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId; // Recipient of the notification
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

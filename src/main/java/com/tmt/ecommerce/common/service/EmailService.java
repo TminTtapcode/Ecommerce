@@ -14,7 +14,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Async // Đẩy hàm này ra một luồng riêng biệt, không block luồng chính
+    @Async
     public void sendShopApprovalNotification(String toEmail, String shopName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -31,7 +31,7 @@ public class EmailService {
 
         } catch (Exception e) {
             log.error("Lỗi khi gửi email tới {}: {}", toEmail, e.getMessage());
-            // Vì chạy @Async, lỗi ở đây sẽ không làm hỏng transaction duyệt shop của Admin
+
         }
     }
 }

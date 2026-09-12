@@ -1,9 +1,9 @@
 import apiClient from './apiClient';
-import type { 
-  ProductResponse, 
-  PageResponse, 
-  ProductCreateRequest, 
-  ProductUpdateRequest 
+import type {
+  ProductResponse,
+  PageResponse,
+  ProductCreateRequest,
+  ProductUpdateRequest
 } from './types/product.types';
 import type { ApiResponse } from './types/common.types';
 

@@ -15,7 +15,6 @@ export interface ProductVariantResponse {
   stockQuantity: number;
   imageUrl?: string;
 
-  // Backward compatibility aliases
   price?: number;
   attributes?: Record<string, any>;
 }
@@ -35,7 +34,6 @@ export interface ProductResponse {
   images: ProductImageResponse[];
   variants: ProductVariantResponse[];
 
-  // Backward compatibility aliases
   price?: number;
   thumbnailUrl?: string;
   imageResponses?: ProductImageResponse[];
@@ -47,7 +45,7 @@ export interface ProductVariantRequest {
   name?: string;
   originalPrice?: number;
   salePrice?: number;
-  price?: number; // fallback
+  price?: number;
   stockQuantity: number;
   imageUrl?: string;
   attributes?: Record<string, any>;
@@ -71,7 +69,6 @@ export interface ProductCreateRequest {
   images: ProductImageRequest[];
   variants: ProductVariantRequest[];
 
-  // Optional legacy / alternatives
   shopId?: number;
   originalPrice?: number;
   salePrice?: number;

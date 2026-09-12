@@ -4,6 +4,6 @@ public interface IdentityInternalService {
     String assignShopOwnerRole(Long userId);
     String getUserFullNameOrDefault(Long userId);
     boolean hasRole(Long userId, String roleName);
-    /** Count total registered users — for Admin Dashboard. */
+
     long countUsers();
 }

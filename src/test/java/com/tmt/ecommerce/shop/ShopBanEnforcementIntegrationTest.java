@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Real MySQL, committed fixtures, separate connections/transactions for competing requests. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ShopBanEnforcementIntegrationTest {
     @org.springframework.boot.test.web.server.LocalServerPort int port;
@@ -58,7 +57,7 @@ class ShopBanEnforcementIntegrationTest {
     String token;
 
     @BeforeEach void setup() {
-        // Refuse accidental use of the application database before inserting fixtures.
+
         assertTrue(jdbc.queryForObject("select database()", String.class).startsWith("ecommerce_s103_s104_s105"));
         tx = new TransactionTemplate(manager);
         var vendorRole = roles.findByName("ROLE_VENDOR").orElseGet(() -> roles.save(

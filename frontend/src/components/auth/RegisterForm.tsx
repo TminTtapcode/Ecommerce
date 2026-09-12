@@ -13,7 +13,7 @@ export const RegisterForm: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; fullName?: string; confirmPassword?: string; phone?: string }>({});
@@ -93,7 +93,7 @@ export const RegisterForm: React.FC = () => {
             {globalError}
           </div>
         )}
-        
+
         <Input
           label="Họ và tên"
           type="text"
@@ -103,7 +103,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.fullName}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Email"
           type="email"
@@ -113,7 +113,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.email}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Số điện thoại"
           type="tel"
@@ -123,7 +123,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.phone}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Mật khẩu"
           type="password"
@@ -133,7 +133,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.password}
           disabled={isLoading}
         />
-        
+
         <Input
           label="Xác nhận mật khẩu"
           type="password"
@@ -143,7 +143,7 @@ export const RegisterForm: React.FC = () => {
           error={fieldErrors.confirmPassword}
           disabled={isLoading}
         />
-        
+
         <Button type="submit" loading={isLoading}>
           Đăng ký tài khoản
         </Button>

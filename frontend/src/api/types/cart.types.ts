@@ -21,7 +21,6 @@ export interface CartItemResponse {
   attributes?: Record<string, any>;
   isAvailable: boolean;
 
-  // Aliases for compatibility
   id?: number;
   productId?: number;
   variantId?: number;
@@ -35,7 +34,6 @@ export interface CartResponse {
   items: CartItemResponse[];
   totalAmount: number;
 
-  // Aliases for compatibility
   totalPrice?: number;
   totalItems?: number;
 }

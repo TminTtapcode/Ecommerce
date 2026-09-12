@@ -14,7 +14,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ icon
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -29,7 +28,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ icon
     if (!notification.isRead && !await read(notification.id)) return;
     setIsOpen(false);
 
-    // Navigate based on type
     const route = getNotificationRoute(notification.type, notification.referenceId);
     if (route) {
       navigate(route);
@@ -45,8 +43,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ icon
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell Icon Trigger */}
-      <button 
+      <button
         className="relative p-1 rounded-full hover:text-orange-500 focus:outline-none flex items-center justify-center transition-colors"
         onClick={() => { if (!isOpen) refresh(); setIsOpen(!isOpen); }}
         title="Thông báo"
@@ -61,14 +58,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ icon
         )}
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-md shadow-xl border border-gray-100 z-50 overflow-hidden flex flex-col max-h-[80vh]">
-          {/* Header */}
           <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
             <h3 className="font-semibold text-gray-800">Thông báo mới nhận</h3>
             {unreadCount > 0 && (
-              <button 
+              <button
                 onClick={handleMarkAllAsRead}
                 className="text-xs text-orange-500 hover:text-orange-600 hover:underline"
               >
@@ -78,7 +73,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ icon
           </div>
 
           {error && <div role="alert" className="p-3 text-sm text-red-600">{error} <button onClick={refresh}>Retry</button></div>}
-          {/* List */}
           <div className="overflow-y-auto flex-1">
             {isLoading ? (
               <div className="flex justify-center items-center p-8">
@@ -95,13 +89,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ icon
             ) : (
               <div className="divide-y divide-gray-100">
                 {notifications.map((notification) => (
-                  <div 
-                    key={notification.id} 
+                  <div
+                    key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors flex gap-3 ${!notification.isRead ? 'bg-orange-50/30' : ''}`}
                   >
                     <div className="shrink-0 mt-1">
-                       {/* Simple icon based on type */}
                        {notification.type.includes('ORDER') ? (
                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>

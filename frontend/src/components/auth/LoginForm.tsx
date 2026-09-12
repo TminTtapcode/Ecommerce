@@ -119,7 +119,7 @@ export const LoginForm: React.FC = () => {
           Google
         </button>
       </div>
-      
+
       <p className="text-xs text-center text-gray-400 mt-6 font-medium">
         Bằng việc đăng nhập, bạn đồng ý với <a href="#" className="text-gray-600 hover:text-orange-500 transition-colors">Điều khoản dịch vụ</a> & <a href="#" className="text-gray-600 hover:text-orange-500 transition-colors">Chính sách bảo mật</a>
       </p>

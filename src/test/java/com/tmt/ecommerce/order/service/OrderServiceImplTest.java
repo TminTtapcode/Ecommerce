@@ -117,7 +117,6 @@ class OrderServiceImplTest {
         when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleOrder));
         when(shopInternalService.isShopOwner(5L, 20L)).thenReturn(true);
 
-        // Chuyển từ CONFIRMED nhảy cóc lên DELIVERED là không hợp lệ
         VendorOrderStatusUpdateRequest request = new VendorOrderStatusUpdateRequest(OrderStatus.DELIVERED, null);
         assertThrows(com.tmt.ecommerce.common.exception.AppException.class, () -> orderService.updateVendorOrderStatus(20L, 1L, request));
     }

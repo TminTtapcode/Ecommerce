@@ -38,7 +38,7 @@ public class ProfileService {
         int changed = users.updateProfile(id, request.getFullName(), request.getPhone());
         if (changed == 0) throw new AppException(ErrorCode.USER_NOT_FOUND);
         if (changed != 1) throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
-        // Constructor projection reads DB values, not a previously managed User snapshot.
+
         return users.findProfileById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 }

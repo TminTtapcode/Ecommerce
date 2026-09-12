@@ -33,7 +33,6 @@ public class OrderNotificationListener {
         try {
             log.info("Received OrderConfirmedEvent for order: {}", event.orderId());
 
-            // 1. Notify Buyer: ORDER_CONFIRMED
             if (!notificationRepository.existsByUserIdAndTypeAndReferenceId(event.buyerId(), NotificationType.ORDER_CONFIRMED, String.valueOf(event.orderId()))) {
                 String method = event.paymentMethod() != null ? event.paymentMethod() : "N/A";
                 Notification buyerNotification = Notification.builder()
@@ -46,7 +45,6 @@ public class OrderNotificationListener {
                 writer.create(buyerNotification);
             }
 
-            // 2. Notify Vendor: NEW_ORDER
             Optional<Long> vendorUserIdOpt = shopInternalService.getUserIdByShopId(event.shopId());
             if (vendorUserIdOpt.isPresent()) {
                 Long vendorUserId = vendorUserIdOpt.get();
@@ -74,7 +72,7 @@ public class OrderNotificationListener {
     public void handleOrderShipped(OrderShippedEvent event) {
         try {
             log.info("Received OrderShippedEvent for order: {}", event.orderId());
-            // Notify Buyer: ORDER_SHIPPED
+
             Notification buyerNotification = Notification.builder()
                     .userId(event.buyerId())
                     .type(NotificationType.ORDER_SHIPPED)
@@ -93,7 +91,7 @@ public class OrderNotificationListener {
     public void handleOrderDelivered(OrderDeliveredEvent event) {
         try {
             log.info("Received OrderDeliveredEvent for order: {}", event.orderId());
-            // Notify Buyer: ORDER_DELIVERED
+
             Notification buyerNotification = Notification.builder()
                     .userId(event.buyerId())
                     .type(NotificationType.ORDER_DELIVERED)
@@ -112,7 +110,7 @@ public class OrderNotificationListener {
     public void handleOrderCancelled(OrderCancelledEvent event) {
         try {
             log.info("Received OrderCancelledEvent for order: {}", event.orderId());
-            // Currently no logic, but acts as a hook for future cancellation notifications
+
         } catch (Exception e) {
             log.error("Failed to process OrderCancelledEvent for order {}. Error: {}", event.orderId(), e.getMessage());
         }

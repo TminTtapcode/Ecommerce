@@ -29,12 +29,11 @@ public class ProductInternalServiceImpl implements ProductInternalService {
         ProductVariant variant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không tồn tại."));
 
-        // Tìm ảnh thumbnail của sản phẩm gốc
         String thumbnailUrl = variant.getProduct().getImages().stream()
                 .filter(ProductImage::isThumbnail)
                 .map(ProductImage::getImageUrl)
                 .findFirst()
-                .orElse(null); // Nếu không có ảnh bìa thì trả về null
+                .orElse(null);
 
         return new ProductVariantInfoDto(
                 variant.getId(),
@@ -80,27 +79,24 @@ public class ProductInternalServiceImpl implements ProductInternalService {
                             thumbnailUrl,
                             variant.getAttributes());
                 },
-                (existing, replacement) -> existing // ignore duplicates
+                (existing, replacement) -> existing
         ));
     }
 
     @Override
     @Transactional
     public void deductStock(Long variantId, Integer quantity) {
-        // 1. Kiểm tra tồn tại
+
         ProductVariant variant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new IllegalArgumentException("Biến thể sản phẩm không tồn tại."));
 
-        // 2. Trừ kho biến thể (Product Variant) - Kích hoạt cơ chế Atomic dưới DB
         int variantUpdatedRows = productVariantRepository.deductStock(variantId, quantity);
         if (variantUpdatedRows == 0) {
-            // Nếu update trả về 0 dòng ảnh hưởng => Nghĩa là điều kiện (stock >= quantity)
-            // bị sai
+
             throw new IllegalStateException(
                     "Rất tiếc, sản phẩm " + variant.getSku() + " đã hết hàng hoặc không đủ số lượng bạn cần.");
         }
 
-        // 3. Trừ kho gốc (Product) để đồng bộ tổng số lượng
         int productUpdatedRows = productRepository.deductStock(variant.getProduct().getId(), quantity);
         if (productUpdatedRows == 0) {
             throw new IllegalStateException("Lỗi đồng bộ tồn kho gốc của hệ thống.");
@@ -119,13 +115,11 @@ public class ProductInternalServiceImpl implements ProductInternalService {
                 .orElseThrow(() -> new AppException(
                         ErrorCode.VARIANT_NOT_FOUND));
 
-        // 1. Hoàn trả kho biến thể (Product Variant) - Atomic Update
         if (productVariantRepository.restoreStock(variantId, quantity) != 1) {
             throw new AppException(
                     ErrorCode.INTERNAL_SERVER_ERROR);
         }
 
-        // 2. Hoàn trả kho gốc (Product) để đồng bộ tổng số lượng
         if (variant.getProduct() == null ||
                 productRepository.restoreStock(variant.getProduct().getId(), quantity) != 1) {
             throw new AppException(

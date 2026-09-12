@@ -11,7 +11,7 @@ export interface PaymentCreateResponse {
 
 export interface PaymentGroupStatusResponse {
     paymentGroupId: string;
-    status: string; // PENDING, SUCCESS, FAILED
+    status: string;
 }
 
 export const paymentApi = {

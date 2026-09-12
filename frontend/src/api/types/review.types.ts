@@ -1,23 +1,23 @@
 export interface ReviewCreateRequest {
   productId: number;
   orderId: number;
-  rating: number; // 1 to 5
+  rating: number;
   comment: string;
   variantId?: number;
   images?: string[];
-  imageUrls?: string[]; // alias
+  imageUrls?: string[];
 }
 
 export interface ReviewUpdateRequest {
   rating: number;
   comment: string;
   images?: string[];
-  imageUrls?: string[]; // alias
+  imageUrls?: string[];
 }
 
 export interface VendorReplyRequest {
   replyComment: string;
-  reply?: string; // alias
+  reply?: string;
 }
 
 export interface ReviewResponse {
@@ -34,7 +34,6 @@ export interface ReviewResponse {
   repliedAt: string | null;
   createdAt: string;
 
-  // Aliases for compatibility
   userFullName?: string;
   imageUrls?: string[];
   vendorReply?: string | null;

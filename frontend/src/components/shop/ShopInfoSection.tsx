@@ -59,7 +59,7 @@ export const ShopInfoSection: React.FC<ShopInfoSectionProps> = ({ shopId }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex gap-3 w-full sm:w-auto">
           <Link
             to={`/shops/${shop.id}`}

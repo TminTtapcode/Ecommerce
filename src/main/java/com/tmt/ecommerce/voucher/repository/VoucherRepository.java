@@ -21,7 +21,6 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
     Page<Voucher> findByScope(VoucherScope scope, Pageable pageable);
 
-    // Atomic conditional update for usedCount to prevent race conditions during checkout
     @Modifying
     @Query("UPDATE Voucher v SET v.usedCount = v.usedCount + 1 " +
            "WHERE v.id = :id AND (v.usageLimit IS NULL OR v.usedCount < v.usageLimit)")

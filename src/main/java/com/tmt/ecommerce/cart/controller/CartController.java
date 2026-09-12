@@ -19,7 +19,6 @@ public class CartController {
 
     private final CartService cartService;
 
-    // API: Xem giỏ hàng
     @GetMapping
     public ResponseEntity<ApiResponse<CartResponse>> getMyCart(@CurrentUserId Long userId) {
         CartResponse cartResponse = cartService.getCart(userId);
@@ -30,7 +29,6 @@ public class CartController {
                 .build());
     }
 
-    // API: Thêm vào giỏ hàng
     @PostMapping("/items")
     public ResponseEntity<ApiResponse<Void>> addToCart(
             @CurrentUserId Long userId,
@@ -57,7 +55,6 @@ public class CartController {
                 .build());
     }
 
-    // API: Xóa 1 sản phẩm khỏi giỏ
     @DeleteMapping("/items/{itemId}")
     public ResponseEntity<ApiResponse<Void>> removeCartItem(
             @CurrentUserId Long userId,
@@ -71,7 +68,6 @@ public class CartController {
                 .build());
     }
 
-    // API: Xóa toàn bộ giỏ hàng
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> clearCart(@CurrentUserId Long userId) {
         cartService.clearCart(userId);

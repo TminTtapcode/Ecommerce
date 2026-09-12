@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CloudinaryConfig {
 
-    // Thêm prefix "application." vào đúng cấu trúc YML
     @Value("${application.cloudinary.cloud-name}")
     private String cloudName;
 

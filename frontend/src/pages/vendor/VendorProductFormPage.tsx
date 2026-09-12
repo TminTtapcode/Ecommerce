@@ -8,11 +8,11 @@ import { mediaApi } from '../../api/mediaApi';
 import { categoryApi, type CategoryResponse } from '../../api/categoryApi';
 import { shopApi } from '../../api/shopApi';
 import type { ShopResponse } from '../../api/types/shop.types';
-import type { 
-  ProductCreateRequest, 
-  ProductUpdateRequest, 
+import type {
+  ProductCreateRequest,
+  ProductUpdateRequest,
   ProductImageRequest,
-  ProductVariantRequest 
+  ProductVariantRequest
 } from '../../api/types/product.types';
 import { VendorNav } from '../../components/vendor/VendorNav';
 
@@ -27,11 +27,9 @@ export const VendorProductFormPage: React.FC = () => {
   const [globalError, setGlobalError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Shop and Categories
   const [shop, setShop] = useState<ShopResponse | null>(null);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
 
-  // Form states
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number>(0);
@@ -40,11 +38,9 @@ export const VendorProductFormPage: React.FC = () => {
   const [images, setImages] = useState<ProductImageRequest[]>([]);
   const [variants, setVariants] = useState<ProductVariantRequest[]>([]);
 
-  // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load Shop, Categories, and Product details for edit
   useEffect(() => {
     shopApi.getMyShop()
       .then(res => setShop(res.data.data ?? null))
@@ -104,7 +100,6 @@ export const VendorProductFormPage: React.FC = () => {
     initData();
   }, [id, isEdit]);
 
-  // Handle Image Upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -147,7 +142,6 @@ export const VendorProductFormPage: React.FC = () => {
     setImages(updated);
   };
 
-  // Variant helpers
   const handleAddVariant = () => {
     const newVariant: ProductVariantRequest = {
       sku: `SKU-${Date.now().toString().slice(-4)}`,
@@ -265,7 +259,6 @@ export const VendorProductFormPage: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6"><fieldset disabled={banned} className="space-y-6">
-        {/* 1. THÔNG TIN CƠ BẢN */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900 border-b pb-3">1. Thông tin cơ bản</h2>
 
@@ -344,7 +337,6 @@ export const VendorProductFormPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. HÌNH ẢNH SẢN PHẨM */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
           <div className="flex items-center justify-between border-b pb-3">
             <div>
@@ -372,8 +364,7 @@ export const VendorProductFormPage: React.FC = () => {
             {images.map((img, idx) => (
               <div key={idx} className="relative group border rounded-lg overflow-hidden aspect-square bg-gray-50">
                 <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
-                
-                {/* Actions overlay */}
+
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
                   <div className="flex justify-end">
                     <button
@@ -415,7 +406,6 @@ export const VendorProductFormPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. BIẾN THỂ SẢN PHẨM (VARIANTS) */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
           <div className="flex items-center justify-between border-b pb-3">
             <div>
@@ -500,7 +490,6 @@ export const VendorProductFormPage: React.FC = () => {
           )}
         </div>
 
-        {/* SUBMIT BUTTON */}
         <div className="flex justify-end space-x-3 pt-4">
           <button
             type="button"

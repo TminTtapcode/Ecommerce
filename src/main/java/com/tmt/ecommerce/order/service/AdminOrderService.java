@@ -66,7 +66,7 @@ public class AdminOrderService {
         if (order.getStatus() != request.expectedStatus()) throw new AppException(ErrorCode.ORDER_STATE_CONFLICT);
         if (!transitions(order.getStatus()).contains(request.status()))
             throw new AppException(ErrorCode.INVALID_ORDER_STATE_TRANSITION);
-        // Plain positive-evidence read only: never acquire Payment locks after Order.
+
         if (!paymentAllows(order, request.status())) throw new AppException(ErrorCode.ORDER_PAYMENT_CONDITION_NOT_MET);
         OrderStatus oldStatus = order.getStatus();
         OrderResponse response = orderService.applyOrderTransition(order, request.status(),

@@ -31,25 +31,21 @@ public class IdentityDataInitializer implements CommandLineRunner {
             log.info("Users already exist. Skipping IdentityDataInitializer.");
             return;
         }
-        
+
         log.info("=== STARTING IDENTITY SEED DATA ===");
 
-        // 1. Roles
         Role roleUser = getOrCreateRole("ROLE_USER");
         Role roleVendor = getOrCreateRole("ROLE_VENDOR");
         Role roleAdmin = getOrCreateRole("ROLE_ADMIN");
 
         String encodedPassword = passwordEncoder.encode("password123");
 
-        // Admin User (1)
         createUser("admin@ecommerce.com", "Trần Quản Trị", "0901000001", encodedPassword, Set.of(roleAdmin, roleUser));
 
-        // Vendor Users (3)
         createUser("vendor1@techstore.com", "Nguyễn Văn Tech", "0902000001", encodedPassword, Set.of(roleVendor, roleUser));
         createUser("vendor2@fashionhub.com", "Lê Thị Thời Trang", "0902000002", encodedPassword, Set.of(roleVendor, roleUser));
         createUser("vendor3@giadungxanh.com", "Phạm Văn Gia Dụng", "0902000003", encodedPassword, Set.of(roleVendor, roleUser));
 
-        // Customer Users (6)
         createUser("customer1@gmail.com", "Đặng Minh Triết", "0903000001", encodedPassword, Set.of(roleUser));
         createUser("customer2@gmail.com", "Vũ Hoàng Nam", "0903000002", encodedPassword, Set.of(roleUser));
         createUser("customer3@gmail.com", "Trần Thị Mai", "0903000003", encodedPassword, Set.of(roleUser));

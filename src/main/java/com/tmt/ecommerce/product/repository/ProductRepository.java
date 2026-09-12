@@ -26,10 +26,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, org.spr
 
     Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    // Filtered by status
     java.util.Optional<Product> findByIdAndStatus(Long id, com.tmt.ecommerce.product.enums.ProductStatus status);
 
-    // Filtered by status
     @EntityGraph(attributePaths = {"category"})
     Page<Product> findByStatus(com.tmt.ecommerce.product.enums.ProductStatus status, Pageable pageable);
 
@@ -37,10 +35,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, org.spr
     Page<Product> findByNameContainingIgnoreCaseAndStatus(String name,
             com.tmt.ecommerce.product.enums.ProductStatus status, Pageable pageable);
 
-    /**
-     * P2-02 baseline: related products are exact-category, public catalogue
-     * candidates. The service applies the bounded Pageable and Shop ban scope.
-     */
     @EntityGraph(attributePaths = {"category"})
     List<Product> findByCategory_IdAndStatusAndIdNot(Long categoryId,
             com.tmt.ecommerce.product.enums.ProductStatus status, Long excludedProductId, Pageable pageable);
@@ -50,17 +44,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, org.spr
             com.tmt.ecommerce.product.enums.ProductStatus status, Long excludedProductId,
             List<Long> excludedShopIds, Pageable pageable);
 
-    // Kỹ thuật Atomic Update: Trừ tổng kho gốc
     @Modifying
     @Query("UPDATE Product p SET p.stockQuantity = p.stockQuantity - :quantity WHERE p.id = :id AND p.stockQuantity >= :quantity")
     int deductStock(@Param("id") Long id, @Param("quantity") Integer quantity);
 
-    // Kỹ thuật Atomic Update: Hoàn trả tổng kho gốc khi hủy đơn
     @Modifying
     @Query("UPDATE Product p SET p.stockQuantity = p.stockQuantity + :quantity WHERE p.id = :id")
     int restoreStock(@Param("id") Long id, @Param("quantity") Integer quantity);
 
-    // Queries for Recommendations
     @EntityGraph(attributePaths = {"category"})
     @Query("SELECT p FROM Product p WHERE p.category.id IN :categoryIds AND p.id NOT IN :excludedIds AND p.status = :status AND p.shopId NOT IN :bannedShopIds ORDER BY p.id DESC")
     List<Product> findByCategoryIdsExcluding(@Param("categoryIds") List<Long> categoryIds,
