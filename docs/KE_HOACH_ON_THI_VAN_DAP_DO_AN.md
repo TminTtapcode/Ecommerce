@@ -927,51 +927,158 @@ public ReviewResponse createReview(Long userId, ReviewCreateRequest request) {
 
 ---
 
-## 2.7. Gửi Tin nhắn Realtime qua STOMP (`ChatServiceImpl.java`)
+## 2.7. Module Chat: Giao tiếp Hợp đồng Nội bộ, Chặn Tự Chat & Gửi Tin nhắn Realtime STOMP (`ChatServiceImpl.java`)
 
-*Vị trí file:* [ChatServiceImpl.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/chat/service/ChatServiceImpl.java#L90-L123)
+*Vị trí file:* [ChatServiceImpl.java](file:///c:/Users/Dell/IdeaProjects/ecommerce/src/main/java/com/tmt/ecommerce/chat/service/ChatServiceImpl.java)
 
 ### 📌 Đoạn mã nguồn thực tế:
 ```java
-@Override
-@Transactional
-public void sendMessage(ChatMessageRequest request, Long senderId) {
-    ChatRoom room = chatRoomRepository.findById(request.getRoomId())
-            .orElseThrow(() -> new ChatRoomNotFoundException("Phòng chat không tồn tại"));
+@Service
+@RequiredArgsConstructor
+public class ChatServiceImpl implements ChatService {
 
-    // 1. Kiểm tra quyền truy cập (Người gửi phải là Buyer hoặc Chủ shop của phòng này)
-    validateAccess(room, senderId);
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ShopInternalService shopInternalService;
+    private final IdentityInternalService identityInternalService; // Hợp đồng nội bộ lấy tên user
+    private final SimpMessagingTemplate messagingTemplate;
 
-    // 2. Lưu tin nhắn vào Database
-    ChatMessage message = ChatMessage.builder()
-            .roomId(room.getId())
-            .senderId(senderId)
-            .content(request.getContent())
-            .build();
-    message = chatMessageRepository.save(message);
+    // 1. Tạo hoặc mở phòng chat: Chặn shop tự chat với chính mình
+    @Override
+    @Transactional
+    public ChatRoomResponse createOrGetRoom(CreateChatRoomRequest request, Long buyerId) {
+        Long shopId = request.getShopId();
 
-    // Cập nhật thời gian phòng chat có tin nhắn mới
-    room.setUpdatedAt(LocalDateTime.now());
-    chatRoomRepository.save(room);
+        Long shopOwnerId = shopInternalService.getUserIdByShopId(shopId)
+                .orElseThrow(() -> new IllegalArgumentException("Shop not found"));
 
-    // 3. Xác định người nhận tin nhắn là ai
-    Long recipientId = getRecipientId(room, senderId);
-    ChatMessageResponse response = mapToChatMessageResponse(message);
+        // CHẶN TỰ CHAT: Người mua không thể trùng với chủ sở hữu của shop
+        if (buyerId.equals(shopOwnerId)) {
+            throw new IllegalArgumentException("Bạn không thể tự trò chuyện với cửa hàng của chính mình.");
+        }
 
-    // 4. BẮN TIN NHẮN REALTIME QUA STOMP:
-    // Đẩy tin nhắn tới người nhận qua kênh riêng /user/{recipientId}/queue/messages
-    messagingTemplate.convertAndSendToUser(
-            recipientId.toString(),
-            "/queue/messages",
-            response
-    );
-    // Đẩy lại cho chính người gửi để cập nhật tin nhắn trên đa thiết bị
-    if (!recipientId.equals(senderId)) {
+        ChatRoom room = chatRoomRepository.findByBuyerIdAndShopId(buyerId, shopId)
+                .orElseGet(() -> {
+                    ChatRoom newRoom = ChatRoom.builder()
+                            .buyerId(buyerId)
+                            .shopId(shopId)
+                            .build();
+                    return chatRoomRepository.save(newRoom);
+                });
+
+        return mapToChatRoomResponse(room, buyerId);
+    }
+
+    // 2. Lấy danh sách phòng chat của tôi (Khử trùng lặp & Lọc bỏ phòng tự chat)
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChatRoomResponse> getMyRooms(Long userId) {
+        List<ChatRoomResponse> responses = new ArrayList<>();
+        Set<Long> seenRoomIds = new HashSet<>(); // Set chống trùng lặp phòng
+
+        // Lấy các phòng mình đóng vai trò Người mua
+        chatRoomRepository.findAllByBuyerIdOrderByUpdatedAtDesc(userId)
+            .forEach(room -> {
+                Long shopOwnerId = shopInternalService.getUserIdByShopId(room.getShopId()).orElse(null);
+                if (shopOwnerId != null && shopOwnerId.equals(userId)) {
+                    return; // Bỏ qua nếu là phòng tự chat
+                }
+                if (seenRoomIds.add(room.getId())) {
+                    responses.add(mapToChatRoomResponse(room, userId));
+                }
+            });
+
+        // Lấy các phòng mình đóng vai trò Chủ shop
+        shopInternalService.findShopIdByUserId(userId).ifPresent(shopId -> {
+            chatRoomRepository.findAllByShopIdOrderByUpdatedAtDesc(shopId)
+                .forEach(room -> {
+                    if (room.getBuyerId().equals(userId)) {
+                        return; // Bỏ qua nếu là phòng tự chat
+                    }
+                    if (seenRoomIds.add(room.getId())) {
+                        responses.add(mapToChatRoomResponse(room, userId));
+                    }
+                });
+        });
+
+        // Sắp xếp phòng có tin nhắn mới nhất lên đầu danh sách
+        responses.sort((r1, r2) -> {
+            if (r1.getUpdatedAt() == null && r2.getUpdatedAt() == null) return 0;
+            if (r1.getUpdatedAt() == null) return 1;
+            if (r2.getUpdatedAt() == null) return -1;
+            return r2.getUpdatedAt().compareTo(r1.getUpdatedAt());
+        });
+
+        return responses;
+    }
+
+    // 3. Gửi tin nhắn qua STOMP WebSocket
+    @Override
+    @Transactional
+    public void sendMessage(ChatMessageRequest request, Long senderId) {
+        ChatRoom room = chatRoomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new ChatRoomNotFoundException("Phòng chat không tồn tại"));
+
+        validateAccess(room, senderId);
+
+        ChatMessage message = ChatMessage.builder()
+                .roomId(room.getId())
+                .senderId(senderId)
+                .content(request.getContent())
+                .build();
+        message = chatMessageRepository.save(message);
+
+        room.setUpdatedAt(LocalDateTime.now());
+        chatRoomRepository.save(room);
+
+        Long recipientId = getRecipientId(room, senderId);
+        ChatMessageResponse response = mapToChatMessageResponse(message);
+
+        // Bắn tin nhắn thời gian thực qua kênh riêng /user/{recipientId}/queue/messages
         messagingTemplate.convertAndSendToUser(
-                senderId.toString(),
+                recipientId.toString(),
                 "/queue/messages",
                 response
         );
+        if (!recipientId.equals(senderId)) {
+            messagingTemplate.convertAndSendToUser(
+                    senderId.toString(),
+                    "/queue/messages",
+                    response
+            );
+        }
+    }
+
+    // 4. Ánh xạ dữ liệu phòng chat: Gọi IdentityInternalService lấy tên người dùng
+    private ChatRoomResponse mapToChatRoomResponse(ChatRoom room, Long currentUserId) {
+        String lastMessage = null;
+        LocalDateTime lastMessageAt = null;
+
+        var messageOpt = chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(room.getId());
+        if (messageOpt.isPresent()) {
+            lastMessage = messageOpt.get().getContent();
+            lastMessageAt = messageOpt.get().getCreatedAt();
+        }
+
+        long unreadCount = chatMessageRepository.countByRoomIdAndSenderIdNotAndIsReadFalse(room.getId(), currentUserId);
+
+        String shopName = shopInternalService.getShopNameById(room.getShopId())
+                .orElse("Shop #" + room.getShopId());
+
+        // TUÂN THỦ MODULAR MONOLITH: Không gọi UserRepository, chỉ gọi Interface Contract
+        String buyerName = identityInternalService.getUserFullNameOrDefault(room.getBuyerId());
+
+        return ChatRoomResponse.builder()
+                .id(room.getId())
+                .buyerId(room.getBuyerId())
+                .shopId(room.getShopId())
+                .shopName(shopName)
+                .buyerName(buyerName) // Bổ sung tên người mua cho góc nhìn của Shop
+                .lastMessage(lastMessage)
+                .lastMessageAt(lastMessageAt)
+                .unreadCount(unreadCount)
+                .updatedAt(room.getUpdatedAt() != null ? room.getUpdatedAt() : room.getCreatedAt())
+                .build();
     }
 }
 ```
@@ -1085,31 +1192,36 @@ public class SecurityConfig {
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-    private final JwtChannelInterceptor inbound;
-    private final SocketSessions sessions;
-    @Value("${application.websocket.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}") 
-    private String[] origins;
 
-    @Override 
-    public void configureMessageBroker(MessageBrokerRegistry c) {
-        // 1. Kích hoạt In-Memory Message Broker cho các kênh nhận tin
-        c.enableSimpleBroker("/queue", "/topic"); 
-        // 2. Tiền tố cho các bản tin client gửi lên server để Controller xử lý
-        c.setApplicationDestinationPrefixes("/app"); 
-        // 3. Tiền tố định tuyến riêng cho từng người dùng cá nhân (Point-to-Point)
-        c.setUserDestinationPrefix("/user");
+    private final JwtChannelInterceptor jwtChannelInterceptor;
+    private final SocketSessions socketSessions;
+
+    @Value("${application.websocket.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
+    private String[] allowedOrigins;
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        // 1. Kích hoạt In-Memory Message Broker cho các kênh nhận tin (/queue riêng tư, /topic broadcast)
+        registry.enableSimpleBroker("/queue", "/topic");
+
+        // 2. Tiền tố cho message từ client gửi lên Controller (@MessageMapping)
+        registry.setApplicationDestinationPrefixes("/app");
+
+        // 3. Tiền tố gửi tin nhắn riêng đích danh từng người dùng: /user/{userId}/queue/...
+        registry.setUserDestinationPrefix("/user");
     }
 
-    @Override 
-    public void registerStompEndpoints(StompEndpointRegistry r) {
-        // 4. Đăng ký Endpoint kết nối WebSocket /ws hỗ trợ SockJS fallback
-        r.addEndpoint("/ws").setAllowedOrigins(origins);
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // 4. Đăng ký Endpoint kết nối bắt tay WebSocket /ws với CORS pattern
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins(allowedOrigins);
     }
 
-    @Override 
-    public void configureClientInboundChannel(ChannelRegistration c) { 
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
         // 5. Gắn Interceptor để xác thực JWT ngay khi Client gửi frame CONNECT
-        c.interceptors(inbound); 
+        registration.interceptors(jwtChannelInterceptor);
     }
 }
 ```
@@ -1641,6 +1753,17 @@ RefundAttempt reserve(RefundableOrderSnapshot order, Long actorId, String idempo
 
     // 2. Khóa ghi giao dịch thanh toán gốc
     List<Payment> candidates = payments.findSuccessfulVnpayByGroupForUpdate(order.paymentGroupId());
+
+    // Kiểm tra lại Idempotency-Key sau khi giữ khóa ghi (Double-Check Pattern)
+    replay = refunds.findByIdempotencyKey(idempotencyKey);
+    if (replay.isPresent()) {
+        RefundAttempt existing = replay.get();
+        if (!existing.getOrderId().equals(order.orderId()) || !existing.getActorUserId().equals(actorId)
+                || !existing.getReason().equals(reason)) {
+            throw new AppException(ErrorCode.REFUND_IDEMPOTENCY_CONFLICT);
+        }
+        return existing;
+    }
     if (candidates.size() != 1) throw new AppException(ErrorCode.REFUND_NOT_ACTIONABLE);
     Payment payment = candidates.getFirst();
 
