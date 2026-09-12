@@ -1,0 +1,611 @@
+
+==================== apiClient.ts ====================
+import axios from 'axios';
+
+const apiClient = axios.create({
+  baseURL: 'http://localhost:8080',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add a request interceptor to attach the auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor to handle 401 Unauthorized
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear token and redirect to login if unauthorized
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default apiClient;
+
+==================== authApi.ts ====================
+import apiClient from './apiClient';
+import type { UserLoginRequest, UserRegisterRequest, AuthResponse, ApiResponse } from './types/auth.types';
+
+export const authApi = {
+  login: async (data: UserLoginRequest): Promise<ApiResponse<AuthResponse>> => {
+    const response = await apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/login', data);
+    return response.data;
+  },
+  
+  register: async (data: UserRegisterRequest): Promise<ApiResponse<AuthResponse>> => {
+    const response = await apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data);
+    return response.data;
+  },
+};
+
+==================== cartApi.ts ====================
+import apiClient from './apiClient';
+import type { ApiResponse } from './types/auth.types';
+import type { CartResponse, CartItemRequest, CartItemUpdateRequest } from './types/cart.types';
+
+export const cartApi = {
+  getCart: () => apiClient.get<ApiResponse<CartResponse>>('/api/v1/carts'),
+  addToCart: (data: CartItemRequest) => apiClient.post<ApiResponse<void>>('/api/v1/carts/items', data),
+  updateQuantity: (itemId: number, data: CartItemUpdateRequest) => apiClient.put<ApiResponse<void>>(`/api/v1/carts/items/${itemId}`, data),
+  removeCartItem: (itemId: number) => apiClient.delete<ApiResponse<void>>(`/api/v1/carts/items/${itemId}`),
+  clearCart: () => apiClient.delete<ApiResponse<void>>('/api/v1/carts')
+};
+
+
+==================== chatApi.ts ====================
+import apiClient from './apiClient';
+import type { ApiResponse, PageResponse } from './types/common.types';
+import type { ChatRoom, ChatMessage, CreateChatRoomRequest } from './types/chat.types';
+
+export const chatApi = {
+  createOrGetRoom: (data: CreateChatRoomRequest) => {
+    return apiClient.post<ApiResponse<ChatRoom>>('/api/v1/chat/rooms', data);
+  },
+
+  getMyRooms: () => {
+    return apiClient.get<ApiResponse<ChatRoom[]>>('/api/v1/chat/rooms');
+  },
+
+  getMessages: (roomId: number, page: number = 0, size: number = 20) => {
+    return apiClient.get<ApiResponse<PageResponse<ChatMessage>>>(`/api/v1/chat/rooms/${roomId}/messages`, {
+      params: { page, size, sort: 'createdAt,desc' }
+    });
+  },
+
+  markAsRead: (roomId: number) => {
+    return apiClient.put<ApiResponse<void>>(`/api/v1/chat/rooms/${roomId}/read`);
+  }
+};
+
+==================== mediaApi.ts ====================
+import apiClient from './apiClient';
+
+export interface UploadResponse {
+  url: string;
+  publicId: string;
+}
+
+export interface ApiResponse<T> {
+  status: number;
+  message: string;
+  data: T;
+}
+
+export const mediaApi = {
+  uploadImage: async (file: File): Promise<ApiResponse<UploadResponse>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await apiClient.post<ApiResponse<UploadResponse>>('/api/v1/media/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+};
+
+==================== notificationApi.ts ====================
+import apiClient from './apiClient';
+import type { ApiResponse, PageResponse } from './types/common.types';
+import type { NotificationResponse, UnreadCountResponse } from './types/notification.types';
+
+export const notificationApi = {
+  getNotifications: (page: number = 0, size: number = 10) => {
+    return apiClient.get<ApiResponse<PageResponse<NotificationResponse>>>('/api/v1/notifications', {
+      params: { page, size }
+    });
+  },
+
+  getUnreadCount: () => {
+    return apiClient.get<ApiResponse<UnreadCountResponse>>('/api/v1/notifications/unread-count');
+  },
+
+  markAsRead: (id: number) => {
+    return apiClient.put<ApiResponse<void>>(`/api/v1/notifications/${id}/read`);
+  },
+
+  markAllAsRead: () => {
+    return apiClient.put<ApiResponse<void>>('/api/v1/notifications/read-all');
+  }
+};
+
+==================== orderApi.ts ====================
+import apiClient from './apiClient';
+import type { ApiResponse, PageResponse } from './types/common.types';
+import type { CheckoutRequest, CheckoutResponse, OrderResponse, VendorOrderStatusUpdateRequest } from './types/order.types';
+
+export const orderApi = {
+    checkout: async (data: CheckoutRequest): Promise<ApiResponse<CheckoutResponse>> => {
+        const response = await apiClient.post<ApiResponse<CheckoutResponse>>('/api/v1/orders/checkout', data);
+        return response.data;
+    },
+
+    previewCheckout: async (data: import('./types/order.types').CartPreviewRequest): Promise<ApiResponse<import('./types/order.types').CartPreviewResponse>> => {
+        const response = await apiClient.post<ApiResponse<import('./types/order.types').CartPreviewResponse>>('/api/v1/orders/preview', data);
+        return response.data;
+    },
+
+    getMyOrders: async (params?: { page?: number; size?: number; status?: string }): Promise<ApiResponse<PageResponse<OrderResponse>>> => {
+        const response = await apiClient.get<ApiResponse<PageResponse<OrderResponse>>>('/api/v1/orders', { params });
+        return response.data;
+    },
+
+    getOrderDetail: async (id: number): Promise<ApiResponse<OrderResponse>> => {
+        const response = await apiClient.get<ApiResponse<OrderResponse>>(`/api/v1/orders/${id}`);
+        return response.data;
+    },
+
+    // === VENDOR ORDER MANAGEMENT ===
+
+    getVendorOrders: async (params?: { page?: number; size?: number; status?: string }): Promise<ApiResponse<PageResponse<OrderResponse>>> => {
+        const response = await apiClient.get<ApiResponse<PageResponse<OrderResponse>>>('/api/v1/vendor/orders', { params });
+        return response.data;
+    },
+
+    getVendorOrderDetail: async (id: number): Promise<ApiResponse<OrderResponse>> => {
+        const response = await apiClient.get<ApiResponse<OrderResponse>>(`/api/v1/vendor/orders/${id}`);
+        return response.data;
+    },
+
+    updateVendorOrderStatus: async (id: number, data: VendorOrderStatusUpdateRequest): Promise<ApiResponse<OrderResponse>> => {
+        const response = await apiClient.patch<ApiResponse<OrderResponse>>(`/api/v1/vendor/orders/${id}/status`, data);
+        return response.data;
+    }
+};
+
+==================== paymentApi.ts ====================
+import apiClient from './apiClient';
+import type { ApiResponse } from './types/common.types';
+
+export interface PaymentCreateRequest {
+    paymentGroupId: string;
+}
+
+export interface PaymentCreateResponse {
+    paymentUrl: string;
+}
+
+export interface PaymentGroupStatusResponse {
+    paymentGroupId: string;
+    status: string; // PENDING, SUCCESS, FAILED
+}
+
+export const paymentApi = {
+    createPaymentUrl: async (data: PaymentCreateRequest): Promise<ApiResponse<PaymentCreateResponse>> => {
+        const response = await apiClient.post<ApiResponse<PaymentCreateResponse>>('/api/v1/payments/create', data);
+        return response.data;
+    },
+
+    getPaymentStatus: async (paymentGroupId: string): Promise<ApiResponse<PaymentGroupStatusResponse>> => {
+        const response = await apiClient.get<ApiResponse<PaymentGroupStatusResponse>>(`/api/v1/payments/group/${paymentGroupId}/status`);
+        return response.data;
+    }
+};
+
+==================== productApi.ts ====================
+import apiClient from './apiClient';
+import type { 
+  ProductResponse, 
+  PageResponse, 
+  ProductCreateRequest, 
+  ProductUpdateRequest 
+} from './types/product.types';
+import type { ApiResponse } from './types/auth.types'; // Reuse ApiResponse structure
+
+export const productApi = {
+  getProducts: (page: number = 0, size: number = 10, keyword?: string) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (keyword) {
+      params.append('keyword', keyword);
+    }
+    return apiClient.get<ApiResponse<PageResponse<ProductResponse>>>(`/api/v1/products?${params.toString()}`);
+  },
+
+  getProductById: (id: number) => {
+    return apiClient.get<ApiResponse<ProductResponse>>(`/api/v1/products/${id}`);
+  },
+
+  createProduct: (data: ProductCreateRequest) => {
+    return apiClient.post<ApiResponse<ProductResponse>>('/api/v1/products', data);
+  },
+
+  updateProduct: (id: number, data: ProductUpdateRequest) => {
+    return apiClient.put<ApiResponse<ProductResponse>>(`/api/v1/products/${id}`, data);
+  },
+
+  deleteProduct: (id: number) => {
+    return apiClient.delete<ApiResponse<void>>(`/api/v1/products/${id}`);
+  }
+};
+
+==================== reviewApi.ts ====================
+import apiClient from './apiClient';
+import type { ApiResponse, PageResponse } from './types/common.types';
+import type { 
+  ReviewCreateRequest, 
+  ReviewUpdateRequest,
+  VendorReplyRequest, 
+  ReviewResponse, 
+  RatingSummaryResponse 
+} from './types/review.types';
+
+export const reviewApi = {
+  createReview: async (data: ReviewCreateRequest): Promise<ApiResponse<ReviewResponse>> => {
+    const response = await apiClient.post<ApiResponse<ReviewResponse>>('/api/v1/reviews', data);
+    return response.data;
+  },
+
+  updateReview: async (reviewId: number, data: ReviewUpdateRequest): Promise<ApiResponse<ReviewResponse>> => {
+    const response = await apiClient.put<ApiResponse<ReviewResponse>>(`/api/v1/reviews/${reviewId}`, data);
+    return response.data;
+  },
+
+  deleteReview: async (reviewId: number): Promise<ApiResponse<void>> => {
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/v1/reviews/${reviewId}`);
+    return response.data;
+  },
+
+  checkReviewEligibility: async (productId: number): Promise<ApiResponse<number[]>> => {
+    const response = await apiClient.get<ApiResponse<number[]>>(`/api/v1/products/${productId}/reviews/eligibility`);
+    return response.data;
+  },
+
+  getProductReviews: async (productId: number, params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<ReviewResponse>>> => {
+    const response = await apiClient.get<ApiResponse<PageResponse<ReviewResponse>>>(`/api/v1/products/${productId}/reviews`, { params });
+    return response.data;
+  },
+
+  getRatingSummary: async (productId: number): Promise<ApiResponse<RatingSummaryResponse>> => {
+    const response = await apiClient.get<ApiResponse<RatingSummaryResponse>>(`/api/v1/products/${productId}/reviews/summary`);
+    return response.data;
+  },
+
+  replyReview: async (reviewId: number, data: VendorReplyRequest): Promise<ApiResponse<ReviewResponse>> => {
+    const response = await apiClient.post<ApiResponse<ReviewResponse>>(`/api/v1/vendor/reviews/${reviewId}/reply`, data);
+    return response.data;
+  }
+};
+
+==================== types\auth.types.ts ====================
+export interface UserLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserRegisterRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string; // Optional since it's not supported by backend yet
+}
+
+export interface AuthResponse {
+  token: string;
+}
+
+export interface ApiResponse<T> {
+  status: number;
+  message: string;
+  data?: T;
+}
+
+==================== types\cart.types.ts ====================
+export interface CartItemRequest {
+  productVariantId: number;
+  quantity: number;
+}
+
+export interface CartItemUpdateRequest {
+  quantity: number;
+}
+
+export interface CartItemResponse {
+  cartItemId: number;
+  productVariantId: number;
+  shopId: number;
+  productName: string;
+  sku: string;
+  unitPrice: number;
+  quantity: number;
+  subTotal: number;
+  thumbnailUrl: string;
+  attributes: Record<string, any>;
+  isAvailable: boolean;
+}
+
+export interface CartResponse {
+  cartId: number;
+  items: CartItemResponse[];
+  totalAmount: number;
+}
+
+
+==================== types\chat.types.ts ====================
+export interface ChatRoom {
+  id: number;
+  buyerId: number;
+  shopId: number;
+  shopName?: string | null;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  unreadCount?: number;
+  updatedAt: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  roomId: number;
+  senderId: number;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface SendMessageRequest {
+  roomId: number;
+  content: string;
+}
+
+export interface CreateChatRoomRequest {
+  shopId: number;
+}
+
+==================== types\common.types.ts ====================
+export interface ApiResponse<T> {
+  status: number;
+  message: string;
+  data: T;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  pageable?: {
+    pageNumber: number;
+    pageSize: number;
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
+==================== types\notification.types.ts ====================
+export interface NotificationResponse {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  referenceId: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface UnreadCountResponse {
+  count: number;
+}
+
+==================== types\order.types.ts ====================
+export interface OrderItemResponse {
+    id: number;
+    productVariantId: number;
+    productId: number;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    subTotal: number;
+}
+
+export interface OrderResponse {
+    id: number;
+    userId: number;
+    customerName: string;
+    shopId: number;
+    status: string; // PENDING, SHIPPING, DELIVERED, CANCELLED
+    shippingAddress: string;
+    paymentMethod: string;
+    totalAmount: number;
+    createdAt: string;
+    items: OrderItemResponse[];
+}
+
+export interface CheckoutRequest {
+    shippingAddress: string;
+    paymentMethod: string;
+    cartItemIds: number[];
+    voucherCode?: string;
+}
+
+export interface CartPreviewRequest {
+    cartItemIds: number[];
+    voucherCode?: string;
+}
+
+export interface CartPreviewResponse {
+    subtotal: number;
+    discount: number;
+    total: number;
+}
+
+export interface CheckoutResponse {
+    paymentGroupId: string;
+    orders: OrderResponse[];
+}
+
+export interface VendorOrderStatusUpdateRequest {
+    status: 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+    reason?: string;
+}
+
+==================== types\product.types.ts ====================
+export interface ProductImageResponse {
+  id: number;
+  imageUrl: string;
+  publicId?: string;
+  isThumbnail: boolean;
+  sortOrder: number;
+}
+
+export interface ProductVariantResponse {
+  id: number;
+  sku: string;
+  price: number;
+  stockQuantity: number;
+  attributes: Record<string, any>;
+}
+
+export interface ProductResponse {
+  id: number;
+  shopId: number;
+  name: string;
+  description: string;
+  price: number;
+  stockQuantity: number;
+  categoryName: string | null;
+  variants: ProductVariantResponse[];
+  imageResponses: ProductImageResponse[];
+}
+
+export interface ProductVariantRequest {
+  id?: number; // Optional for new variants
+  sku: string;
+  price: number;
+  stockQuantity: number;
+  attributes: Record<string, any>;
+}
+
+export interface ProductImageRequest {
+  id?: number; // Optional for new images
+  imageUrl: string;
+  publicId?: string;
+  isThumbnail: boolean;
+  sortOrder: number;
+}
+
+export interface ProductCreateRequest {
+  shopId: number;
+  name: string;
+  description?: string;
+  price: number;
+  stockQuantity: number;
+  categoryId: number;
+  brandId?: number;
+  variants: ProductVariantRequest[];
+  images: ProductImageRequest[];
+}
+
+export interface ProductUpdateRequest {
+  name: string;
+  description?: string;
+  price: number;
+  stockQuantity: number;
+  categoryId?: number;
+  variants: ProductVariantRequest[]; 
+  images: ProductImageRequest[]; 
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: { empty: boolean; sorted: boolean; unsorted: boolean };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  sort: { empty: boolean; sorted: boolean; unsorted: boolean };
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
+==================== types\review.types.ts ====================
+export interface ReviewCreateRequest {
+  productId: number;
+  orderId: number;
+  rating: number; // 1 to 5
+  comment: string;
+  imageUrls?: string[];
+}
+
+export interface ReviewUpdateRequest {
+  rating: number; // 1 to 5
+  comment: string;
+  imageUrls?: string[];
+}
+
+export interface VendorReplyRequest {
+  replyComment: string;
+}
+
+export interface ReviewResponse {
+  id: number;
+  userId: number;
+  userFullName: string;
+  productId: number;
+  orderId: number;
+  rating: number;
+  comment: string;
+  imageUrls: string[];
+  vendorReply: string | null;
+  vendorRepliedAt: string | null;
+  createdAt: string;
+}
+
+export interface RatingSummaryResponse {
+  averageRating: number;
+  totalReviews: number;
+  ratingCounts: Record<number, number>; // { 5: 12, 4: 3, 3: 1, 2: 0, 1: 0 }
+}

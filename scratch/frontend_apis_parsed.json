@@ -1,0 +1,8 @@
+[
+  {
+    "file": "paymentApi.ts",
+    "path_in_code": "/api/v1/payments/vnpay/ipn${queryString}",
+    "http_method": "GET",
+    "generic_type": null
+  }
+]

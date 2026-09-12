@@ -1,0 +1,253 @@
+{
+  "files_count": 54,
+  "files": [
+    "App.tsx",
+    "main.tsx",
+    "api\\apiClient.ts",
+    "api\\authApi.ts",
+    "api\\cartApi.ts",
+    "api\\chatApi.ts",
+    "api\\mediaApi.ts",
+    "api\\notificationApi.ts",
+    "api\\orderApi.ts",
+    "api\\paymentApi.ts",
+    "api\\productApi.ts",
+    "api\\reviewApi.ts",
+    "api\\types\\auth.types.ts",
+    "api\\types\\cart.types.ts",
+    "api\\types\\chat.types.ts",
+    "api\\types\\common.types.ts",
+    "api\\types\\notification.types.ts",
+    "api\\types\\order.types.ts",
+    "api\\types\\product.types.ts",
+    "api\\types\\review.types.ts",
+    "components\\auth\\LoginForm.tsx",
+    "components\\auth\\ProtectedRoute.tsx",
+    "components\\auth\\RegisterForm.tsx",
+    "components\\chat\\FloatingChatWidget.tsx",
+    "components\\common\\Button.tsx",
+    "components\\common\\Input.tsx",
+    "components\\common\\Pagination.tsx",
+    "components\\layout\\AdminLayout.tsx",
+    "components\\layout\\Footer.tsx",
+    "components\\layout\\Header.tsx",
+    "components\\layout\\PublicLayout.tsx",
+    "components\\notification\\NotificationDropdown.tsx",
+    "components\\products\\ProductCard.tsx",
+    "components\\reviews\\CreateReviewModal.tsx",
+    "components\\reviews\\ProductReviewSection.tsx",
+    "contexts\\AuthContext.tsx",
+    "contexts\\CartContext.tsx",
+    "contexts\\ChatContext.tsx",
+    "hooks\\useChat.ts",
+    "pages\\admin\\AdminProductFormPage.tsx",
+    "pages\\admin\\AdminProductListPage.tsx",
+    "pages\\auth\\LoginPage.tsx",
+    "pages\\auth\\RegisterPage.tsx",
+    "pages\\public\\CartPage.tsx",
+    "pages\\public\\ChatTestPage.tsx",
+    "pages\\public\\CheckoutPage.tsx",
+    "pages\\public\\OrderDetailPage.tsx",
+    "pages\\public\\OrderHistoryPage.tsx",
+    "pages\\public\\PaymentResultPage.tsx",
+    "pages\\public\\ProductDetailPage.tsx",
+    "pages\\public\\ProductListPage.tsx",
+    "pages\\vendor\\VendorOrderListPage.tsx",
+    "services\\websocket.ts",
+    "utils\\notificationUtils.ts"
+  ],
+  "todos": [],
+  "fixmes": [],
+  "alerts": [
+    {
+      "file": "components\\reviews\\ProductReviewSection.tsx",
+      "line": 88,
+      "content": "alert('Không thể phản hồi đánh giá. Bạn có chắc là chủ shop của sản phẩm này?');"
+    },
+    {
+      "file": "components\\reviews\\ProductReviewSection.tsx",
+      "line": 102,
+      "content": "alert('Xóa đánh giá thất bại.');"
+    },
+    {
+      "file": "contexts\\CartContext.tsx",
+      "line": 44,
+      "content": "alert(\"Vui lòng đăng nhập để thêm vào giỏ hàng\");"
+    },
+    {
+      "file": "contexts\\CartContext.tsx",
+      "line": 52,
+      "content": "alert(\"Đã thêm vào giỏ hàng\");"
+    },
+    {
+      "file": "contexts\\CartContext.tsx",
+      "line": 55,
+      "content": "alert(error.response?.data?.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');"
+    },
+    {
+      "file": "pages\\admin\\AdminProductFormPage.tsx",
+      "line": 100,
+      "content": "alert('Tải ảnh thất bại. Vui lòng thử lại.');"
+    },
+    {
+      "file": "pages\\admin\\AdminProductFormPage.tsx",
+      "line": 146,
+      "content": "alert('Cập nhật sản phẩm thành công!');"
+    },
+    {
+      "file": "pages\\admin\\AdminProductFormPage.tsx",
+      "line": 154,
+      "content": "alert('Tạo sản phẩm thành công!');"
+    },
+    {
+      "file": "pages\\admin\\AdminProductListPage.tsx",
+      "line": 67,
+      "content": "alert(err.response?.data?.message || 'Có lỗi xảy ra khi xóa sản phẩm');"
+    },
+    {
+      "file": "pages\\public\\CartPage.tsx",
+      "line": 60,
+      "content": "alert(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật số lượng');"
+    },
+    {
+      "file": "pages\\public\\CartPage.tsx",
+      "line": 74,
+      "content": "alert('Có lỗi xảy ra khi xóa sản phẩm');"
+    },
+    {
+      "file": "pages\\public\\CartPage.tsx",
+      "line": 91,
+      "content": "alert('Có lỗi xảy ra khi xóa sản phẩm');"
+    },
+    {
+      "file": "pages\\public\\CartPage.tsx",
+      "line": 107,
+      "content": "alert('Có lỗi xảy ra khi dọn dẹp giỏ hàng');"
+    },
+    {
+      "file": "pages\\vendor\\VendorOrderListPage.tsx",
+      "line": 68,
+      "content": "alert(err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái.');"
+    }
+  ],
+  "console_logs": [
+    {
+      "file": "services\\websocket.ts",
+      "line": 36,
+      "content": "console.log('[WS] Connected to STOMP server');"
+    },
+    {
+      "file": "services\\websocket.ts",
+      "line": 56,
+      "content": "console.log('[WS] Connection closed');"
+    },
+    {
+      "file": "services\\websocket.ts",
+      "line": 61,
+      "content": "console.log('[WS] Disconnected');"
+    }
+  ],
+  "mock_patterns": [
+    {
+      "file": "pages\\public\\ProductListPage.tsx",
+      "line": 63,
+      "content": "{/* Banner Section (Mock) */}"
+    },
+    {
+      "file": "pages\\public\\ProductListPage.tsx",
+      "line": 85,
+      "content": "{/* Categories Section (Mock) */}"
+    }
+  ],
+  "empty_handlers": [
+    {
+      "file": "components\\chat\\FloatingChatWidget.tsx",
+      "line": 155,
+      "content": "onClick={() => {}}"
+    }
+  ],
+  "href_hash": [
+    {
+      "file": "components\\auth\\LoginForm.tsx",
+      "line": 114,
+      "content": "<a href=\"#\" className=\"text-blue-600 hover:opacity-80\">Quên mật khẩu</a>"
+    },
+    {
+      "file": "components\\auth\\LoginForm.tsx",
+      "line": 115,
+      "content": "<a href=\"#\" className=\"text-blue-600 hover:opacity-80\">Đăng nhập với SMS</a>"
+    },
+    {
+      "file": "components\\auth\\LoginForm.tsx",
+      "line": 136,
+      "content": "Bằng việc đăng nhập, bạn đồng ý với <a href=\"#\" className=\"text-gray-600 hover:text-orange-500 transition-colors\">Điều khoản dịch vụ</a> & <a href=\"#\" className=\"text-gray-600 hover:text-orange-500 transition-colors\">Chính sách bảo mật</a>"
+    },
+    {
+      "file": "components\\auth\\RegisterForm.tsx",
+      "line": 165,
+      "content": "Bằng việc đăng ký, bạn đồng ý với <a href=\"#\" className=\"text-gray-600 hover:text-orange-500 transition-colors\">Điều khoản dịch vụ</a> & <a href=\"#\" className=\"text-gray-600 hover:text-orange-500 transition-colors\">Chính sách bảo mật</a>"
+    }
+  ],
+  "api_calls": [
+    {
+      "file": "components\\layout\\Header.tsx",
+      "line": 17,
+      "call": ".get('keyword'",
+      "endpoint": "keyword"
+    },
+    {
+      "file": "components\\reviews\\ProductReviewSection.tsx",
+      "line": 66,
+      "call": ".get('action'",
+      "endpoint": "action"
+    },
+    {
+      "file": "components\\reviews\\ProductReviewSection.tsx",
+      "line": 67,
+      "call": ".get('orderId'",
+      "endpoint": "orderId"
+    },
+    {
+      "file": "pages\\admin\\AdminProductListPage.tsx",
+      "line": 14,
+      "call": ".get('page'",
+      "endpoint": "page"
+    },
+    {
+      "file": "pages\\admin\\AdminProductListPage.tsx",
+      "line": 15,
+      "call": ".get('size'",
+      "endpoint": "size"
+    },
+    {
+      "file": "pages\\admin\\AdminProductListPage.tsx",
+      "line": 16,
+      "call": ".get('keyword'",
+      "endpoint": "keyword"
+    },
+    {
+      "file": "pages\\admin\\AdminProductListPage.tsx",
+      "line": 48,
+      "call": ".delete('keyword'",
+      "endpoint": "keyword"
+    },
+    {
+      "file": "pages\\public\\ProductListPage.tsx",
+      "line": 15,
+      "call": ".get('page'",
+      "endpoint": "page"
+    },
+    {
+      "file": "pages\\public\\ProductListPage.tsx",
+      "line": 16,
+      "call": ".get('size'",
+      "endpoint": "size"
+    },
+    {
+      "file": "pages\\public\\ProductListPage.tsx",
+      "line": 17,
+      "call": ".get('keyword'",
+      "endpoint": "keyword"
+    }
+  ]
+}

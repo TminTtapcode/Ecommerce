@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 216 100% 98%; /* Soft light blue/lavender background */
+    --foreground: 222.2 84% 4.9%;
+    /* Primary: Soft but vibrant Orange */
+    --primary: 24 90% 55%; 
+    --primary-foreground: 0 0% 100%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+@layer utilities {
+  .soft-gradient-bg {
+    background: linear-gradient(135deg, #eaf2ff 0%, #f6eafd 100%);
+    position: relative;
+  }
+  .soft-gradient-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1.5px, transparent 1.5px);
+    background-size: 32px 32px;
+    z-index: 0;
+  }
+  .card-gradient {
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(0.6); }
+    50% { opacity: 1; transform: scale(1.1) rotate(15deg); }
+  }
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  .delay-1000 { animation-delay: 1s; }
+  .delay-2000 { animation-delay: 2s; }
+  .delay-1500 { animation-delay: 1.5s; }
+}
+

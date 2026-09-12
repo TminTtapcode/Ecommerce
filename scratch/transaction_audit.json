@@ -1,0 +1,573 @@
+[
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\initializer\\CartDataInitializer.java",
+    "class": "CartDataInitializer",
+    "target": "run",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void run(String... args) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartInternalServiceImpl.java",
+    "class": "CartInternalServiceImpl",
+    "target": "getCartItems",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public List<CartItemInternalDto> getCartItems(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartInternalServiceImpl.java",
+    "class": "CartInternalServiceImpl",
+    "target": "clearCart",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void clearCart(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartInternalServiceImpl.java",
+    "class": "CartInternalServiceImpl",
+    "target": "removeCartItems",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void removeCartItems(Long userId, List<Long> cartItemIds) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartServiceImpl.java",
+    "class": "CartServiceImpl",
+    "target": "addToCart",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void addToCart(Long userId, CartItemRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartServiceImpl.java",
+    "class": "CartServiceImpl",
+    "target": "getCart",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public CartResponse getCart(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartServiceImpl.java",
+    "class": "CartServiceImpl",
+    "target": "updateItemQuantity",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void updateItemQuantity(Long userId, Long cartItemId, Integer newQuantity) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartServiceImpl.java",
+    "class": "CartServiceImpl",
+    "target": "removeCartItem",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void removeCartItem(Long userId, Long cartItemId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\cart\\service\\CartServiceImpl.java",
+    "class": "CartServiceImpl",
+    "target": "clearCart",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void clearCart(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\chat\\service\\ChatServiceImpl.java",
+    "class": "ChatServiceImpl",
+    "target": "createOrGetRoom",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public ChatRoomResponse createOrGetRoom(CreateChatRoomRequest request, Long buyerId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\chat\\service\\ChatServiceImpl.java",
+    "class": "ChatServiceImpl",
+    "target": "getMyRooms",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public List<ChatRoomResponse> getMyRooms(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\chat\\service\\ChatServiceImpl.java",
+    "class": "ChatServiceImpl",
+    "target": "getMessages",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public Page<ChatMessageResponse> getMessages(Long roomId, Long userId, Pageable pageable) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\chat\\service\\ChatServiceImpl.java",
+    "class": "ChatServiceImpl",
+    "target": "sendMessage",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void sendMessage(ChatMessageRequest request, Long senderId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\chat\\service\\ChatServiceImpl.java",
+    "class": "ChatServiceImpl",
+    "target": "markMessagesAsRead",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void markMessagesAsRead(Long roomId, Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\identity\\initializer\\IdentityDataInitializer.java",
+    "class": "IdentityDataInitializer",
+    "target": "run",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void run(String... args) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\identity\\service\\AuthenticationService.java",
+    "class": "AuthenticationService",
+    "target": "register",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public AuthResponse register(UserRegisterRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\identity\\service\\IdentityInternalServiceImpl.java",
+    "class": "IdentityInternalServiceImpl",
+    "target": "assignShopOwnerRole",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public String assignShopOwnerRole(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderConfirmed",
+    "annotation": "@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderConfirmed(OrderConfirmedEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderConfirmed",
+    "annotation": "@Transactional(propagation = Propagation.REQUIRES_NEW)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderConfirmed(OrderConfirmedEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderShipped",
+    "annotation": "@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderShipped(OrderShippedEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderShipped",
+    "annotation": "@Transactional(propagation = Propagation.REQUIRES_NEW)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderShipped(OrderShippedEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderDelivered",
+    "annotation": "@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderDelivered(OrderDeliveredEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderDelivered",
+    "annotation": "@Transactional(propagation = Propagation.REQUIRES_NEW)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderDelivered(OrderDeliveredEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderCancelled",
+    "annotation": "@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderCancelled(OrderCancelledEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\OrderNotificationListener.java",
+    "class": "OrderNotificationListener",
+    "target": "handleOrderCancelled",
+    "annotation": "@Transactional(propagation = Propagation.REQUIRES_NEW)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleOrderCancelled(OrderCancelledEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\listener\\ReviewNotificationListener.java",
+    "class": "ReviewNotificationListener",
+    "target": "handleReviewCreatedEvent",
+    "annotation": "@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void handleReviewCreatedEvent(ReviewCreatedEvent event) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\service\\NotificationServiceImpl.java",
+    "class": "NotificationServiceImpl",
+    "target": "getUserNotifications",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public Page<NotificationResponse> getUserNotifications(Long userId, int page, int size) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\service\\NotificationServiceImpl.java",
+    "class": "NotificationServiceImpl",
+    "target": "getUnreadCount",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public UnreadCountResponse getUnreadCount(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\service\\NotificationServiceImpl.java",
+    "class": "NotificationServiceImpl",
+    "target": "markAsRead",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void markAsRead(Long userId, Long notificationId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\notification\\service\\NotificationServiceImpl.java",
+    "class": "NotificationServiceImpl",
+    "target": "markAllAsRead",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void markAllAsRead(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\order\\initializer\\OrderDataInitializer.java",
+    "class": "OrderDataInitializer",
+    "target": "run",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void run(String... args) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\order\\service\\OrderServiceImpl.java",
+    "class": "OrderServiceImpl",
+    "target": "checkout",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public CheckoutResponse checkout(Long userId, CheckoutRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\order\\service\\OrderServiceImpl.java",
+    "class": "OrderServiceImpl",
+    "target": "previewCheckout",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public CartPreviewResponse previewCheckout(Long userId, CartPreviewRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\order\\service\\OrderServiceImpl.java",
+    "class": "OrderServiceImpl",
+    "target": "updateOrderStatusByGroup",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void updateOrderStatusByGroup(String paymentGroupId, String status) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\order\\service\\OrderServiceImpl.java",
+    "class": "OrderServiceImpl",
+    "target": "updateVendorOrderStatus",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public OrderResponse updateVendorOrderStatus(Long userId, Long orderId, VendorOrderStatusUpdateRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\payment\\initializer\\PaymentDataInitializer.java",
+    "class": "PaymentDataInitializer",
+    "target": "run",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void run(String... args) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\payment\\service\\PaymentGatewayService.java",
+    "class": "PaymentGatewayService",
+    "target": "generatePaymentUrl",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public String generatePaymentUrl(PaymentOrderData orderData, String clientIp) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\payment\\service\\PaymentGatewayService.java",
+    "class": "PaymentGatewayService",
+    "target": "processVnPayIpn",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void processVnPayIpn(Map<String, String> params) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\payment\\service\\PaymentGatewayService.java",
+    "class": "PaymentGatewayService",
+    "target": "getPaymentGroupStatus",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public PaymentGroupStatusResponse getPaymentGroupStatus(String paymentGroupId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\product\\initializer\\ProductDataInitializer.java",
+    "class": "ProductDataInitializer",
+    "target": "run",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [
+      "Possible HTTP call inside transaction"
+    ],
+    "method_body_sample": "public void run(String... args) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\product\\service\\ProductInternalServiceImpl.java",
+    "class": "ProductInternalServiceImpl",
+    "target": "getVariantInfos",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public Map<Long, ProductVariantInfoDto> getVariantInfos(List<Long> variantIds) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\product\\service\\ProductInternalServiceImpl.java",
+    "class": "ProductInternalServiceImpl",
+    "target": "deductStock",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void deductStock(Long variantId, Integer quantity) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\product\\service\\ProductInternalServiceImpl.java",
+    "class": "ProductInternalServiceImpl",
+    "target": "getProductIdsByVariantIds",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public Map<Long, Long> getProductIdsByVariantIds(List<Long> variantIds) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\product\\service\\ProductServiceImpl.java",
+    "class": "ProductServiceImpl",
+    "target": "createProduct",
+    "annotation": "@Transactional(rollbackFor = Exception.class)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public ProductResponse createProduct(Long userId, ProductCreateRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\product\\service\\ProductServiceImpl.java",
+    "class": "ProductServiceImpl",
+    "target": "deleteProduct",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void deleteProduct(Long userId, Long id) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\product\\service\\ProductServiceImpl.java",
+    "class": "ProductServiceImpl",
+    "target": "updateProduct",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [
+      "Possible file/image upload inside transaction"
+    ],
+    "method_body_sample": "public ProductResponse updateProduct(Long userId, Long id, ProductUpdateRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\review\\service\\ReviewServiceImpl.java",
+    "class": "ReviewServiceImpl",
+    "target": "createReview",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public ReviewResponse createReview(Long userId, ReviewCreateRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\review\\service\\ReviewServiceImpl.java",
+    "class": "ReviewServiceImpl",
+    "target": "replyReview",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public ReviewResponse replyReview(Long vendorUserId, Long reviewId, VendorReplyRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\review\\service\\ReviewServiceImpl.java",
+    "class": "ReviewServiceImpl",
+    "target": "updateReview",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public ReviewResponse updateReview(Long userId, Long reviewId, com.tmt.ecommerce.review.dto.request.ReviewUpdateRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\review\\service\\ReviewServiceImpl.java",
+    "class": "ReviewServiceImpl",
+    "target": "deleteReview",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void deleteReview(Long userId, Long reviewId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\initializer\\ShopDataInitializer.java",
+    "class": "ShopDataInitializer",
+    "target": "run",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void run(String... args) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\service\\ShopInternalServiceImpl.java",
+    "class": "ShopInternalServiceImpl",
+    "target": "isShopOwner",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public boolean isShopOwner(Long shopId, Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\service\\ShopInternalServiceImpl.java",
+    "class": "ShopInternalServiceImpl",
+    "target": "getShopIdByUserId",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public Long getShopIdByUserId(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\service\\ShopInternalServiceImpl.java",
+    "class": "ShopInternalServiceImpl",
+    "target": "public java.util.Optional<Long> findShopIdByUserId(Long userId) {",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public java.util.Optional<Long> findShopIdByUserId(Long userId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\service\\ShopInternalServiceImpl.java",
+    "class": "ShopInternalServiceImpl",
+    "target": "public java.util.Optional<Long> getUserIdByShopId(Long shopId) {",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public java.util.Optional<Long> getUserIdByShopId(Long shopId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\service\\ShopInternalServiceImpl.java",
+    "class": "ShopInternalServiceImpl",
+    "target": "public java.util.Optional<String> getShopNameById(Long shopId) {",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public java.util.Optional<String> getShopNameById(Long shopId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\service\\ShopService.java",
+    "class": "ShopService",
+    "target": "createShop",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void createShop(Long userId, ShopCreateRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\shop\\service\\ShopService.java",
+    "class": "ShopService",
+    "target": "approveShop",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public void approveShop(Long shopId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\voucher\\service\\VoucherInternalServiceImpl.java",
+    "class": "VoucherInternalServiceImpl",
+    "target": "calculateDiscount",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public VoucherDiscountResult calculateDiscount(VoucherCalculationRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\voucher\\service\\VoucherInternalServiceImpl.java",
+    "class": "VoucherInternalServiceImpl",
+    "target": "incrementUsage",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public boolean incrementUsage(Long voucherId) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\voucher\\service\\VoucherServiceImpl.java",
+    "class": "VoucherServiceImpl",
+    "target": "createVoucher",
+    "annotation": "@Transactional",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public VoucherResponse createVoucher(Long userId, VoucherCreateRequest request) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\voucher\\service\\VoucherServiceImpl.java",
+    "class": "VoucherServiceImpl",
+    "target": "getShopVouchers",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public Page<VoucherResponse> getShopVouchers(Long shopId, int page, int size) {"
+  },
+  {
+    "file": "\\com\\tmt\\ecommerce\\voucher\\service\\VoucherServiceImpl.java",
+    "class": "VoucherServiceImpl",
+    "target": "getSystemVouchers",
+    "annotation": "@Transactional(readOnly = true)",
+    "is_private": false,
+    "anti_patterns": [],
+    "method_body_sample": "public Page<VoucherResponse> getSystemVouchers(int page, int size) {"
+  }
+]

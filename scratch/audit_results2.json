@@ -1,0 +1,240 @@
+[
+  {
+    "from_module": "cart",
+    "to_module": "product",
+    "from_file": "com.tmt.ecommerce.cart.service.CartInternalServiceImpl",
+    "imported_class": "com.tmt.ecommerce.product.api.ProductInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "cart",
+    "to_module": "product",
+    "from_file": "com.tmt.ecommerce.cart.service.CartInternalServiceImpl",
+    "imported_class": "com.tmt.ecommerce.product.api.dto.ProductVariantInfoDto",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "cart",
+    "to_module": "product",
+    "from_file": "com.tmt.ecommerce.cart.service.CartServiceImpl",
+    "imported_class": "com.tmt.ecommerce.product.api.ProductInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "cart",
+    "to_module": "product",
+    "from_file": "com.tmt.ecommerce.cart.service.CartServiceImpl",
+    "imported_class": "com.tmt.ecommerce.product.api.dto.ProductVariantInfoDto",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "chat",
+    "to_module": "shop",
+    "from_file": "com.tmt.ecommerce.chat.service.ChatServiceImpl",
+    "imported_class": "com.tmt.ecommerce.shop.api.ShopInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "notification",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.notification.listener.OrderNotificationListener",
+    "imported_class": "com.tmt.ecommerce.order.api.event.OrderCancelledEvent",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "notification",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.notification.listener.OrderNotificationListener",
+    "imported_class": "com.tmt.ecommerce.order.api.event.OrderConfirmedEvent",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "notification",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.notification.listener.OrderNotificationListener",
+    "imported_class": "com.tmt.ecommerce.order.api.event.OrderDeliveredEvent",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "notification",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.notification.listener.OrderNotificationListener",
+    "imported_class": "com.tmt.ecommerce.order.api.event.OrderShippedEvent",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "notification",
+    "to_module": "shop",
+    "from_file": "com.tmt.ecommerce.notification.listener.OrderNotificationListener",
+    "imported_class": "com.tmt.ecommerce.shop.api.ShopInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "notification",
+    "to_module": "review",
+    "from_file": "com.tmt.ecommerce.notification.listener.ReviewNotificationListener",
+    "imported_class": "com.tmt.ecommerce.review.api.event.ReviewCreatedEvent",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "notification",
+    "to_module": "shop",
+    "from_file": "com.tmt.ecommerce.notification.listener.ReviewNotificationListener",
+    "imported_class": "com.tmt.ecommerce.shop.api.ShopInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "cart",
+    "from_file": "com.tmt.ecommerce.order.service.OrderService",
+    "imported_class": "com.tmt.ecommerce.cart.dto.request.CartPreviewRequest",
+    "type": "DTO"
+  },
+  {
+    "from_module": "order",
+    "to_module": "cart",
+    "from_file": "com.tmt.ecommerce.order.service.OrderService",
+    "imported_class": "com.tmt.ecommerce.cart.dto.response.CartPreviewResponse",
+    "type": "DTO"
+  },
+  {
+    "from_module": "order",
+    "to_module": "cart",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.cart.api.CartInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "cart",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.cart.api.dto.CartItemInternalDto",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "product",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.product.api.ProductInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "shop",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.shop.api.ShopInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "voucher",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.voucher.api.VoucherInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "voucher",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.voucher.api.dto.VoucherCalculationRequest",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "voucher",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.voucher.api.dto.VoucherDiscountResult",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "identity",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.identity.api.IdentityInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "order",
+    "to_module": "cart",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.cart.dto.request.CartPreviewRequest",
+    "type": "DTO"
+  },
+  {
+    "from_module": "order",
+    "to_module": "cart",
+    "from_file": "com.tmt.ecommerce.order.service.OrderServiceImpl",
+    "imported_class": "com.tmt.ecommerce.cart.dto.response.CartPreviewResponse",
+    "type": "DTO"
+  },
+  {
+    "from_module": "payment",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.payment.controller.PaymentController",
+    "imported_class": "com.tmt.ecommerce.order.api.OrderInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "payment",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.payment.controller.PaymentController",
+    "imported_class": "com.tmt.ecommerce.order.api.dto.OrderPaymentDto",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "payment",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.payment.service.PaymentGatewayService",
+    "imported_class": "com.tmt.ecommerce.order.api.OrderInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "product",
+    "to_module": "shop",
+    "from_file": "com.tmt.ecommerce.product.service.ProductServiceImpl",
+    "imported_class": "com.tmt.ecommerce.shop.api.ShopInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "review",
+    "to_module": "identity",
+    "from_file": "com.tmt.ecommerce.review.service.ReviewServiceImpl",
+    "imported_class": "com.tmt.ecommerce.identity.api.IdentityInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "review",
+    "to_module": "order",
+    "from_file": "com.tmt.ecommerce.review.service.ReviewServiceImpl",
+    "imported_class": "com.tmt.ecommerce.order.api.OrderInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "review",
+    "to_module": "product",
+    "from_file": "com.tmt.ecommerce.review.service.ReviewServiceImpl",
+    "imported_class": "com.tmt.ecommerce.product.api.ProductInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "review",
+    "to_module": "shop",
+    "from_file": "com.tmt.ecommerce.review.service.ReviewServiceImpl",
+    "imported_class": "com.tmt.ecommerce.shop.api.ShopInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "shop",
+    "to_module": "identity",
+    "from_file": "com.tmt.ecommerce.shop.service.ShopService",
+    "imported_class": "com.tmt.ecommerce.identity.api.IdentityInternalService",
+    "type": "INTERNAL_SERVICE"
+  },
+  {
+    "from_module": "voucher",
+    "to_module": "shop",
+    "from_file": "com.tmt.ecommerce.voucher.service.VoucherServiceImpl",
+    "imported_class": "com.tmt.ecommerce.shop.api.ShopInternalService",
+    "type": "INTERNAL_SERVICE"
+  }
+]

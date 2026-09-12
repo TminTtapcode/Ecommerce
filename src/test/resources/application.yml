@@ -1,0 +1,59 @@
+# =====================================================
+# Test Configuration — Safe dummy values for testing
+# These are NOT real credentials. They exist solely so
+# @SpringBootTest can boot the application context
+# without requiring environment variables.
+# =====================================================
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:mysql://127.0.0.1:33317/ecommerce_s103_s104_s105_s108?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${TEST_DB_USERNAME:s1baseline}
+    password: ${TEST_DB_PASSWORD:s1-local-only}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+    hibernate:
+      ddl-auto: update
+    naming:
+      physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: test@example.com
+    password: test_password_not_real
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+application:
+  security:
+    jwt:
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      expiration: 86400000
+  cloudinary:
+    cloud-name: test_cloud
+    api-key: 000000000000000
+    api-secret: test_api_secret_not_real
+
+app:
+  frontend:
+    url: http://localhost:5173
+
+payment:
+  vnpay:
+    tmn-code: TEST_TMN_CODE
+    secret-key: TEST_SECRET_KEY
+    pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    api-url: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+    version: "2.1.0"
+    api-ip: 127.0.0.1
+    return-url: http://localhost:5173/payment-result

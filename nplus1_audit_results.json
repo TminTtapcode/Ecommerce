@@ -1,0 +1,44 @@
+{
+    "repository_loops": [
+        {
+            "file": "\\main\\java\\com\\tmt\\ecommerce\\order\\service\\OrderServiceImpl.java",
+            "line": 181,
+            "content": "                        for (Order savedOrder : savedOrders) {\n                                OrderStatus oldStatus = savedOrder.getStatus();\n                                savedOrder.setStatus(OrderStatus.CONFIRMED);\n                                orderRepository.save(savedOrder);\n\n                                // Ph\u00e1t event \u0111\u1ec3 Notification Module g\u1eedi th\u00f4ng b\u00e1o cho Buyer & Vendor\n                                eventPublisher.publishEvent(new OrderConfirmedEvent(\n                                                savedOrder.getId(), savedOrder.getUserId(), savedOrder.getShopId(),\n                                                savedOrder.getPaymentMethod()\n                                        ));\n                        }"
+        },
+        {
+            "file": "\\main\\java\\com\\tmt\\ecommerce\\review\\service\\ReviewServiceImpl.java",
+            "line": 173,
+            "content": "        for (com.tmt.ecommerce.order.api.dto.DeliveredOrderData orderData : deliveredOrders) {\n            // Check if order contains product\n            List<Long> variantIdsInOrder = orderData.productVariantIds();\n            boolean hasProduct = variantIdsInOrder.stream()\n                    .map(productInternalService::getProductIdByVariantId)\n                    .anyMatch(pid -> pid != null && pid.equals(productId));\n                    \n            if (hasProduct) {\n                // Check if already reviewed\n                if (!reviewRepository.existsByUserIdAndOrderIdAndProductId(userId, orderData.orderId(), productId)) {\n                    eligibleOrderIds.add(orderData.orderId());\n                }\n            }\n        }"
+        }
+    ],
+    "lazy_collection_loops": [
+        {
+            "file": "\\main\\java\\com\\tmt\\ecommerce\\cart\\service\\CartInternalServiceImpl.java",
+            "line": 33,
+            "content": "        for (CartItem item : cart.getItems()) {\n            ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(item.getProductVariantId());\n            \n            BigDecimal subTotal = variantInfo.price().multiply(BigDecimal.valueOf(item.getQuantity()));\n            boolean isAvailable = \"ACTIVE\".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();\n\n            internalDtos.add(new CartItemInternalDto(\n                    item.getId(),\n                    variantInfo.variantId(),\n                    variantInfo.shopId(),\n                    variantInfo.productName(),\n                    variantInfo.price(),\n                    item.getQuantity(),\n                    subTotal,\n                    isAvailable\n            ));\n        }"
+        },
+        {
+            "file": "\\main\\java\\com\\tmt\\ecommerce\\cart\\service\\CartServiceImpl.java",
+            "line": 85,
+            "content": "        for (CartItem item : cart.getItems()) {\n            // L\u1ea5y data real-time t\u1eeb module Product\n            ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(item.getProductVariantId());\n\n            // T\u00ednh th\u00e0nh ti\u1ec1n c\u1ee7a t\u1eebng m\u00f3n (D\u00f9ng h\u00e0m .multiply() c\u1ee7a BigDecimal)\n            BigDecimal subTotal = variantInfo.price().multiply(BigDecimal.valueOf(item.getQuantity()));\n\n            // Ki\u1ec3m tra tr\u1ea1ng th\u00e1i kh\u1ea3 d\u1ee5ng\n            boolean isAvailable = \"ACTIVE\".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();\n\n            if (isAvailable) {\n                totalAmount = totalAmount.add(subTotal);\n            }\n\n            itemResponses.add(new CartItemResponse(\n                    item.getId(),\n                    variantInfo.variantId(),\n                    variantInfo.shopId(), // TH\u00caM TR\u01af\u1edcNG N\u00c0Y \u0110\u1ec2 MAP V\u1edaI RECORD\n                    variantInfo.productName(),\n                    variantInfo.sku(),\n                    variantInfo.price(),\n                    item.getQuantity(),\n                    subTotal,\n                    variantInfo.thumbnailUrl(),\n                    variantInfo.attributes(),\n                    isAvailable\n            ));\n        }"
+        },
+        {
+            "file": "\\main\\java\\com\\tmt\\ecommerce\\product\\service\\ProductServiceImpl.java",
+            "line": 160,
+            "content": "            for (ProductVariantUpdateRequest vReq : request.variants()) {\n                if (vReq.id() == null) {\n                    ProductVariant newVariant = ProductVariant.builder()\n                            .product(product)\n                            .sku(vReq.sku())\n                            .price(vReq.price())\n                            .stockQuantity(vReq.stockQuantity())\n                            .attributes(vReq.attributes())\n                            .status(ProductStatus.ACTIVE)\n                            .build();\n                    product.getVariants().add(newVariant);\n                } else {\n                    product.getVariants().stream()\n                            .filter(v -> v.getId().equals(vReq.id()))\n                            .findFirst()\n                            .ifPresent(v -> {\n                                v.setSku(vReq.sku());\n                                v.setPrice(vReq.price());\n                                v.setStockQuantity(vReq.stockQuantity());\n                                v.setAttributes(vReq.attributes());\n                            });\n                }\n            }"
+        },
+        {
+            "file": "\\main\\java\\com\\tmt\\ecommerce\\product\\service\\ProductServiceImpl.java",
+            "line": 202,
+            "content": "            for (int i = 0; i < request.images().size(); i++) {\n                ProductImageUpdateRequest imgReq = request.images().get(i);\n                if (imgReq.id() == null) {\n                    ProductImage newImage = ProductImage.builder()\n                            .product(product)\n                            .imageUrl(imgReq.imageUrl())\n                            .publicId(imgReq.publicId())\n                            .isThumbnail(Boolean.TRUE.equals(imgReq.isThumbnail()))\n                            .sortOrder(i)\n                            .build();\n                    product.getImages().add(newImage);\n                } else {\n                    final int finalI = i;\n                    product.getImages().stream()\n                            .filter(img -> img.getId().equals(imgReq.id()))\n                            .findFirst()\n                            .ifPresent(img -> {\n                                img.setImageUrl(imgReq.imageUrl());\n                                if (imgReq.publicId() != null && !imgReq.publicId().isBlank()) {\n                                    img.setPublicId(imgReq.publicId());\n                                }\n                                img.setThumbnail(Boolean.TRUE.equals(imgReq.isThumbnail()));\n                                img.setSortOrder(finalI);\n                            });\n                }\n            }"
+        }
+    ],
+    "dto_mapping_lazy": [
+        {
+            "file": "\\main\\java\\com\\tmt\\ecommerce\\product\\service\\ProductServiceImpl.java",
+            "line": 153,
+            "content": "                    .map(ProductVariantUpdateRequest::id)\n                    .filter(Objects::nonNull)\n                    .toList();\n\n            product.getVariants().removeIf(existingVariant ->"
+        }
+    ],
+    "entity_graphs_used": []
+}

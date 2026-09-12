@@ -1,0 +1,12 @@
+[
+  {
+    "file": "PaymentController.java",
+    "controller": "PaymentController",
+    "http_method": "ALL",
+    "path": "/api/v1/payments/api/v1/payments",
+    "return_type": "ResponseEntity<?>",
+    "method_name": "vnpayIpn",
+    "preauthorize": "",
+    "body_type": null
+  }
+]
