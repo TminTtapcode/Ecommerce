@@ -3,6 +3,7 @@ export interface ChatRoom {
   buyerId: number;
   shopId: number;
   shopName?: string | null;
+  buyerName?: string | null;
   lastMessage?: string | null;
   lastMessageAt?: string | null;
   unreadCount?: number;

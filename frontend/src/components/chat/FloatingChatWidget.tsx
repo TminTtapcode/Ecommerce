@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatContext } from '../../contexts/ChatContext';
+import type { ChatRoom } from '../../api/types/chat.types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -69,8 +70,17 @@ export const FloatingChatWidget: React.FC = () => {
     }
   };
 
+  const getRoomDisplayName = (room: ChatRoom) => {
+    const isBuyer = room.buyerId === currentUserId;
+    if (isBuyer) {
+      return room.shopName || `Shop #${room.shopId}`;
+    }
+    return room.buyerName || `Người mua #${room.buyerId}`;
+  };
+
   const filteredRooms = rooms.filter((r) => {
-    const nameMatch = (r.shopName || `Shop #${r.shopId}`)
+    const displayName = getRoomDisplayName(r);
+    const nameMatch = displayName
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     if (filterType === 'unread') {
@@ -203,7 +213,8 @@ export const FloatingChatWidget: React.FC = () => {
                 ) : (
                   filteredRooms.map((room) => {
                     const isSelected = room.id === activeRoomId;
-                    const displayName = room.shopName || `Shop #${room.shopId}`;
+                    const displayName = getRoomDisplayName(room);
+                    const isBuyer = room.buyerId === currentUserId;
                     return (
                       <div
                         key={room.id}
@@ -220,13 +231,20 @@ export const FloatingChatWidget: React.FC = () => {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <span
-                              className={`text-xs truncate ${
-                                isSelected ? 'font-bold text-[#ee4d2d]' : 'font-semibold text-gray-800'
-                              }`}
-                            >
-                              {displayName}
-                            </span>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className={`text-xs truncate ${
+                                  isSelected ? 'font-bold text-[#ee4d2d]' : 'font-semibold text-gray-800'
+                                }`}
+                              >
+                                {displayName}
+                              </span>
+                              {!isBuyer && (
+                                <span className="text-[10px] bg-orange-100 text-[#ee4d2d] px-1 py-0.2 rounded font-medium shrink-0">
+                                  Khách mua
+                                </span>
+                              )}
+                            </div>
                             <span className="text-[10px] text-gray-400 shrink-0 ml-1">
                               {formatTime(room.lastMessageAt || room.updatedAt)}
                             </span>
@@ -306,25 +324,36 @@ export const FloatingChatWidget: React.FC = () => {
                   <div className="px-4 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between shrink-0 shadow-xs">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-xs">
-                        {(activeRoom.shopName || 'S').charAt(0).toUpperCase()}
+                        {getRoomDisplayName(activeRoom).charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h4 className="text-xs font-bold text-gray-900 leading-tight">
-                          {activeRoom.shopName || `Shop #${activeRoom.shopId}`}
-                        </h4>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-xs font-bold text-gray-900 leading-tight">
+                            {getRoomDisplayName(activeRoom)}
+                          </h4>
+                          {activeRoom.buyerId !== currentUserId && (
+                            <span className="text-[10px] bg-orange-100 text-[#ee4d2d] px-1.5 py-0.2 rounded font-medium">
+                              Khách hàng
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[10px] text-gray-400">Đang hoạt động</span>
+                          <span className="text-[10px] text-gray-400">
+                            {activeRoom.buyerId === currentUserId ? 'Đang hoạt động' : 'Trực tuyến'}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => navigate(`/products`)}
-                      className="text-[11px] text-[#ee4d2d] hover:text-[#d73211] font-medium flex items-center gap-1 bg-orange-50 px-2.5 py-1 rounded-md transition-colors"
-                    >
-                      <Store className="w-3.5 h-3.5" />
-                      <span>Xem Shop</span>
-                    </button>
+                    {activeRoom.buyerId === currentUserId && (
+                      <button
+                        onClick={() => navigate(`/products`)}
+                        className="text-[11px] text-[#ee4d2d] hover:text-[#d73211] font-medium flex items-center gap-1 bg-orange-50 px-2.5 py-1 rounded-md transition-colors"
+                      >
+                        <Store className="w-3.5 h-3.5" />
+                        <span>Xem Shop</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F9FA]">
@@ -336,7 +365,11 @@ export const FloatingChatWidget: React.FC = () => {
                       <div className="flex flex-col items-center justify-center h-full text-xs text-gray-400 space-y-1">
                         <MessageSquare className="w-6 h-6 text-gray-300" />
                         <span>Chưa có tin nhắn nào trong phòng này.</span>
-                        <span className="text-[11px] text-gray-400">Hãy gửi lời chào đầu tiên đến Shop nhé!</span>
+                        <span className="text-[11px] text-gray-400">
+                          {activeRoom.buyerId === currentUserId
+                            ? 'Hãy gửi lời chào đầu tiên đến Shop nhé!'
+                            : 'Hãy gửi tin nhắn phản hồi cho khách hàng nhé!'}
+                        </span>
                       </div>
                     ) : (
                       messages.map((msg) => {

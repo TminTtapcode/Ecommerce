@@ -10,6 +10,7 @@ import com.tmt.ecommerce.chat.exception.ChatAccessDeniedException;
 import com.tmt.ecommerce.chat.exception.ChatRoomNotFoundException;
 import com.tmt.ecommerce.chat.repository.ChatMessageRepository;
 import com.tmt.ecommerce.chat.repository.ChatRoomRepository;
+import com.tmt.ecommerce.identity.api.IdentityInternalService;
 import com.tmt.ecommerce.shop.api.ShopInternalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ShopInternalService shopInternalService;
+    private final IdentityInternalService identityInternalService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
@@ -36,8 +40,12 @@ public class ChatServiceImpl implements ChatService {
     public ChatRoomResponse createOrGetRoom(CreateChatRoomRequest request, Long buyerId) {
         Long shopId = request.getShopId();
 
-        shopInternalService.getUserIdByShopId(shopId)
+        Long shopOwnerId = shopInternalService.getUserIdByShopId(shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Shop not found"));
+
+        if (buyerId.equals(shopOwnerId)) {
+            throw new IllegalArgumentException("Bạn không thể tự trò chuyện với cửa hàng của chính mình.");
+        }
 
         ChatRoom room = chatRoomRepository.findByBuyerIdAndShopId(buyerId, shopId)
                 .orElseGet(() -> {
@@ -55,13 +63,29 @@ public class ChatServiceImpl implements ChatService {
     @Transactional(readOnly = true)
     public List<ChatRoomResponse> getMyRooms(Long userId) {
         List<ChatRoomResponse> responses = new ArrayList<>();
+        Set<Long> seenRoomIds = new HashSet<>();
 
         chatRoomRepository.findAllByBuyerIdOrderByUpdatedAtDesc(userId)
-            .forEach(room -> responses.add(mapToChatRoomResponse(room, userId)));
+            .forEach(room -> {
+                Long shopOwnerId = shopInternalService.getUserIdByShopId(room.getShopId()).orElse(null);
+                if (shopOwnerId != null && shopOwnerId.equals(userId)) {
+                    return;
+                }
+                if (seenRoomIds.add(room.getId())) {
+                    responses.add(mapToChatRoomResponse(room, userId));
+                }
+            });
 
         shopInternalService.findShopIdByUserId(userId).ifPresent(shopId -> {
             chatRoomRepository.findAllByShopIdOrderByUpdatedAtDesc(shopId)
-                .forEach(room -> responses.add(mapToChatRoomResponse(room, userId)));
+                .forEach(room -> {
+                    if (room.getBuyerId().equals(userId)) {
+                        return;
+                    }
+                    if (seenRoomIds.add(room.getId())) {
+                        responses.add(mapToChatRoomResponse(room, userId));
+                    }
+                });
         });
 
         responses.sort((r1, r2) -> {
@@ -168,11 +192,14 @@ public class ChatServiceImpl implements ChatService {
         String shopName = shopInternalService.getShopNameById(room.getShopId())
                 .orElse("Shop #" + room.getShopId());
 
+        String buyerName = identityInternalService.getUserFullNameOrDefault(room.getBuyerId());
+
         return ChatRoomResponse.builder()
                 .id(room.getId())
                 .buyerId(room.getBuyerId())
                 .shopId(room.getShopId())
                 .shopName(shopName)
+                .buyerName(buyerName)
                 .lastMessage(lastMessage)
                 .lastMessageAt(lastMessageAt)
                 .unreadCount(unreadCount)

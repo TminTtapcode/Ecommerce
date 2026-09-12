@@ -202,7 +202,10 @@ export const useChat = (initialRoomId?: number | null) => {
           });
           return room;
         }
-      } catch (err) {
+      } catch (err: any) {
+        const errorMsg =
+          err?.response?.data?.message || 'Không thể tạo hoặc mở phòng chat với shop này.';
+        alert(errorMsg);
         console.error('[useChat] Lỗi khi tạo phòng chat với shop:', err);
       }
       return null;
