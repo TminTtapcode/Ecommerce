@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record ProductCreateRequest(
-        @NotNull(message = "ID Cửa hàng không được để trống")
         Long shopId,
 
         @NotBlank(message = "Tên sản phẩm không được để trống")
@@ -30,10 +29,8 @@ public record ProductCreateRequest(
         @NotNull(message = "Danh mục sản phẩm không được để trống")
         Long categoryId,
 
-        Long brandId, // Brand có thể null nếu sản phẩm không có thương hiệu
+        Long brandId,
 
-        // @Valid cực kỳ quan trọng: Nó báo cho Spring biết phải chui vào bên trong
-        // List này và check tiếp các annotation của ProductVariantRequest
         @Valid
         List<ProductVariantRequest> variants,
 

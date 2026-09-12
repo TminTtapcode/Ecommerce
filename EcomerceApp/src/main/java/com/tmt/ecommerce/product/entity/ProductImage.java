@@ -3,7 +3,6 @@ package com.tmt.ecommerce.product.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-// 1. Tạo Entity ProductImage
 @Entity
 @Table(name = "product_images")
 @Getter
@@ -24,10 +23,10 @@ public class ProductImage {
     private String publicId;
 
     @Column(name = "is_thumbnail")
-    private boolean isThumbnail; // Đánh dấu ảnh bìa
+    private boolean isThumbnail;
 
     @Column(name = "sort_order")
-    private int sortOrder; // Thứ tự hiển thị ảnh trên UI
+    private int sortOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)

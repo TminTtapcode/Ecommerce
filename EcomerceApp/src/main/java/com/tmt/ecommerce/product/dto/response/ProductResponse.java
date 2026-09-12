@@ -10,7 +10,9 @@ public record ProductResponse(
         String description,
         BigDecimal price,
         Integer stockQuantity,
-        String categoryName, // Chỉ trả về tên danh mục cho nhẹ, thay vì cả Object Category
+        Long categoryId,
+        String categoryName,
+        String status,
         List<ProductVariantResponse> variants,
         List<ProductImageResponse> imageResponses
 ) {}

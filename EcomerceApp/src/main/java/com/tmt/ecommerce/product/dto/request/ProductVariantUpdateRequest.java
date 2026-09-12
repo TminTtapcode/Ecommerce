@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 public record ProductVariantUpdateRequest(
-        Long id, // ID có thể null nếu đây là biến thể mới được thêm vào
+        Long id,
         String sku,
         BigDecimal price,
         Integer stockQuantity,

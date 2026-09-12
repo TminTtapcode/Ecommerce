@@ -33,16 +33,16 @@ public class ReviewServiceImpl implements ReviewService {
     private final ProductInternalService productInternalService;
     private final ShopInternalService shopInternalService;
     private final IdentityInternalService identityInternalService;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public ReviewResponse createReview(Long userId, ReviewCreateRequest request) {
-        // 1. Kiểm tra đơn hàng thuộc về user và đã giao thành công
+
         if (!orderInternalService.isOrderDeliveredAndBelongsToUser(request.orderId(), userId)) {
             throw new IllegalArgumentException("Đơn hàng chưa giao thành công hoặc không thuộc về bạn.");
         }
 
-        // 2. Kiểm tra đơn hàng có chứa sản phẩm (thông qua variant)
         List<Long> variantIdsInOrder = orderInternalService.getProductVariantIdsByOrderId(request.orderId());
         boolean hasProduct = variantIdsInOrder.stream()
                 .map(productInternalService::getProductIdByVariantId)
@@ -52,12 +52,10 @@ public class ReviewServiceImpl implements ReviewService {
             throw new IllegalArgumentException("Sản phẩm không có trong đơn hàng này.");
         }
 
-        // 3. Kiểm tra người dùng đã đánh giá sản phẩm trong đơn hàng này chưa
         if (reviewRepository.existsByUserIdAndOrderIdAndProductId(userId, request.orderId(), request.productId())) {
             throw new IllegalStateException("Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi.");
         }
 
-        // 4. Lưu đánh giá
         Review review = Review.builder()
                 .userId(userId)
                 .productId(request.productId())
@@ -69,10 +67,17 @@ public class ReviewServiceImpl implements ReviewService {
 
         review = reviewRepository.save(review);
         log.info("User {} created review {} for product {}", userId, review.getId(), request.productId());
+
+        Long shopId = productInternalService.getShopIdByProductId(request.productId());
+        eventPublisher.publishEvent(new com.tmt.ecommerce.review.api.event.ReviewCreatedEvent(
+                review.getId(), userId, shopId, request.productId(), request.rating()
+        ));
+
         return mapToReviewResponse(review);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ReviewResponse> getProductReviews(Long productId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return reviewRepository.findByProductIdOrderByCreatedAtDesc(productId, pageable)
@@ -80,6 +85,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public RatingSummaryResponse getRatingSummary(Long productId) {
         Long totalReviews = reviewRepository.countByProductId(productId);
         if (totalReviews == 0) {
@@ -104,6 +110,15 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public java.util.List<ReviewResponse> getMyReviewsForProduct(Long userId, Long productId) {
+        List<Review> myReviews = reviewRepository.findByUserIdAndProductId(userId, productId);
+        return myReviews.stream()
+                .map(this::mapToReviewResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public ReviewResponse replyReview(Long vendorUserId, Long reviewId, VendorReplyRequest request) {
         Review review = reviewRepository.findById(reviewId)
@@ -116,7 +131,7 @@ public class ReviewServiceImpl implements ReviewService {
 
         review.setVendorReply(request.replyComment());
         review.setVendorRepliedAt(LocalDateTime.now());
-        
+
         review = reviewRepository.save(review);
         log.info("Vendor {} replied to review {}", vendorUserId, reviewId);
         return mapToReviewResponse(review);
@@ -127,15 +142,15 @@ public class ReviewServiceImpl implements ReviewService {
     public ReviewResponse updateReview(Long userId, Long reviewId, com.tmt.ecommerce.review.dto.request.ReviewUpdateRequest request) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài đánh giá."));
-        
+
         if (!review.getUserId().equals(userId)) {
             throw new IllegalArgumentException("Bạn không có quyền sửa đánh giá này.");
         }
-        
+
         review.setRating(request.rating());
         review.setComment(request.comment());
         review.setImageUrls(request.imageUrls() != null ? request.imageUrls() : new java.util.ArrayList<>());
-        
+
         review = reviewRepository.save(review);
         log.info("User {} updated review {}", userId, reviewId);
         return mapToReviewResponse(review);
@@ -146,37 +161,52 @@ public class ReviewServiceImpl implements ReviewService {
     public void deleteReview(Long userId, Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài đánh giá."));
-        
+
         if (!review.getUserId().equals(userId)) {
             throw new IllegalArgumentException("Bạn không có quyền xóa đánh giá này.");
         }
-        
+
         reviewRepository.delete(review);
         log.info("User {} deleted review {}", userId, reviewId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Long> checkReviewEligibility(Long userId, Long productId) {
-        // Find delivered orders for this user
-        List<com.tmt.ecommerce.order.entity.Order> deliveredOrders = orderInternalService.getDeliveredOrdersByUserId(userId);
-        
-        List<Long> eligibleOrderIds = new java.util.ArrayList<>();
-        
-        for (com.tmt.ecommerce.order.entity.Order order : deliveredOrders) {
-            // Check if order contains product
-            List<Long> variantIdsInOrder = orderInternalService.getProductVariantIdsByOrderId(order.getId());
+
+        List<com.tmt.ecommerce.order.api.dto.DeliveredOrderData> deliveredOrders =
+                orderInternalService.getDeliveredOrdersWithVariantsByUserId(userId);
+
+        List<Long> orderIdsWithProduct = new java.util.ArrayList<>();
+
+        List<Long> allVariantIds = deliveredOrders.stream()
+                .flatMap(orderData -> orderData.productVariantIds().stream())
+                .distinct()
+                .toList();
+
+        Map<Long, Long> variantToProductMap = productInternalService.getProductIdsByVariantIds(allVariantIds);
+
+        for (com.tmt.ecommerce.order.api.dto.DeliveredOrderData orderData : deliveredOrders) {
+
+            List<Long> variantIdsInOrder = orderData.productVariantIds();
             boolean hasProduct = variantIdsInOrder.stream()
-                    .map(productInternalService::getProductIdByVariantId)
+                    .map(variantToProductMap::get)
                     .anyMatch(pid -> pid != null && pid.equals(productId));
-                    
+
             if (hasProduct) {
-                // Check if already reviewed
-                if (!reviewRepository.existsByUserIdAndOrderIdAndProductId(userId, order.getId(), productId)) {
-                    eligibleOrderIds.add(order.getId());
-                }
+                orderIdsWithProduct.add(orderData.orderId());
             }
         }
-        return eligibleOrderIds;
+
+        if (orderIdsWithProduct.isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+
+        List<Long> reviewedOrderIds = reviewRepository.findReviewedOrderIds(userId, productId, orderIdsWithProduct);
+
+        orderIdsWithProduct.removeAll(reviewedOrderIds);
+
+        return orderIdsWithProduct;
     }
 
     private ReviewResponse mapToReviewResponse(Review review) {

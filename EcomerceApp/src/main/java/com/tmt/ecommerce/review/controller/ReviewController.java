@@ -67,6 +67,22 @@ public class ReviewController {
         );
     }
 
+    @GetMapping("/products/{productId}/reviews/my-reviews")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<java.util.List<ReviewResponse>>> getMyReviewsForProduct(
+            @CurrentUserId Long userId,
+            @PathVariable Long productId) {
+
+        java.util.List<ReviewResponse> responseData = reviewService.getMyReviewsForProduct(userId, productId);
+        return ResponseEntity.ok(
+                ApiResponse.<java.util.List<ReviewResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Lấy đánh giá của tôi thành công")
+                        .data(responseData)
+                        .build()
+        );
+    }
+
     @PutMapping("/reviews/{reviewId}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<ReviewResponse>> updateReview(

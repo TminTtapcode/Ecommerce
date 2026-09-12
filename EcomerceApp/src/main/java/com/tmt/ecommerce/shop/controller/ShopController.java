@@ -1,6 +1,6 @@
 package com.tmt.ecommerce.shop.controller;
 
-import com.tmt.ecommerce.common.annotation.CurrentUserId; // <-- Import Annotation mới
+import com.tmt.ecommerce.common.annotation.CurrentUserId;
 import com.tmt.ecommerce.common.dto.ApiResponse;
 import com.tmt.ecommerce.shop.dto.ShopCreateRequest;
 import com.tmt.ecommerce.shop.service.ShopService;
@@ -19,7 +19,7 @@ public class ShopController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<Void>> registerShop(
-            @CurrentUserId Long userId, // <-- Xịn xò chưa! Mọi thứ tự động được Spring bơm vào đây
+            @CurrentUserId Long userId,
             @Valid @RequestBody ShopCreateRequest request) {
 
         shopService.createShop(userId, request);
@@ -29,5 +29,29 @@ public class ShopController {
                         .status(HttpStatus.CREATED.value())
                         .message("Đăng ký mở shop thành công, đang chờ duyệt.")
                         .build());
+    }
+
+    @GetMapping("/my-shop")
+    public ResponseEntity<ApiResponse<com.tmt.ecommerce.shop.dto.ShopResponse>> getMyShop(
+            @CurrentUserId Long userId) {
+
+        com.tmt.ecommerce.shop.dto.ShopResponse shopResponse = shopService.getMyShop(userId);
+
+        return ResponseEntity.ok(ApiResponse.<com.tmt.ecommerce.shop.dto.ShopResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy thông tin gian hàng thành công")
+                .data(shopResponse)
+                .build());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<com.tmt.ecommerce.shop.dto.ShopResponse>> getShopPublicInfo(@PathVariable Long id) {
+        com.tmt.ecommerce.shop.dto.ShopResponse shopResponse = shopService.getShopPublicInfo(id);
+
+        return ResponseEntity.ok(ApiResponse.<com.tmt.ecommerce.shop.dto.ShopResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy thông tin Shop thành công")
+                .data(shopResponse)
+                .build());
     }
 }

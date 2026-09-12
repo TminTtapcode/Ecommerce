@@ -25,12 +25,10 @@ public class Category {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // Trỏ đến Danh mục cha (Nếu là null thì đây là danh mục gốc - Root Category)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Category parent;
 
-    // Danh sách các Danh mục con
     @Builder.Default
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private Set<Category> subCategories = new HashSet<>();

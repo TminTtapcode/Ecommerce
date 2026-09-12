@@ -17,7 +17,6 @@ public class Shop {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Cột này map 1-1 với User (Quy tắc Enterprise: 1 User chỉ có 1 Shop)
     @Column(name = "user_id", unique = true, nullable = false)
     private Long userId;
 
@@ -29,5 +28,8 @@ public class Shop {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private ShopStatus status; // PENDING, ACTIVE, BANNED
+    private ShopStatus status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "prior_status", length = 20)
+    private ShopStatus priorStatus;
 }

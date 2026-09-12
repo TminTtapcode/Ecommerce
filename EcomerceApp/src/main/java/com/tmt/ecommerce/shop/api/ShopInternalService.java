@@ -1,13 +1,19 @@
 package com.tmt.ecommerce.shop.api;
 
 public interface ShopInternalService {
-    /**
-     * Kiểm tra xem userId có phải là chủ sở hữu của shopId hay không.
-     */
+    java.util.List<Long> getBannedShopIds();
+
+    void requireNotBannedForSale(Long shopId);
+
     boolean isShopOwner(Long shopId, Long userId);
 
-    /**
-     * Lấy shopId của Vendor theo userId. Nếu user chưa có Shop, ném exception.
-     */
     Long getShopIdByUserId(Long userId);
+
+    java.util.Optional<Long> findShopIdByUserId(Long userId);
+
+    java.util.Optional<Long> getUserIdByShopId(Long shopId);
+
+    java.util.Optional<String> getShopNameById(Long shopId);
+
+    long countShops();
 }

@@ -12,6 +12,8 @@ import java.util.List;
 @Entity
 @Table(name = "reviews", uniqueConstraints = {
     @UniqueConstraint(name = "uk_user_order_product", columnNames = {"user_id", "order_id", "product_id"})
+}, indexes = {
+    @Index(name = "idx_review_product_created", columnList = "product_id, created_at")
 })
 @Getter
 @Setter
@@ -34,7 +36,7 @@ public class Review {
     private Long orderId;
 
     @Column(nullable = false)
-    private Integer rating; // 1 to 5
+    private Integer rating;
 
     @Column(nullable = false, length = 1000)
     private String comment;
