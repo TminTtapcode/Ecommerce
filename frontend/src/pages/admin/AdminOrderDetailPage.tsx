@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
 import type { OrderResponse } from '../../api/types/order.types';
-import type { AdminOrderHistory } from '../../api/adminApi';
+import type { AdminOrderHistory, RefundAttemptResponse } from '../../api/adminApi';
 import { getApiError } from '../../api/apiError';
 import { ERROR_CODES } from '../../api/types/errorCodes';
 
@@ -21,6 +21,12 @@ export const AdminOrderDetailPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
 
+  const [refunds, setRefunds] = useState<RefundAttemptResponse[]>([]);
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState('Khách hàng yêu cầu hủy đơn');
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [refundMessage, setRefundMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const refresh = useCallback(async () => {
     if (!id) return;
     const [detail, allowed, audit] = await Promise.all([
@@ -28,10 +34,20 @@ export const AdminOrderDetailPage: React.FC = () => {
       adminApi.getOrderActions(Number(id)),
       adminApi.getOrderHistory(Number(id), historyPage),
     ]);
-    setOrder(detail.data.data);
+    const orderData = detail.data.data;
+    setOrder(orderData);
     setActions(allowed.data.data ?? []);
     setHistory(audit.data.data?.content ?? []);
     setHistoryPages(audit.data.data?.totalPages ?? 0);
+
+    if (orderData && orderData.status === 'CANCELLED' && orderData.paymentMethod === 'VNPAY') {
+      try {
+        const refundRes = await adminApi.getRefunds(Number(id));
+        setRefunds(refundRes.data.data ?? []);
+      } catch {
+        setRefunds([]);
+      }
+    }
   }, [id, historyPage]);
 
   useEffect(() => {
@@ -239,52 +255,200 @@ export const AdminOrderDetailPage: React.FC = () => {
       </section>
 
       {order.status === 'CANCELLED' && order.paymentMethod === 'VNPAY' && (
-        <section className="bg-amber-50/60 border border-amber-200 rounded-xl p-5 mb-6">
-          <h3 className="text-base font-bold text-amber-800 mb-2">💳 Hoàn Tiền (VNPAY)</h3>
-          <p className="mb-4 text-xs text-amber-700">Đơn hàng đã thanh toán qua VNPAY và bị hủy. Bạn có thể thực hiện lệnh hoàn tiền trực tuyến.</p>
-          <div className="flex flex-wrap gap-3">
+        <section className="bg-gradient-to-br from-amber-50/70 to-orange-50/30 border border-amber-200 rounded-2xl p-6 mb-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div>
+              <h3 className="text-base font-bold text-amber-900 flex items-center gap-2">
+                💳 Quản Lý Hoàn Tiền (VNPAY Sandbox)
+              </h3>
+              <p className="text-xs text-amber-700 mt-1">
+                Đơn hàng thanh toán trực tuyến qua VNPAY bị hủy. Admin có thể thực hiện hoàn tiền an toàn (có Idempotency-Key chống click đúp).
+              </p>
+            </div>
             <button
-              onClick={async () => {
-                const r = window.prompt('Nhập lý do hoàn tiền (không bắt buộc):', 'Khách hàng hủy đơn');
-                if (r === null) return;
-                try {
-                  setSaving(true);
-                  await adminApi.createRefund(order.id, r);
-                  alert('Lệnh hoàn tiền đã được gửi thành công!');
-                } catch (err: unknown) {
-                  alert(getApiError(err).message);
-                } finally {
-                  setSaving(false);
-                }
+              onClick={() => {
+                setRefundMessage(null);
+                setIsRefundModalOpen(true);
               }}
-              disabled={saving}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+              disabled={saving || refundLoading}
+              className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-semibold rounded-xl transition-all shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shrink-0"
             >
-              {saving ? 'Đang xử lý...' : 'Thực hiện Hoàn Tiền'}
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  setSaving(true);
-                  const res = await adminApi.getRefunds(order.id);
-                  const data = res.data.data;
-                  if (data && data.length > 0) {
-                    alert('Lịch sử hoàn tiền:\n' + data.map(d => `- ${d.status}: ${d.amount} VND (${new Date(d.createdAt).toLocaleString('vi-VN')})`).join('\n'));
-                  } else {
-                    alert('Chưa có lịch sử hoàn tiền nào cho đơn này.');
-                  }
-                } catch (err: unknown) {
-                  alert(getApiError(err).message);
-                } finally {
-                  setSaving(false);
-                }
-              }}
-              disabled={saving}
-              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              Xem lịch sử hoàn tiền
+              <span>+ Tạo Lệnh Hoàn Tiền</span>
             </button>
           </div>
+
+          {refundMessage && (
+            <div
+              className={`p-3.5 rounded-xl mb-4 text-xs font-medium border flex items-center justify-between ${
+                refundMessage.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-rose-50 text-rose-800 border-rose-200'
+              }`}
+            >
+              <span>{refundMessage.type === 'success' ? '✅ ' : '⚠️ '}{refundMessage.text}</span>
+              <button
+                onClick={() => setRefundMessage(null)}
+                className="text-gray-400 hover:text-gray-600 text-sm ml-2 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {refunds.length === 0 ? (
+            <div className="bg-white/90 border border-amber-100 rounded-xl p-4 text-center text-xs text-gray-500">
+              Chưa có lệnh hoàn tiền nào được tạo cho đơn hàng này. Bấm nút <strong>"Tạo Lệnh Hoàn Tiền"</strong> để gửi yêu cầu tới VNPAY.
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-amber-200/80 bg-white shadow-xs">
+              <table className="min-w-full divide-y divide-gray-100 text-left text-xs">
+                <thead className="bg-amber-50/60 font-semibold text-gray-600">
+                  <tr>
+                    <th className="px-4 py-3">Mã Lệnh</th>
+                    <th className="px-4 py-3">Số Tiền</th>
+                    <th className="px-4 py-3">Trạng Thái</th>
+                    <th className="px-4 py-3">Thời Gian Yêu Cầu</th>
+                    <th className="px-4 py-3 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {refunds.map((ref) => {
+                    const statusBadge: Record<string, { label: string; className: string }> = {
+                      CONFIRMED: { label: 'Đã hoàn tiền', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                      REQUESTED: { label: 'Đang xử lý', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+                      UNKNOWN:   { label: 'Cần đối soát', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+                      REJECTED:  { label: 'Từ chối', className: 'bg-rose-50 text-rose-700 border-rose-200' },
+                    };
+                    const badge = statusBadge[ref.status] || { label: ref.status, className: 'bg-gray-100 text-gray-700 border-gray-200' };
+
+                    return (
+                      <tr key={ref.id} className="hover:bg-amber-50/30 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-900">#{ref.id}</td>
+                        <td className="px-4 py-3 font-bold text-emerald-600">{formatCurrency(ref.amount)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {ref.requestedAt ? new Date(ref.requestedAt).toLocaleString('vi-VN') : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {ref.status === 'UNKNOWN' ? (
+                            <button
+                              onClick={async () => {
+                                setRefundLoading(true);
+                                setRefundMessage(null);
+                                try {
+                                  const res = await adminApi.reconcileRefund(ref.id);
+                                  setRefundMessage({
+                                    type: 'success',
+                                    text: `Đối soát thành công! Trạng thái mới: ${res.data.data?.status}`
+                                  });
+                                  await refresh();
+                                } catch (err: unknown) {
+                                  setRefundMessage({
+                                    type: 'error',
+                                    text: getApiError(err, 'Lỗi khi đối soát với VNPay').message
+                                  });
+                                } finally {
+                                  setRefundLoading(false);
+                                }
+                              }}
+                              disabled={refundLoading}
+                              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 shadow-xs cursor-pointer"
+                            >
+                              {refundLoading ? 'Đang đối soát...' : 'Đối soát VNPay'}
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-gray-400">Không cần đối soát</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {isRefundModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    💸 Xác Nhận Hoàn Tiền VNPAY
+                  </h4>
+                  <button
+                    onClick={() => setIsRefundModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600 text-lg cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!order || !refundReason.trim()) return;
+                    setRefundLoading(true);
+                    setRefundMessage(null);
+                    try {
+                      await adminApi.createRefund(order.id, refundReason.trim());
+                      setRefundMessage({ type: 'success', text: 'Lệnh hoàn tiền VNPAY đã được gửi thành công!' });
+                      setIsRefundModalOpen(false);
+                      setRefundReason('Khách hàng yêu cầu hủy đơn');
+                      await refresh();
+                    } catch (err: unknown) {
+                      setRefundMessage({ type: 'error', text: getApiError(err, 'Không thể tạo lệnh hoàn tiền').message });
+                    } finally {
+                      setRefundLoading(false);
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+                    <p><strong>Mã đơn hàng:</strong> #{order.id}</p>
+                    <p><strong>Số tiền hoàn:</strong> <span className="font-bold text-emerald-600 text-sm">{formatCurrency(order.totalAmount)}</span></p>
+                    <p><strong>Cổng thanh toán:</strong> VNPAY Sandbox (Toàn bộ giá trị đơn)</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                      Lý do hoàn tiền (Bắt buộc)
+                    </label>
+                    <textarea
+                      required
+                      maxLength={500}
+                      rows={3}
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      className="block w-full bg-white border border-gray-300 rounded-xl p-3 text-sm text-gray-900 focus:border-orange-500 focus:outline-none"
+                      placeholder="Nhập lý do hoàn tiền cho khách hàng..."
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsRefundModalOpen(false)}
+                      disabled={refundLoading}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={refundLoading || !refundReason.trim()}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                    >
+                      {refundLoading ? 'Đang gửi lệnh...' : 'Xác Nhận Hoàn Tiền'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </section>
       )}
 

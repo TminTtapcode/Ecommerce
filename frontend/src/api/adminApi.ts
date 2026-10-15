@@ -30,8 +30,7 @@ export const adminApi = {
       params: { page, size }
     });
   },
-  interveneOrder: (id: number, payload: { targetStatus: string; reason: string }) =>
-    apiClient.patch<ApiResponse<OrderResponse>>(`/api/v1/admin/orders/${id}/intervene-status`, payload),
+
   getOrders: (status?: string, page = 0, size = 10) => {
     return apiClient.get<ApiResponse<PageResponse<OrderResponse>>>('/api/v1/admin/orders', {
       params: { status, page, size }
@@ -61,6 +60,12 @@ export const adminApi = {
   getRefunds: (orderId: number) => {
     return apiClient.get<ApiResponse<RefundAttemptResponse[]>>(`/api/v1/admin/orders/${orderId}/refunds`);
   },
+  getRefundDetail: (refundId: number) => {
+    return apiClient.get<ApiResponse<RefundAttemptResponse>>(`/api/v1/admin/refunds/${refundId}`);
+  },
+  reconcileRefund: (refundId: number) => {
+    return apiClient.post<ApiResponse<RefundAttemptResponse>>(`/api/v1/admin/refunds/${refundId}/reconcile`);
+  },
 
   getDashboardStats: (startDate?: string, endDate?: string) => {
     return apiClient.get<ApiResponse<AdminDashboardStats>>('/api/v1/admin/statistics/dashboard', {
@@ -83,11 +88,14 @@ export interface RefundAttemptResponse {
   id: number;
   orderId: number;
   amount: number;
-  status: string;
-  transactionId: string;
-  reason: string;
-  createdAt: string;
-  updatedAt: string;
+  currency?: string;
+  status: 'REQUESTED' | 'CONFIRMED' | 'REJECTED' | 'UNKNOWN' | string;
+  requestedAt?: string;
+  resolvedAt?: string | null;
+  transactionId?: string;
+  reason?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AdminDashboardStats {
