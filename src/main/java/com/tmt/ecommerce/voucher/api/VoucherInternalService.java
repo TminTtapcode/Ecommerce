@@ -9,4 +9,6 @@ public interface VoucherInternalService {
     VoucherDiscountResult calculateDiscount(VoucherCalculationRequest request);
 
     boolean incrementUsage(Long voucherId);
+
+    void decrementUsage(Long voucherId);
 }

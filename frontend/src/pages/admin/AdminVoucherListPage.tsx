@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../api/adminApi';
 import { voucherApi } from '../../api/voucherApi';
+import { getApiError } from '../../api/apiError';
 import type { VoucherResponse, VoucherCreateRequest, VoucherUpdateRequest, VoucherType } from '../../api/types/voucher.types';
 
 export const AdminVoucherListPage: React.FC = () => {
@@ -35,13 +36,13 @@ export const AdminVoucherListPage: React.FC = () => {
   const fetchVouchers = async () => {
     try {
       setLoading(true);
-      const res = await adminApi.getSystemVouchers(page, 10);
+      const res = await adminApi.getSystemVouchers(page, 15);
       if (!res.data.data) throw new Error('Thiếu dữ liệu phản hồi');
       setVouchers(res.data.data.content);
       setTotalPages(res.data.data.totalPages);
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Lỗi tải danh sách voucher');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Lỗi tải danh sách voucher').message);
     } finally {
       setLoading(false);
     }
@@ -91,8 +92,8 @@ export const AdminVoucherListPage: React.FC = () => {
         startDate: '',
         endDate: ''
       });
-    } catch (err: any) {
-      setCreateError(err.response?.data?.message || 'Lỗi tạo voucher');
+    } catch (err: unknown) {
+      setCreateError(getApiError(err, 'Lỗi tạo voucher').message);
     } finally {
       setIsSubmitting(false);
     }
@@ -134,8 +135,8 @@ export const AdminVoucherListPage: React.FC = () => {
       setSuccessMsg(`Cập nhật voucher "${editingVoucher.code}" thành công!`);
       setTimeout(() => setSuccessMsg(''), 4000);
       fetchVouchers();
-    } catch (err: any) {
-      setEditError(err.response?.data?.message || 'Lỗi cập nhật voucher');
+    } catch (err: unknown) {
+      setEditError(getApiError(err, 'Lỗi cập nhật voucher').message);
     } finally {
       setIsEditSubmitting(false);
     }
@@ -150,8 +151,8 @@ export const AdminVoucherListPage: React.FC = () => {
       setTimeout(() => setSuccessMsg(''), 4000);
       setDeletingVoucher(null);
       fetchVouchers();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Lỗi xóa voucher');
+    } catch (err: unknown) {
+      alert(getApiError(err, 'Lỗi xóa voucher').message);
     } finally {
       setIsDeleting(false);
     }
@@ -360,7 +361,7 @@ export const AdminVoucherListPage: React.FC = () => {
                     <select
                       required
                       value={formData.type}
-                      onChange={e => setFormData({...formData, type: e.target.value as any})}
+                      onChange={e => setFormData({...formData, type: e.target.value as VoucherType})}
                       className="block w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors"
                     >
                       <option value="PERCENTAGE">Phần trăm (%)</option>
@@ -378,7 +379,7 @@ export const AdminVoucherListPage: React.FC = () => {
                       min="1"
                       max={formData.type === 'PERCENTAGE' ? 100 : undefined}
                       value={formData.discountValue || ''}
-                      onChange={e => setFormData({...formData, discountValue: e.target.value as any})}
+                      onChange={e => setFormData({...formData, discountValue: e.target.value ? Number(e.target.value) : 0})}
                       className="block w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors"
                       placeholder={formData.type === 'PERCENTAGE' ? 'VD: 15 (nghĩa là giảm 15%)' : 'VD: 50000'}
                     />
@@ -395,7 +396,7 @@ export const AdminVoucherListPage: React.FC = () => {
                         min="0"
                         required={formData.type === 'PERCENTAGE'}
                         value={formData.maxDiscount || ''}
-                        onChange={e => setFormData({...formData, maxDiscount: e.target.value as any})}
+                        onChange={e => setFormData({...formData, maxDiscount: e.target.value ? Number(e.target.value) : undefined})}
                         className="block w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-gray-900 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors"
                         placeholder="VD: 50000"
                       />
@@ -406,7 +407,7 @@ export const AdminVoucherListPage: React.FC = () => {
                         type="number"
                         min="0"
                         value={formData.minOrderValue || ''}
-                        onChange={e => setFormData({...formData, minOrderValue: e.target.value as any})}
+                        onChange={e => setFormData({...formData, minOrderValue: e.target.value ? Number(e.target.value) : undefined})}
                         className="block w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-gray-900 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors"
                         placeholder="VD: 100000"
                       />
@@ -442,7 +443,7 @@ export const AdminVoucherListPage: React.FC = () => {
                       type="number"
                       min="1"
                       value={formData.usageLimit || ''}
-                      onChange={e => setFormData({...formData, usageLimit: e.target.value as any})}
+                      onChange={e => setFormData({...formData, usageLimit: e.target.value ? Number(e.target.value) : undefined})}
                       className="block w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors"
                       placeholder="Để trống nếu không giới hạn"
                     />
@@ -510,7 +511,7 @@ export const AdminVoucherListPage: React.FC = () => {
                     <select
                       required
                       value={editFormData.type}
-                      onChange={e => setEditFormData({...editFormData, type: e.target.value as any})}
+                      onChange={e => setEditFormData({...editFormData, type: e.target.value as VoucherType})}
                       className="block w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors"
                     >
                       <option value="PERCENTAGE">Phần trăm (%)</option>

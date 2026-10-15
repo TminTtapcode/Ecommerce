@@ -6,15 +6,21 @@ import com.tmt.ecommerce.cart.dto.response.CartResponse;
 import com.tmt.ecommerce.cart.entity.Cart;
 import com.tmt.ecommerce.cart.entity.CartItem;
 import com.tmt.ecommerce.cart.repository.CartRepository;
+import com.tmt.ecommerce.common.exception.AppException;
+import com.tmt.ecommerce.common.exception.ErrorCode;
 import com.tmt.ecommerce.product.api.ProductInternalService;
 import com.tmt.ecommerce.product.api.dto.ProductVariantInfoDto;
+import com.tmt.ecommerce.shop.api.ShopInternalService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -23,12 +29,11 @@ public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
     private final ProductInternalService productInternalService;
-    private final com.tmt.ecommerce.shop.api.ShopInternalService shopInternalService;
+    private final ShopInternalService shopInternalService;
 
     @Override
     @Transactional
     public void addToCart(Long userId, CartItemRequest request) {
-
         ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(request.getProductVariantId());
 
         if (!"ACTIVE".equals(variantInfo.status())) {
@@ -36,14 +41,20 @@ public class CartServiceImpl implements CartService {
         }
 
         if (variantInfo.stockQuantity() < request.getQuantity()) {
-            throw new IllegalStateException("Số lượng tồn kho không đủ. Chỉ còn " + variantInfo.stockQuantity() + " sản phẩm.");
+            throw new IllegalStateException(
+                    "Số lượng tồn kho không đủ. Chỉ còn " + variantInfo.stockQuantity() + " sản phẩm.");
         }
 
-        Cart cart = cartRepository.findByUserIdForUpdate(userId)
-                .orElseGet(() -> {
-                    Cart newCart = Cart.builder().userId(userId).build();
-                    return cartRepository.save(newCart);
-                });
+        Cart cart;
+        try {
+            cart = cartRepository.findByUserIdForUpdate(userId)
+                    .orElseGet(() -> {
+                        Cart newCart = Cart.builder().userId(userId).build();
+                        return cartRepository.saveAndFlush(newCart);
+                    });
+        } catch (DataIntegrityViolationException e) {
+            cart = cartRepository.findByUserIdForUpdate(userId).get();
+        }
 
         shopInternalService.requireNotBannedForSale(variantInfo.shopId());
 
@@ -77,29 +88,37 @@ public class CartServiceImpl implements CartService {
                 .orElseGet(() -> Cart.builder().userId(userId).build());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
-
         List<CartItemResponse> itemResponses = new ArrayList<>();
 
         List<Long> variantIds = cart.getItems().stream().map(CartItem::getProductVariantId).toList();
-        java.util.Map<Long, ProductVariantInfoDto> variantInfoMap = productInternalService.getVariantInfos(variantIds);
+        Map<Long, ProductVariantInfoDto> variantInfoMap = productInternalService.getVariantInfos(variantIds);
 
         var bannedShopIds = shopInternalService.getBannedShopIds();
+        Map<Long, String> shopNameCache = new java.util.HashMap<>();
         for (CartItem item : cart.getItems()) {
             ProductVariantInfoDto variantInfo = variantInfoMap.get(item.getProductVariantId());
-            if (variantInfo == null) continue;
+            if (variantInfo == null)
+                continue;
 
             BigDecimal subTotal = variantInfo.price().multiply(BigDecimal.valueOf(item.getQuantity()));
-
-            boolean isAvailable = !bannedShopIds.contains(variantInfo.shopId()) && "ACTIVE".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();
+            boolean isAvailable = !bannedShopIds.contains(variantInfo.shopId()) && "ACTIVE".equals(variantInfo.status())
+                    && variantInfo.stockQuantity() >= item.getQuantity();
 
             if (isAvailable) {
                 totalAmount = totalAmount.add(subTotal);
             }
 
+            String shopName = shopNameCache.computeIfAbsent(
+                    variantInfo.shopId(),
+                    id -> shopInternalService.getShopNameById(id).orElse("Unknown Shop")
+            );
+
             itemResponses.add(new CartItemResponse(
                     item.getId(),
+                    variantInfo.productId(),
                     variantInfo.variantId(),
                     variantInfo.shopId(),
+                    shopName,
                     variantInfo.productName(),
                     variantInfo.sku(),
                     variantInfo.price(),
@@ -107,8 +126,7 @@ public class CartServiceImpl implements CartService {
                     subTotal,
                     variantInfo.thumbnailUrl(),
                     variantInfo.attributes(),
-                    isAvailable
-            ));
+                    isAvailable));
         }
 
         return new CartResponse(cart.getId(), itemResponses, totalAmount);
@@ -126,12 +144,14 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong giỏ hàng."));
 
         if (newQuantity == null || newQuantity < 1) {
-            throw new com.tmt.ecommerce.common.exception.AppException(com.tmt.ecommerce.common.exception.ErrorCode.INVALID_INPUT);
+            throw new AppException(ErrorCode.INVALID_INPUT);
         }
         if (newQuantity > itemToUpdate.getQuantity()) {
-            ProductVariantInfoDto variantInfo = productInternalService.getVariantInfo(itemToUpdate.getProductVariantId());
+            ProductVariantInfoDto variantInfo = productInternalService
+                    .getVariantInfo(itemToUpdate.getProductVariantId());
             shopInternalService.requireNotBannedForSale(variantInfo.shopId());
-            if (newQuantity > variantInfo.stockQuantity()) throw new IllegalStateException("Insufficient stock");
+            if (newQuantity > variantInfo.stockQuantity())
+                throw new IllegalStateException("Insufficient stock");
         }
 
         itemToUpdate.setQuantity(newQuantity);

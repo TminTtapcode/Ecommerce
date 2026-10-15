@@ -28,7 +28,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [loading] = useState<boolean>(false);
 
-  // 1. Tải thông tin hồ sơ người dùng từ Backend
   const loadProfile = useCallback(async (): Promise<Profile | null> => {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -41,12 +40,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return null;
     } catch (error) {
-      console.error('Lỗi khi tải thông tin cá nhân:', error);
+      console.error(error);
       return null;
     }
   }, []);
 
-  // 2. Cập nhật hồ sơ cá nhân
   const saveProfile = useCallback(async (body: ProfileUpdate): Promise<Profile | null> => {
     try {
       const response = await userApi.updateProfile(body);
@@ -57,12 +55,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return null;
     } catch (error) {
-      console.error('Lỗi khi cập nhật hồ sơ:', error);
+      console.error(error);
       throw error;
     }
   }, []);
 
-  // 3. Khởi động ứng dụng: nếu có token thì kết nối WebSocket và tải hồ sơ
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -71,7 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [loadProfile]);
 
-  // 4. Đồng bộ đa tab: khi đăng nhập/đăng xuất ở tab khác thì tự cập nhật giao diện
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'token') {
@@ -90,7 +86,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [loadProfile]);
 
-  // 5. Hàm đăng nhập: Lưu token, set user, kết nối WebSocket và nạp profile
   const login = (token: string) => {
     localStorage.setItem('token', token);
     const identity = decodeUser(token);
@@ -99,7 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     void loadProfile();
   };
 
-  // 6. Hàm đăng xuất: Xóa token, reset user và ngắt kết nối WebSocket
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);

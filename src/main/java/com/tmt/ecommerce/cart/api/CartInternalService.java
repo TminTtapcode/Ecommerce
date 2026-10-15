@@ -10,4 +10,6 @@ public interface CartInternalService {
     void clearCart(Long userId);
 
     void removeCartItems(Long userId, List<Long> cartItemIds);
+
+    void removeCartItemsByVariantIds(Long userId, List<Long> variantIds);
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { voucherApi } from '../../api/voucherApi';
+import { getApiError } from '../../api/apiError';
 import type { VoucherResponse, VoucherCreateRequest, VoucherUpdateRequest, VoucherType } from '../../api/types/voucher.types';
 import { VendorNav } from '../../components/vendor/VendorNav';
 import { Pagination } from '../../components/common/Pagination';
@@ -36,13 +37,13 @@ export const VendorVoucherListPage: React.FC = () => {
   const fetchVouchers = async () => {
     try {
       setLoading(true);
-      const res = await voucherApi.getMyShopVouchers(page, 10);
+      const res = await voucherApi.getMyShopVouchers(page, 15);
       if (!res.data.data) throw new Error('Thiếu dữ liệu phản hồi');
       setVouchers(res.data.data.content);
       setTotalPages(res.data.data.totalPages);
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Lỗi tải danh sách voucher');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Lỗi tải danh sách voucher').message);
     } finally {
       setLoading(false);
     }
@@ -92,8 +93,8 @@ export const VendorVoucherListPage: React.FC = () => {
         startDate: '',
         endDate: ''
       });
-    } catch (err: any) {
-      setCreateError(err.response?.data?.message || 'Lỗi tạo voucher');
+    } catch (err: unknown) {
+      setCreateError(getApiError(err, 'Lỗi tạo voucher').message);
     } finally {
       setIsSubmitting(false);
     }
@@ -135,8 +136,8 @@ export const VendorVoucherListPage: React.FC = () => {
       setSuccessMsg(`Cập nhật voucher "${editingVoucher.code}" thành công!`);
       setTimeout(() => setSuccessMsg(''), 4000);
       fetchVouchers();
-    } catch (err: any) {
-      setEditError(err.response?.data?.message || 'Lỗi cập nhật voucher');
+    } catch (err: unknown) {
+      setEditError(getApiError(err, 'Lỗi cập nhật voucher').message);
     } finally {
       setIsEditSubmitting(false);
     }
@@ -151,8 +152,8 @@ export const VendorVoucherListPage: React.FC = () => {
       setTimeout(() => setSuccessMsg(''), 4000);
       setDeletingVoucher(null);
       fetchVouchers();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Lỗi xóa voucher');
+    } catch (err: unknown) {
+      alert(getApiError(err, 'Lỗi xóa voucher').message);
     } finally {
       setIsDeleting(false);
     }
@@ -339,7 +340,7 @@ export const VendorVoucherListPage: React.FC = () => {
                     <select
                       required
                       value={formData.type}
-                      onChange={e => setFormData({...formData, type: e.target.value as any})}
+                      onChange={e => setFormData({...formData, type: e.target.value as VoucherType})}
                       className="block w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       <option value="PERCENTAGE">Phần trăm (%)</option>
@@ -357,7 +358,7 @@ export const VendorVoucherListPage: React.FC = () => {
                       min="1"
                       max={formData.type === 'PERCENTAGE' ? 100 : undefined}
                       value={formData.discountValue || ''}
-                      onChange={e => setFormData({...formData, discountValue: e.target.value as any})}
+                      onChange={e => setFormData({...formData, discountValue: Number(e.target.value)})}
                       className="block w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder={formData.type === 'PERCENTAGE' ? 'VD: 10 (nghĩa là giảm 10%)' : 'VD: 30000'}
                     />
@@ -373,7 +374,7 @@ export const VendorVoucherListPage: React.FC = () => {
                         min="0"
                         required={formData.type === 'PERCENTAGE'}
                         value={formData.maxDiscount || ''}
-                        onChange={e => setFormData({...formData, maxDiscount: e.target.value as any})}
+                        onChange={e => setFormData({...formData, maxDiscount: e.target.value ? Number(e.target.value) : undefined})}
                         className="block w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="VD: 50000"
                       />
@@ -384,7 +385,7 @@ export const VendorVoucherListPage: React.FC = () => {
                         type="number"
                         min="0"
                         value={formData.minOrderValue || ''}
-                        onChange={e => setFormData({...formData, minOrderValue: e.target.value as any})}
+                        onChange={e => setFormData({...formData, minOrderValue: e.target.value ? Number(e.target.value) : undefined})}
                         className="block w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="VD: 100000"
                       />
@@ -420,7 +421,7 @@ export const VendorVoucherListPage: React.FC = () => {
                       type="number"
                       min="1"
                       value={formData.usageLimit || ''}
-                      onChange={e => setFormData({...formData, usageLimit: e.target.value as any})}
+                      onChange={e => setFormData({...formData, usageLimit: e.target.value ? Number(e.target.value) : undefined})}
                       className="block w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Để trống nếu không giới hạn"
                     />
@@ -484,7 +485,7 @@ export const VendorVoucherListPage: React.FC = () => {
                     <select
                       required
                       value={editFormData.type}
-                      onChange={e => setEditFormData({...editFormData, type: e.target.value as any})}
+                      onChange={e => setEditFormData({...editFormData, type: e.target.value as VoucherType})}
                       className="block w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       <option value="PERCENTAGE">Phần trăm (%)</option>

@@ -1,37 +1,56 @@
 package com.tmt.ecommerce.product.service;
 
+import com.tmt.ecommerce.common.exception.AppException;
+import com.tmt.ecommerce.common.exception.ErrorCode;
+import com.tmt.ecommerce.common.service.FileStorageService;
+import com.tmt.ecommerce.order.api.OrderInternalService;
 import com.tmt.ecommerce.product.dto.request.ProductCreateRequest;
 import com.tmt.ecommerce.product.dto.request.ProductImageUpdateRequest;
 import com.tmt.ecommerce.product.dto.request.ProductUpdateRequest;
 import com.tmt.ecommerce.product.dto.request.ProductVariantUpdateRequest;
 import com.tmt.ecommerce.product.dto.response.ProductImageResponse;
-import com.tmt.ecommerce.product.enums.ProductStatus;
+import com.tmt.ecommerce.product.dto.response.ProductResponse;
+import com.tmt.ecommerce.product.dto.response.ProductVariantResponse;
 import com.tmt.ecommerce.product.entity.Category;
 import com.tmt.ecommerce.product.entity.Product;
 import com.tmt.ecommerce.product.entity.ProductImage;
 import com.tmt.ecommerce.product.entity.ProductVariant;
+import com.tmt.ecommerce.product.enums.ProductStatus;
 import com.tmt.ecommerce.product.repository.CategoryRepository;
+import com.tmt.ecommerce.product.repository.ProductImageRepository;
 import com.tmt.ecommerce.product.repository.ProductRepository;
 import com.tmt.ecommerce.product.repository.ProductVariantRepository;
-import com.tmt.ecommerce.product.repository.ProductImageRepository;
-import com.tmt.ecommerce.common.service.FileStorageService;
 import com.tmt.ecommerce.shop.api.ShopInternalService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import com.tmt.ecommerce.product.dto.response.ProductResponse;
-import com.tmt.ecommerce.product.dto.response.ProductVariantResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -45,14 +64,13 @@ public class ProductServiceImpl implements ProductService {
     private final ShopInternalService shopInternalService;
     private final ProductImageRepository productImageRepository;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    @org.springframework.context.annotation.Lazy
-    private com.tmt.ecommerce.order.api.OrderInternalService orderInternalService;
+    @Autowired
+    @Lazy
+    private OrderInternalService orderInternalService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProductResponse createProduct(Long userId, ProductCreateRequest request) {
-
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Danh mục sản phẩm không tồn tại với ID: " + request.categoryId()));
 
@@ -85,7 +103,7 @@ public class ProductServiceImpl implements ProductService {
                             .sortOrder(imgReq.sortOrder() != null ? imgReq.sortOrder() : 0)
                             .build()
             ).toList();
-            product.setImages(new java.util.ArrayList<>(productImages));
+            product.setImages(new ArrayList<>(productImages));
             normalizeThumbnails(product.getImages());
             normalizeSortOrders(product.getImages());
         }
@@ -127,33 +145,16 @@ public class ProductServiceImpl implements ProductService {
         int safePage = Math.max(page, 0);
         Pageable pageable = PageRequest.of(safePage, safeSize, sort);
 
-        Set<Long> categoryIds = null;
-        if (categoryId != null) {
-            categoryIds = new java.util.HashSet<>();
-            categoryIds.add(categoryId);
-            java.util.Queue<Long> queue = new java.util.LinkedList<>(List.of(categoryId));
-            while (!queue.isEmpty()) {
-                Long current = queue.poll();
-                List<Long> children = categoryRepository.findDirectChildIds(current);
-                for (Long child : children) {
-                    if (categoryIds.add(child)) {
-                        queue.add(child);
-                    }
-                }
-            }
-        }
-
+        Set<Long> categoryIds = categoryId != null ? getCategoryHierarchyIds(categoryId) : null;
         List<Long> bannedShopIds = shopInternalService.getBannedShopIds();
 
         final Set<Long> finalCategoryIds = categoryIds;
-
         final BigDecimal safeMin = (minPrice != null && minPrice.compareTo(BigDecimal.ZERO) >= 0) ? minPrice : null;
         final BigDecimal safeMax = (maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) > 0) ? maxPrice : null;
 
         Page<Product> productPage = productRepository.findAll(
-            (org.springframework.data.jpa.domain.Specification<Product>) (root, query, cb) -> {
-                var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
-
+            (Specification<Product>) (root, query, cb) -> {
+                List<Predicate> predicates = new ArrayList<>();
                 predicates.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
 
                 if (!bannedShopIds.isEmpty()) {
@@ -165,7 +166,7 @@ public class ProductServiceImpl implements ProductService {
                 }
 
                 if (keyword != null && !keyword.isBlank()) {
-                    String escaped = keyword.toLowerCase(java.util.Locale.ROOT)
+                    String escaped = keyword.toLowerCase(Locale.ROOT)
                             .replace("!", "!!").replace("%", "!%").replace("_", "!_");
                     predicates.add(cb.like(cb.lower(root.get("name")), "%" + escaped + "%", '!'));
                 }
@@ -181,10 +182,26 @@ public class ProductServiceImpl implements ProductService {
                     predicates.add(cb.lessThanOrEqualTo(root.get("price"), safeMax));
                 }
 
-                return cb.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+                return cb.and(predicates.toArray(Predicate[]::new));
             }, pageable);
 
         return productPage.map(this::mapToProductResponse);
+    }
+
+    private Set<Long> getCategoryHierarchyIds(Long rootCategoryId) {
+        Set<Long> categoryIds = new HashSet<>();
+        categoryIds.add(rootCategoryId);
+        Queue<Long> queue = new LinkedList<>(List.of(rootCategoryId));
+        while (!queue.isEmpty()) {
+            Long current = queue.poll();
+            List<Long> children = categoryRepository.findDirectChildIds(current);
+            for (Long child : children) {
+                if (categoryIds.add(child)) {
+                    queue.add(child);
+                }
+            }
+        }
+        return categoryIds;
     }
 
     @Override
@@ -209,9 +226,9 @@ public class ProductServiceImpl implements ProductService {
         int safeLimit = Math.max(1, Math.min(limit, 50));
         int bufferLimit = safeLimit * 3;
 
-        java.util.Set<Product> recommendationSet = new java.util.LinkedHashSet<>();
-        java.util.List<Long> purchasedProductIds = new java.util.ArrayList<>();
-        java.util.List<Long> bannedShopIds = shopInternalService.getBannedShopIds();
+        Set<Product> recommendationSet = new LinkedHashSet<>();
+        List<Long> purchasedProductIds = new ArrayList<>();
+        List<Long> bannedShopIds = shopInternalService.getBannedShopIds();
 
         if (userId != null) {
             List<Long> recentVariantIds = orderInternalService.getRecentlyPurchasedVariantIds(userId, bufferLimit);
@@ -231,7 +248,7 @@ public class ProductServiceImpl implements ProductService {
                         .toList();
 
                 if (!categoryIds.isEmpty()) {
-                    List<Long> excluded = purchasedProductIds.isEmpty() ? new java.util.ArrayList<>(List.of(-1L)) : new java.util.ArrayList<>(purchasedProductIds);
+                    List<Long> excluded = purchasedProductIds.isEmpty() ? new ArrayList<>(List.of(-1L)) : new ArrayList<>(purchasedProductIds);
                     Pageable pageable = PageRequest.of(0, safeLimit, Sort.by("id").descending());
                     List<Product> personalized = bannedShopIds.isEmpty()
                             ? productRepository.findByCategoryIdsExcluding(categoryIds, excluded, ProductStatus.ACTIVE, pageable)
@@ -247,7 +264,7 @@ public class ProductServiceImpl implements ProductService {
             if (!topVariantIds.isEmpty()) {
                 List<ProductVariant> topVariants = productVariantRepository.findByIdIn(topVariantIds);
 
-                java.util.Map<Long, Product> variantToProductMap = new java.util.HashMap<>();
+                Map<Long, Product> variantToProductMap = new HashMap<>();
                 for (ProductVariant pv : topVariants) {
                     if (pv.getProduct().getStatus() == ProductStatus.ACTIVE) {
                         variantToProductMap.put(pv.getId(), pv.getProduct());
@@ -259,7 +276,9 @@ public class ProductServiceImpl implements ProductService {
                     if (p != null && !purchasedProductIds.contains(p.getId()) && !recommendationSet.contains(p)) {
                         if (bannedShopIds.isEmpty() || !bannedShopIds.contains(p.getShopId())) {
                             recommendationSet.add(p);
-                            if (recommendationSet.size() >= safeLimit) break;
+                            if (recommendationSet.size() >= safeLimit) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -267,9 +286,11 @@ public class ProductServiceImpl implements ProductService {
         }
 
         if (recommendationSet.size() < safeLimit) {
-            List<Long> excluded = recommendationSet.stream().map(Product::getId).collect(java.util.stream.Collectors.toList());
+            List<Long> excluded = recommendationSet.stream().map(Product::getId).collect(Collectors.toList());
             excluded.addAll(purchasedProductIds);
-            if (excluded.isEmpty()) excluded.add(-1L);
+            if (excluded.isEmpty()) {
+                excluded.add(-1L);
+            }
 
             int needed = safeLimit - recommendationSet.size();
             Pageable pageable = PageRequest.of(0, needed, Sort.by("id").descending());
@@ -281,25 +302,26 @@ public class ProductServiceImpl implements ProductService {
         }
 
         List<Product> finalProducts = recommendationSet.stream().limit(safeLimit).toList();
-
         List<ProductResponse> content = mapToProductResponsesSafe(finalProducts);
 
-        return new org.springframework.data.domain.PageImpl<>(content, PageRequest.of(0, safeLimit), content.size());
+        return new PageImpl<>(content, PageRequest.of(0, safeLimit), content.size());
     }
 
     private List<ProductResponse> mapToProductResponsesSafe(List<Product> products) {
-        if (products == null || products.isEmpty()) return List.of();
+        if (products == null || products.isEmpty()) {
+            return List.of();
+        }
 
         List<Long> productIds = products.stream().map(Product::getId).toList();
 
         List<ProductVariant> allVariants = productVariantRepository.findByProduct_IdIn(productIds);
         List<ProductImage> allImages = productImageRepository.findByProduct_IdIn(productIds);
 
-        java.util.Map<Long, List<ProductVariant>> variantsMap = allVariants.stream()
-                .collect(java.util.stream.Collectors.groupingBy(v -> v.getProduct().getId()));
+        Map<Long, List<ProductVariant>> variantsMap = allVariants.stream()
+                .collect(Collectors.groupingBy(v -> v.getProduct().getId()));
 
-        java.util.Map<Long, List<ProductImage>> imagesMap = allImages.stream()
-                .collect(java.util.stream.Collectors.groupingBy(img -> img.getProduct().getId()));
+        Map<Long, List<ProductImage>> imagesMap = allImages.stream()
+                .collect(Collectors.groupingBy(img -> img.getProduct().getId()));
 
         return products.stream().map(product -> {
             List<ProductVariant> pVariants = variantsMap.getOrDefault(product.getId(), List.of());
@@ -343,8 +365,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public List<ProductResponse> getRelatedProducts(Long productId, Integer limit) {
         if (limit == null || limit < 1) {
-            throw new com.tmt.ecommerce.common.exception.AppException(
-                    com.tmt.ecommerce.common.exception.ErrorCode.INVALID_INPUT);
+            throw new AppException(ErrorCode.INVALID_INPUT);
         }
 
         int safeLimit = Math.min(limit, 8);
@@ -365,9 +386,9 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public ProductResponse getVendorProductById(Long userId, Long id) {
         Product product = productRepository.findById(id).orElseThrow(() ->
-                new com.tmt.ecommerce.common.exception.AppException(com.tmt.ecommerce.common.exception.ErrorCode.PRODUCT_NOT_FOUND));
+                new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         if (!shopInternalService.isShopOwner(product.getShopId(), userId)) {
-            throw new org.springframework.security.access.AccessDeniedException("Product belongs to another shop");
+            throw new AccessDeniedException("Product belongs to another shop");
         }
         return mapToProductResponse(product);
     }
@@ -379,7 +400,12 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm với ID: " + id));
 
         if (!shopInternalService.isShopOwner(product.getShopId(), userId)) {
-            throw new IllegalArgumentException("Bạn không có quyền thao tác trên sản phẩm này.");
+            boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                            .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!isAdmin) {
+                throw new IllegalArgumentException("Bạn không có quyền thao tác trên sản phẩm này.");
+            }
         }
 
         shopInternalService.requireNotBannedForSale(product.getShopId());
@@ -443,7 +469,7 @@ public class ProductServiceImpl implements ProductService {
             }
         }
 
-        List<String> publicIdsToDelete = new java.util.ArrayList<>();
+        List<String> publicIdsToDelete = new ArrayList<>();
 
         if (request.images() != null) {
             List<Long> requestImageIds = request.images().stream()
@@ -566,12 +592,11 @@ public class ProductServiceImpl implements ProductService {
 
     private Product findPublicProduct(Long id, List<Long> bannedShopIds) {
         Product product = productRepository.findByIdAndStatus(id, ProductStatus.ACTIVE)
-                .orElseThrow(() -> new com.tmt.ecommerce.common.exception.AppException(
-                        com.tmt.ecommerce.common.exception.ErrorCode.PRODUCT_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         if (bannedShopIds.contains(product.getShopId())) {
-            throw new com.tmt.ecommerce.common.exception.AppException(
-                        com.tmt.ecommerce.common.exception.ErrorCode.PRODUCT_NOT_FOUND);
+            throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
         }
         return product;
     }
 }
+

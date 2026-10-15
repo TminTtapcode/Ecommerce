@@ -42,3 +42,15 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+
+### Documentation & Non-runtime Assets (Local-only) ###
+docs/
+scratch/
+.agents/
+api_scan.py
+update_report*.py
+nplus1_audit_results.json
+phase_*_implementation_report.md
+*.log
+*.tmp
+

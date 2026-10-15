@@ -78,8 +78,8 @@ export const AdminProductFormPage: React.FC = () => {
         } else if (loadedCategories.length > 0) {
           setCategoryId(loadedCategories[0].id);
         }
-      } catch (err: any) {
-        setGlobalError(err.response?.data?.message || 'Lỗi tải dữ liệu sản phẩm.');
+      } catch (err: unknown) {
+        setGlobalError(getApiError(err, 'Lỗi tải dữ liệu sản phẩm.').message);
       } finally {
         setLoading(false);
       }
@@ -136,7 +136,7 @@ export const AdminProductFormPage: React.FC = () => {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const handleVariantChange = (index: number, field: keyof ProductVariantRequest, value: any) => {
+  const handleVariantChange = (index: number, field: keyof ProductVariantRequest, value: string | number | Record<string, string | number> | undefined) => {
     const updated = [...variants];
     updated[index] = { ...updated[index], [field]: value };
     setVariants(updated);
@@ -157,7 +157,7 @@ export const AdminProductFormPage: React.FC = () => {
         alert('Cập nhật sản phẩm thành công!');
       } else {
         const createData: ProductCreateRequest = {
-          shopId: 1,
+          shopId: 0,
           categoryId: categoryId || 1,
           name, description, price, stockQuantity, images, variants
         };
@@ -165,10 +165,9 @@ export const AdminProductFormPage: React.FC = () => {
         alert('Tạo sản phẩm thành công!');
       }
       navigate('/admin/products');
-    } catch (err: any) {
+    } catch (err: unknown) {
       const details = getApiError(err);
       if (details.fieldErrors) {
-
         setFieldErrors(details.fieldErrors);
         setGlobalError('Vui lòng kiểm tra lại thông tin nhập.');
       } else {
@@ -417,9 +416,8 @@ export const AdminProductFormPage: React.FC = () => {
                       onChange={(e) => {
                         try {
                           handleVariantChange(index, 'attributes', JSON.parse(e.target.value));
-                        } catch(err) {
-
-                          handleVariantChange(index, 'attributes', e.target.value as any);
+                        } catch {
+                          handleVariantChange(index, 'attributes', { raw: e.target.value });
                         }
                       }}
                       className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-500 font-mono"

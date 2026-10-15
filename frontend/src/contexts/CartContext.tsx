@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { cartApi } from '../api/cartApi';
+import { getApiError } from '../api/apiError';
 import { useAuth } from './AuthContext';
 import type { CartResponse } from '../api/types/cart.types';
 
@@ -71,9 +72,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await cartApi.addToCart({ variantId, quantity });
       await fetchCart();
       alert("Đã thêm vào giỏ hàng");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to add to cart', error);
-      alert(error.response?.data?.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');
+      alert(getApiError(error, 'Có lỗi xảy ra khi thêm vào giỏ hàng').message);
       throw error;
     }
   }, [isAuthenticated, fetchCart]);

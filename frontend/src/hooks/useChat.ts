@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { websocketService } from '../services/websocket';
 import { chatApi } from '../api/chatApi';
+import { getApiError } from '../api/apiError';
 import type { ChatRoom, ChatMessage } from '../api/types/chat.types';
 
 export const useChat = (initialRoomId?: number | null) => {
@@ -18,12 +19,10 @@ export const useChat = (initialRoomId?: number | null) => {
     activeRoomIdRef.current = activeRoomId;
   }, [activeRoomId]);
 
-  // Cập nhật trạng thái kết nối socket
   useEffect(() => {
     return websocketService.onStatusChange(setIsConnected);
   }, []);
 
-  // Reset dữ liệu khi đăng xuất
   useEffect(() => {
     if (!isAuthenticated) {
       setRooms([]);
@@ -34,7 +33,6 @@ export const useChat = (initialRoomId?: number | null) => {
     }
   }, [isAuthenticated]);
 
-  // Tải danh sách phòng chat
   const loadRooms = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoadingRooms(true);
@@ -44,7 +42,7 @@ export const useChat = (initialRoomId?: number | null) => {
         setRooms(res.data.data);
       }
     } catch (err) {
-      console.error('[useChat] Lỗi khi tải danh sách phòng chat:', err);
+      console.error(err);
     } finally {
       setIsLoadingRooms(false);
     }
@@ -56,7 +54,6 @@ export const useChat = (initialRoomId?: number | null) => {
     }
   }, [isAuthenticated, loadRooms]);
 
-  // Tải lịch sử tin nhắn của một phòng chat
   const loadMessages = useCallback(
     async (roomId: number) => {
       if (!isAuthenticated) return;
@@ -68,13 +65,12 @@ export const useChat = (initialRoomId?: number | null) => {
           setMessages([...res.data.data.content].reverse());
         }
 
-        // Đánh dấu đã đọc tin nhắn trong phòng
         await chatApi.markAsRead(roomId);
         setRooms((prev) =>
           prev.map((r) => (r.id === roomId ? { ...r, unreadCount: 0 } : r))
         );
       } catch (err) {
-        console.error(`[useChat] Lỗi khi tải tin nhắn phòng ${roomId}:`, err);
+        console.error(err);
       } finally {
         setIsLoadingMessages(false);
       }
@@ -90,7 +86,6 @@ export const useChat = (initialRoomId?: number | null) => {
     }
   }, [activeRoomId, loadMessages]);
 
-  // Lắng nghe tin nhắn mới từ WebSocket STOMP
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -100,7 +95,6 @@ export const useChat = (initialRoomId?: number | null) => {
           if (prev.some((m) => m.id === incomingMsg.id)) {
             return prev;
           }
-          // Thay thế tin nhắn tạm (optimistic message) nếu có
           const optIndex = prev.findIndex(
             (m) => m.id < 0 && m.senderId === incomingMsg.senderId && m.content === incomingMsg.content
           );
@@ -112,11 +106,9 @@ export const useChat = (initialRoomId?: number | null) => {
           return [...prev, incomingMsg];
         });
 
-        // Báo cho backend biết đã đọc tin nhắn mới này
         chatApi.markAsRead(incomingMsg.roomId).catch(() => {});
       }
 
-      // Cập nhật tin nhắn cuối cùng và số lượng chưa đọc cho danh sách phòng
       setRooms((prev) => {
         const existing = prev.find((r) => Number(r.id) === Number(incomingMsg.roomId));
         if (existing) {
@@ -143,7 +135,6 @@ export const useChat = (initialRoomId?: number | null) => {
     };
   }, [isAuthenticated, loadRooms]);
 
-  // Gửi tin nhắn
   const sendMessage = useCallback(
     (content: string, targetRoomId?: number) => {
       if (!isAuthenticated || !websocketService.isConnected()) return false;
@@ -152,7 +143,6 @@ export const useChat = (initialRoomId?: number | null) => {
 
       const trimmed = content.trim();
 
-      // Optimistic UI: Hiển thị tin nhắn ngay lập tức trên màn hình
       if (roomId === activeRoomId && user?.userId) {
         const optimisticMsg: ChatMessage = {
           id: -Date.now(),
@@ -185,7 +175,6 @@ export const useChat = (initialRoomId?: number | null) => {
     [activeRoomId, user?.userId, isAuthenticated]
   );
 
-  // Mở hoặc tạo phòng chat với Shop
   const openChatWithShop = useCallback(
     async (shopId: number) => {
       if (!isAuthenticated) return null;
@@ -202,11 +191,10 @@ export const useChat = (initialRoomId?: number | null) => {
           });
           return room;
         }
-      } catch (err: any) {
-        const errorMsg =
-          err?.response?.data?.message || 'Không thể tạo hoặc mở phòng chat với shop này.';
+      } catch (err: unknown) {
+        const errorMsg = getApiError(err, 'Không thể tạo hoặc mở phòng chat với shop này.').message;
         alert(errorMsg);
-        console.error('[useChat] Lỗi khi tạo phòng chat với shop:', err);
+        console.error(err);
       }
       return null;
     },

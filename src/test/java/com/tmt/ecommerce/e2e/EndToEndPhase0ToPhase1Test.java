@@ -259,8 +259,18 @@ public class EndToEndPhase0ToPhase1Test {
         createdOrderId = firstOrder.path("id").asLong();
         String status = firstOrder.path("status").asText();
 
-        assertEquals("CONFIRMED", status);
+        assertEquals("PENDING", status);
         System.out.println("Order created: ID=" + createdOrderId + ", Status=" + status + ", PaymentGroup=" + paymentGroupId);
+
+        String confirmJson = objectMapper.writeValueAsString(Map.of("status", "CONFIRMED"));
+        HttpRequest confirmReq = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl("/api/v1/vendor/orders/" + createdOrderId + "/status")))
+                .header("Authorization", "Bearer " + vendorToken)
+                .header("Content-Type", "application/json")
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(confirmJson))
+                .build();
+        HttpResponse<String> confirmResp = httpClient.send(confirmReq, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, confirmResp.statusCode());
     }
 
     @Test
@@ -462,6 +472,16 @@ public class EndToEndPhase0ToPhase1Test {
 
         JsonNode checkoutNode = objectMapper.readTree(checkoutResp.body());
         long orderToCancelId = checkoutNode.path("data").path("orders").get(0).path("id").asLong();
+
+        String confirmJson = objectMapper.writeValueAsString(Map.of("status", "CONFIRMED"));
+        HttpRequest confirmReq = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl("/api/v1/vendor/orders/" + orderToCancelId + "/status")))
+                .header("Authorization", "Bearer " + vendorToken)
+                .header("Content-Type", "application/json")
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(confirmJson))
+                .build();
+        HttpResponse<String> confirmResp = httpClient.send(confirmReq, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, confirmResp.statusCode());
 
         String cancelJson = objectMapper.writeValueAsString(Map.of(
                 "status", "CANCELLED",

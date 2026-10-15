@@ -34,7 +34,8 @@ public class PaymentGatewayService {
         PaymentStrategy strategy = paymentFactory.getStrategy(orderData.method());
         String txnRef = "PAY_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         String vnpayTransactionDate = orderData.method() == PaymentMethod.VNPAY
-                ? LocalDateTime.now(VNPAY_ZONE).format(VNPAY_DATE) : null;
+                ? LocalDateTime.now(VNPAY_ZONE).format(VNPAY_DATE)
+                : null;
 
         Payment payment = Payment.builder()
                 .paymentGroupId(orderData.paymentGroupId())

@@ -1,7 +1,10 @@
 package com.tmt.ecommerce.shop.api;
 
+import java.util.List;
+import java.util.Optional;
+
 public interface ShopInternalService {
-    java.util.List<Long> getBannedShopIds();
+    List<Long> getBannedShopIds();
 
     void requireNotBannedForSale(Long shopId);
 
@@ -9,11 +12,11 @@ public interface ShopInternalService {
 
     Long getShopIdByUserId(Long userId);
 
-    java.util.Optional<Long> findShopIdByUserId(Long userId);
+    Optional<Long> findShopIdByUserId(Long userId);
 
-    java.util.Optional<Long> getUserIdByShopId(Long shopId);
+    Optional<Long> getUserIdByShopId(Long shopId);
 
-    java.util.Optional<String> getShopNameById(Long shopId);
+    Optional<String> getShopNameById(Long shopId);
 
     long countShops();
 }

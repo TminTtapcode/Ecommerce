@@ -143,7 +143,8 @@ public class PaymentIpnSecurityIntegrationTest {
                 .build();
         orderRepository.save(order);
 
-        PaymentOrderData orderData = new PaymentOrderData(paymentGroupId, new BigDecimal("100000"), "Test", PaymentMethod.VNPAY);
+        PaymentOrderData orderData = new PaymentOrderData(paymentGroupId, new BigDecimal("100000"), "Test",
+                PaymentMethod.VNPAY);
         paymentGatewayService.generatePaymentUrl(orderData, "127.0.0.1");
 
         Payment payment = paymentRepository.findByPaymentGroupIdOrderByCreatedAtDesc(paymentGroupId).get(0);

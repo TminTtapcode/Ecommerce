@@ -1,13 +1,13 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { ShopAccessContext } from '../../contexts/ShopAccessContext';
-import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { vendorApi } from '../../api/vendorApi';
+import { getApiError } from '../../api/apiError';
 import type { ProductResponse } from '../../api/types/product.types';
 import { Pagination } from '../../components/common/Pagination';
 import { VendorNav } from '../../components/vendor/VendorNav';
 
-export const VendorProductListPage: React.FC = () => {
+export const VendorProductListPage = () => {
   const { banned } = useContext(ShopAccessContext);
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<ProductResponse[]>([]);
@@ -18,7 +18,7 @@ export const VendorProductListPage: React.FC = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const page = parseInt(searchParams.get('page') || '0', 10);
-  const size = parseInt(searchParams.get('size') || '10', 10);
+  const size = parseInt(searchParams.get('size') || '15', 10);
   const keyword = searchParams.get('keyword') || '';
 
   const [searchInput, setSearchInput] = useState(keyword);
@@ -33,8 +33,8 @@ export const VendorProductListPage: React.FC = () => {
         setTotalPages(response.data.data.totalPages);
         setTotalElements(response.data.data.totalElements || response.data.data.content.length);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Lỗi tải danh sách sản phẩm của Shop.');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Lỗi tải danh sách sản phẩm của Shop.').message);
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -43,7 +43,6 @@ export const VendorProductListPage: React.FC = () => {
 
   useEffect(() => {
     fetchVendorProducts();
-
   }, [page, size, keyword]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -74,8 +73,8 @@ export const VendorProductListPage: React.FC = () => {
       await vendorApi.deleteProduct(id);
       alert('Đã ẩn sản phẩm thành công!');
       fetchVendorProducts();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra khi ẩn sản phẩm.');
+    } catch (err: unknown) {
+      alert(getApiError(err, 'Có lỗi xảy ra khi ẩn sản phẩm.').message);
     } finally {
       setDeletingId(null);
     }
@@ -100,6 +99,12 @@ export const VendorProductListPage: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
+            <Link
+              to="/vendor/products/new"
+              className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg shadow-xs transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <span className="mr-1.5 text-base leading-none font-bold">+</span> Thêm sản phẩm mới
+            </Link>
             <form onSubmit={handleSearch} className="flex items-center">
               <div className="relative w-72">
                 <input
@@ -156,7 +161,9 @@ export const VendorProductListPage: React.FC = () => {
               Bắt đầu đăng sản phẩm đầu tiên để tiếp cận hàng triệu khách hàng ngay hôm nay.
             </p>
             <Link
-              to={banned ? "/vendor/orders" : "/vendor/products/new"} aria-disabled={banned} style={banned ? { display: "none" } : undefined}
+              to={banned ? "/vendor/orders" : "/vendor/products/new"}
+              aria-disabled={banned}
+              style={banned ? { display: "none" } : undefined}
               className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg shadow-sm"
             >
               + Đăng Sản Phẩm Mới
@@ -259,7 +266,6 @@ export const VendorProductListPage: React.FC = () => {
                         <button
                           onClick={() => handleDelete(product.id)}
                           disabled={banned || deletingId === product.id}
-
                           className="inline-flex items-center px-2.5 py-1.5 border border-red-200 rounded text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
                         >
                           {deletingId === product.id ? '...' : 'Ẩn'}

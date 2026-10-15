@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { paymentApi } from '../../api/paymentApi';
+import { useCart } from '../../contexts/CartContext';
 
 export const PaymentResultPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { fetchCart } = useCart();
     const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'timeout' | 'error'>('loading');
     const [message, setMessage] = useState('Đang xử lý kết quả thanh toán...');
     const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -18,11 +20,13 @@ export const PaymentResultPage: React.FC = () => {
                 setStatus('success');
                 setMessage('Thanh toán thành công! Đơn hàng của bạn đã được xác nhận.');
                 sessionStorage.removeItem('pendingPaymentGroupId');
+                fetchCart();
                 return true;
             } else if (currentStatus === 'FAILED') {
                 setStatus('failed');
-                setMessage('Thanh toán thất bại hoặc đã bị hủy.');
+                setMessage('Giao dịch đã bị hủy hoặc thanh toán không thành công. Các sản phẩm vẫn được giữ nguyên trong giỏ hàng của bạn.');
                 sessionStorage.removeItem('pendingPaymentGroupId');
+                fetchCart();
                 return true;
             }
             return false;

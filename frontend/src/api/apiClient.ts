@@ -9,7 +9,6 @@ const apiClient = axios.create({
   },
 });
 
-// Tự động gắn Bearer Token vào Header Authorization cho mọi request
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -21,7 +20,6 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Bắt lỗi 401 Unauthorized toàn cục để tự động đăng xuất và chuyển về trang Login
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {

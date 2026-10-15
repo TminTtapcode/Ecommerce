@@ -21,7 +21,7 @@ export interface ProductSearchParams {
 
 export const productApi = {
   getProducts: (params: ProductSearchParams = {}) => {
-    const { page = 0, size = 10, keyword, categoryId, shopId, minPrice, maxPrice, sortBy } = params;
+    const { page = 0, size = 15, keyword, categoryId, shopId, minPrice, maxPrice, sortBy } = params;
     const qs = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),
@@ -35,7 +35,7 @@ export const productApi = {
     return apiClient.get<ApiResponse<PageResponse<ProductResponse>>>(`/api/v1/products?${qs.toString()}`);
   },
 
-  getVendorProducts: (page: number = 0, size: number = 10, keyword?: string) => {
+  getVendorProducts: (page: number = 0, size: number = 15, keyword?: string) => {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),

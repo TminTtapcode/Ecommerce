@@ -22,7 +22,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
-  // Tải danh sách thông báo và số lượng chưa đọc từ API
   const refresh = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoading(true);
@@ -35,14 +34,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       setNotifications(listRes.data.data?.content ?? []);
       setUnreadCount(countRes.data.data?.unreadCount ?? 0);
     } catch (err) {
-      console.error('Lỗi khi tải thông báo:', err);
+      console.error(err);
       setError('Không tải được thông báo. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
   }, [isAuthenticated]);
 
-  // Đánh dấu đã đọc thông báo (nếu không truyền id -> đánh dấu đọc tất cả)
   const read = useCallback(
     async (id?: number): Promise<boolean> => {
       try {
@@ -59,14 +57,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         }
         return true;
       } catch (err) {
-        console.error('Lỗi khi đánh dấu đã đọc:', err);
+        console.error(err);
         return false;
       }
     },
     []
   );
 
-  // Khi đăng nhập: tự động tải thông báo và lắng nghe qua WebSocket STOMP
   useEffect(() => {
     if (!isAuthenticated) {
       setNotifications([]);

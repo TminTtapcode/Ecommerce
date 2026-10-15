@@ -79,15 +79,15 @@ class RecommendedProductsIntegrationTest {
     }
 
     @Test
-    void limitDefaultsToTwelveAndClampsLargeValues() throws Exception {
-        for (int i = 0; i < 15; i++) {
+    void limitDefaultsToFifteenAndClampsLargeValues() throws Exception {
+        for (int i = 0; i < 20; i++) {
             product("recommend-" + i, category, activeShopId, ProductStatus.ACTIVE);
         }
 
         JsonNode defaultData = mapper.readTree(get("").body()).path("data").path("content");
         JsonNode clampedData = mapper.readTree(get("?limit=999").body()).path("data").path("content");
 
-        assertThat(defaultData.size()).isLessThanOrEqualTo(12);
+        assertThat(defaultData.size()).isLessThanOrEqualTo(15);
         assertThat(clampedData.size()).isLessThanOrEqualTo(50);
     }
 

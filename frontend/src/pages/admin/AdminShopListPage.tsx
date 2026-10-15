@@ -23,13 +23,13 @@ export const AdminShopListPage: React.FC = () => {
   const fetchShops = async () => {
     try {
       setLoading(true);
-      const res = await adminApi.getShops(statusFilter || undefined, page, 10);
+      const res = await adminApi.getShops(statusFilter || undefined, page, 15);
       if (!res.data.data) throw new Error('Thiếu dữ liệu phản hồi');
       setShops(res.data.data.content);
       setTotalPages(res.data.data.totalPages);
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Lỗi tải danh sách cửa hàng');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Lỗi tải danh sách cửa hàng').message);
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export const AdminShopListPage: React.FC = () => {
       setBusy(shopId);
       await adminApi.approveShop(shopId);
       fetchShops();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(mutationError(err));
     } finally {
       setBusy(null);
@@ -58,7 +58,7 @@ export const AdminShopListPage: React.FC = () => {
       setBusy(shopId);
       await adminApi.banShop(shopId, reason || undefined);
       fetchShops();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(mutationError(err));
     } finally {
       setBusy(null);
@@ -71,7 +71,7 @@ export const AdminShopListPage: React.FC = () => {
       setBusy(shopId);
       await adminApi.unbanShop(shopId);
       fetchShops();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(mutationError(err));
     } finally {
       setBusy(null);

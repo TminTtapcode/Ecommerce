@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
+import { getApiError } from '../../api/apiError';
 import type { OrderResponse } from '../../api/types/order.types';
 
 const STATUS_BADGES: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -25,13 +26,13 @@ export const AdminOrderListPage: React.FC = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await adminApi.getOrders(statusFilter || undefined, page, 10);
+      const res = await adminApi.getOrders(statusFilter || undefined, page, 15);
       if (!res.data.data) throw new Error('Thiếu dữ liệu phản hồi');
       setOrders(res.data.data.content);
       setTotalPages(res.data.data.totalPages);
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Lỗi tải danh sách đơn hàng');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Lỗi tải danh sách đơn hàng').message);
     } finally {
       setLoading(false);
     }

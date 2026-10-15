@@ -35,10 +35,12 @@ public class CartInternalServiceImpl implements CartInternalService {
 
         for (CartItem item : cart.getItems()) {
             ProductVariantInfoDto variantInfo = variantInfoMap.get(item.getProductVariantId());
-            if (variantInfo == null) continue;
+            if (variantInfo == null)
+                continue;
 
             BigDecimal subTotal = variantInfo.price().multiply(BigDecimal.valueOf(item.getQuantity()));
-            boolean isAvailable = "ACTIVE".equals(variantInfo.status()) && variantInfo.stockQuantity() >= item.getQuantity();
+            boolean isAvailable = "ACTIVE".equals(variantInfo.status())
+                    && variantInfo.stockQuantity() >= item.getQuantity();
 
             internalDtos.add(new CartItemInternalDto(
                     item.getId(),
@@ -48,8 +50,7 @@ public class CartInternalServiceImpl implements CartInternalService {
                     variantInfo.price(),
                     item.getQuantity(),
                     subTotal,
-                    isAvailable
-            ));
+                    isAvailable));
         }
 
         return internalDtos;
@@ -72,6 +73,18 @@ public class CartInternalServiceImpl implements CartInternalService {
         }
         cartRepository.findByUserId(userId).ifPresent(cart -> {
             cart.getItems().removeIf(item -> cartItemIds.contains(item.getId()));
+            cartRepository.save(cart);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void removeCartItemsByVariantIds(Long userId, List<Long> variantIds) {
+        if (variantIds == null || variantIds.isEmpty()) {
+            return;
+        }
+        cartRepository.findByUserId(userId).ifPresent(cart -> {
+            cart.getItems().removeIf(item -> variantIds.contains(item.getProductVariantId()));
             cartRepository.save(cart);
         });
     }

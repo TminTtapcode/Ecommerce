@@ -41,7 +41,7 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ProductResponse>>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long shopId,
@@ -98,7 +98,7 @@ public class ProductController {
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<Page<ProductResponse>>> getRecommendations(
             @CurrentUserId(required = false) Long userId,
-            @RequestParam(defaultValue = "12") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(50) Integer limit) {
+            @RequestParam(defaultValue = "15") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(50) Integer limit) {
 
         Page<ProductResponse> recommendationPage = productService.getRecommendedProducts(userId, limit);
 

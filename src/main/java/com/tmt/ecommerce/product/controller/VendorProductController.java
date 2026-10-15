@@ -26,7 +26,7 @@ public class VendorProductController {
     public ResponseEntity<ApiResponse<Page<ProductResponse>>> getVendorProducts(
             @CurrentUserId Long userId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String keyword) {
 
         Page<ProductResponse> productPage = productService.getVendorProducts(userId, page, size, keyword);

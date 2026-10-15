@@ -16,12 +16,10 @@ export const VendorShopRegistrationPage: React.FC<{ onRegistered: () => void }> 
     try {
       await shopApi.registerShop({ name, description });
       onRegistered();
-    } catch (err: any) {
+    } catch (err: unknown) {
       const details = getApiError(err);
       if (details.fieldErrors) {
-
-        const errs = details.fieldErrors;
-        const msgs = Object.values(errs).join(', ');
+        const msgs = Object.values(details.fieldErrors).join(', ');
         setError(msgs);
       } else {
         setError(details.message);

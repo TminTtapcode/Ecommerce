@@ -9,7 +9,6 @@ class WebSocketService {
   private statuses = new Set<(connected: boolean) => void>();
   private connected = false;
 
-  // 1. Kết nối tới WebSocket Server với Bearer Token
   connect(token: string) {
     if (this.client) {
       this.disconnect();
@@ -21,7 +20,7 @@ class WebSocketService {
     const client = new Client({
       brokerURL: url,
       connectHeaders: {
-        Authorization: `Bearer ${token}`, // Gửi token trong frame CONNECT của STOMP
+        Authorization: `Bearer ${token}`,
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
@@ -29,7 +28,6 @@ class WebSocketService {
       onConnect: () => {
         this.status(true);
 
-        // Kênh nhận tin nhắn chat riêng tư: /user/queue/messages
         client.subscribe('/user/queue/messages', (frame) => {
           try {
             const data = JSON.parse(frame.body);
@@ -39,7 +37,6 @@ class WebSocketService {
           }
         });
 
-        // Kênh nhận thông báo hệ thống: /user/queue/notifications
         client.subscribe('/user/queue/notifications', (frame) => {
           try {
             const data = JSON.parse(frame.body);
@@ -61,7 +58,6 @@ class WebSocketService {
     client.activate();
   }
 
-  // 2. Ngắt kết nối khi đăng xuất
   disconnect() {
     if (this.client) {
       this.client.deactivate();
@@ -70,7 +66,6 @@ class WebSocketService {
     this.status(false);
   }
 
-  // 3. Đăng ký nhận tin nhắn chat
   subscribe(cb: (m: ChatMessage) => void) {
     this.messages.add(cb);
     return () => {
@@ -78,7 +73,6 @@ class WebSocketService {
     };
   }
 
-  // 4. Đăng ký nhận thông báo
   subscribeNotifications(cb: (n: NotificationResponse) => void) {
     this.notifications.add(cb);
     return () => {
@@ -86,7 +80,6 @@ class WebSocketService {
     };
   }
 
-  // 5. Theo dõi trạng thái kết nối
   onStatusChange(cb: (connected: boolean) => void) {
     this.statuses.add(cb);
     cb(this.connected);
@@ -104,7 +97,6 @@ class WebSocketService {
     return this.connected;
   }
 
-  // 6. Gửi tin nhắn chat lên server qua kênh /app/chat.send
   sendMessage(body: SendMessageRequest): boolean {
     if (!this.client?.connected || !this.connected) return false;
     this.client.publish({

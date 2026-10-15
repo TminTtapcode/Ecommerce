@@ -40,7 +40,7 @@ export const AdminOrderDetailPage: React.FC = () => {
         setLoading(true);
         await refresh();
         setError('');
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(getApiError(err, 'Lỗi tải chi tiết đơn hàng').message);
       } finally {
         setLoading(false);
@@ -251,7 +251,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                   setSaving(true);
                   await adminApi.createRefund(order.id, r);
                   alert('Lệnh hoàn tiền đã được gửi thành công!');
-                } catch (err: any) {
+                } catch (err: unknown) {
                   alert(getApiError(err).message);
                 } finally {
                   setSaving(false);
@@ -273,7 +273,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                   } else {
                     alert('Chưa có lịch sử hoàn tiền nào cho đơn này.');
                   }
-                } catch (err: any) {
+                } catch (err: unknown) {
                   alert(getApiError(err).message);
                 } finally {
                   setSaving(false);

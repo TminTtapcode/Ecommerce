@@ -32,6 +32,7 @@ export const AdminLayout: React.FC = () => {
     { name: 'Đơn hàng', path: '/admin/orders', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
     { name: 'Cửa hàng', path: '/admin/shop', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
     { name: 'Voucher', path: '/admin/vouchers', icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z' },
+    { name: 'Rút tiền', path: '/admin/payouts', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
   ];
 
   return (
@@ -39,11 +40,19 @@ export const AdminLayout: React.FC = () => {
       <div
         className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col hidden md:flex z-10 shadow-xs`}
       >
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-black text-orange-600 italic">E<span className="text-gray-900">C</span></span>
+        <div className="h-16 flex items-center justify-between px-3.5 border-b border-gray-200">
+          <Link to="/admin" className="flex items-center space-x-2 overflow-hidden group">
+            <div className="flex items-center bg-orange-500 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors group-hover:bg-orange-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3.1-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z"/>
+                <path d="M8 14v.5"/><path d="M16 14v.5"/><path d="M11.25 16.25h1.5L12 17l-.75-.75Z"/>
+              </svg>
+              {isSidebarOpen && (
+                <span className="ml-1.5 text-lg font-bold tracking-tighter text-white">MintMark</span>
+              )}
+            </div>
             {isSidebarOpen && (
-              <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-200 shrink-0">
                 Admin
               </span>
             )}
@@ -85,6 +94,14 @@ export const AdminLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="relative z-30 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-xs">
           <div className="flex-1 flex items-center">
+            <Link to="/admin" className="md:hidden flex items-center bg-orange-500 text-white px-2 py-1 rounded-md shadow-xs mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3.1-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z"/>
+                <path d="M8 14v.5"/><path d="M16 14v.5"/><path d="M11.25 16.25h1.5L12 17l-.75-.75Z"/>
+              </svg>
+              <span className="ml-1 text-sm font-bold tracking-tighter text-white">MintMark</span>
+            </Link>
+
             <div className="max-w-md w-full hidden sm:block relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

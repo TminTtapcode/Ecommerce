@@ -1,19 +1,21 @@
 package com.tmt.ecommerce.voucher.service;
 
 import com.tmt.ecommerce.voucher.api.VoucherInternalService;
+import com.tmt.ecommerce.voucher.api.dto.VoucherCalculationRequest;
+import com.tmt.ecommerce.voucher.api.dto.VoucherDiscountResult;
 import com.tmt.ecommerce.voucher.entity.Voucher;
+import com.tmt.ecommerce.voucher.entity.VoucherScope;
+import com.tmt.ecommerce.voucher.entity.VoucherType;
 import com.tmt.ecommerce.voucher.repository.VoucherRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.tmt.ecommerce.voucher.api.dto.VoucherCalculationRequest;
-import com.tmt.ecommerce.voucher.api.dto.VoucherDiscountResult;
 
 @Service
 @RequiredArgsConstructor
@@ -41,13 +43,12 @@ public class VoucherInternalServiceImpl implements VoucherInternalService {
         BigDecimal eligibleAmount = BigDecimal.ZERO;
         Map<Long, BigDecimal> shopTotals = request.shopTotals();
 
-        if (voucher.getScope() == com.tmt.ecommerce.voucher.entity.VoucherScope.SHOP) {
+        if (voucher.getScope() == VoucherScope.SHOP) {
             if (!shopTotals.containsKey(voucher.getShopId())) {
                 throw new IllegalArgumentException("Voucher này không áp dụng cho các sản phẩm trong giỏ hàng");
             }
             eligibleAmount = shopTotals.get(voucher.getShopId());
         } else {
-
             for (BigDecimal amount : shopTotals.values()) {
                 eligibleAmount = eligibleAmount.add(amount);
             }
@@ -58,7 +59,7 @@ public class VoucherInternalServiceImpl implements VoucherInternalService {
         }
 
         BigDecimal totalDiscount = BigDecimal.ZERO;
-        if (voucher.getType() == com.tmt.ecommerce.voucher.entity.VoucherType.PERCENTAGE) {
+        if (voucher.getType() == VoucherType.PERCENTAGE) {
             totalDiscount = eligibleAmount.multiply(voucher.getDiscountValue()).divide(BigDecimal.valueOf(100));
             if (voucher.getMaxDiscount() != null && totalDiscount.compareTo(voucher.getMaxDiscount()) > 0) {
                 totalDiscount = voucher.getMaxDiscount();
@@ -74,16 +75,15 @@ public class VoucherInternalServiceImpl implements VoucherInternalService {
         Map<Long, BigDecimal> discountPerShop = new HashMap<>();
 
         if (totalDiscount.compareTo(BigDecimal.ZERO) > 0) {
-            if (voucher.getScope() == com.tmt.ecommerce.voucher.entity.VoucherScope.SHOP) {
+            if (voucher.getScope() == VoucherScope.SHOP) {
                 discountPerShop.put(voucher.getShopId(), totalDiscount);
             } else {
-
                 for (Map.Entry<Long, BigDecimal> entry : shopTotals.entrySet()) {
                     Long shopId = entry.getKey();
                     BigDecimal shopOrderTotal = entry.getValue();
 
                     BigDecimal shopDiscount = totalDiscount.multiply(shopOrderTotal)
-                            .divide(eligibleAmount, 0, java.math.RoundingMode.HALF_UP);
+                            .divide(eligibleAmount, 0, RoundingMode.HALF_UP);
 
                     if (shopDiscount.compareTo(shopOrderTotal) > 0) {
                         shopDiscount = shopOrderTotal;
@@ -104,4 +104,13 @@ public class VoucherInternalServiceImpl implements VoucherInternalService {
         int affectedRows = voucherRepository.incrementUsage(voucherId);
         return affectedRows > 0;
     }
+
+    @Override
+    @Transactional
+    public void decrementUsage(Long voucherId) {
+        if (voucherId != null) {
+            voucherRepository.decrementUsage(voucherId);
+        }
+    }
 }
+

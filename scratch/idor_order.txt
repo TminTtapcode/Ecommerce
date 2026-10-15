@@ -1,1 +1,0 @@
-{"message":"Hệ thống đang gặp sự cố, vui lòng thử lại sau.","status":500}

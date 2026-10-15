@@ -23,7 +23,7 @@ export const ProductListPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const page       = parseInt(searchParams.get('page')       || '0',  10);
-  const size       = parseInt(searchParams.get('size')       || '12', 10);
+  const size       = parseInt(searchParams.get('size')       || '15', 10);
   const keyword    = searchParams.get('keyword')    || '';
   const categoryId = searchParams.get('categoryId') ? Number(searchParams.get('categoryId')) : undefined;
   const sortBy     = searchParams.get('sortBy')     || 'id_desc';
@@ -134,24 +134,24 @@ export const ProductListPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-      <div className="flex gap-2 mb-6 h-48">
-        <div className="w-2/3 bg-orange-100 rounded-sm overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-rose-400 flex flex-col justify-center px-10">
-            <h2 className="text-white text-4xl font-bold mb-2">SIÊU SALE GIỮA THÁNG</h2>
-            <p className="text-white/90 text-lg">Giảm đến 50% toàn sàn</p>
-          </div>
-        </div>
-        <div className="w-1/3 flex flex-col gap-2">
-          <div className="h-1/2 bg-blue-100 rounded-sm overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 flex flex-col justify-center px-6">
-              <h3 className="text-white text-xl font-bold">FREESHIP 0Đ</h3>
-            </div>
-          </div>
-          <div className="h-1/2 bg-green-100 rounded-sm overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 flex flex-col justify-center px-6">
-              <h3 className="text-white text-xl font-bold">HOÀN XU XTRA</h3>
-            </div>
-          </div>
+      <div className="mb-6 h-72 rounded-2xl overflow-hidden relative shadow-xl group">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 group-hover:scale-105"
+          style={{ backgroundImage: "url('/hero_banner.jpg')" }}
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/50 to-transparent flex flex-col justify-center px-8 sm:px-12">
+          <h2 className="text-white text-4xl sm:text-5xl font-extrabold mb-3 leading-tight tracking-tight">
+            MINTMARK<br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-400">
+              NỀN TẢNG ĐA GIAN HÀNG
+            </span>
+          </h2>
+          <p className="text-gray-300 text-base sm:text-lg max-w-lg font-light mb-6">
+            Mua sắm trực tuyến thông minh, thanh toán an toàn với VNPay và săn hàng ngàn mã giảm giá độc quyền mỗi ngày.
+          </p>
+          <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full w-max transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5 cursor-pointer">
+            Khám Phá Ngay
+          </button>
         </div>
       </div>
 

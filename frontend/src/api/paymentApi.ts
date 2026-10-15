@@ -25,7 +25,7 @@ export const paymentApi = {
         return response.data;
     },
 
-    syncVnpayIpn: async (queryString: string): Promise<any> => {
+    syncVnpayIpn: async (queryString: string): Promise<unknown> => {
         const response = await apiClient.get(`/api/v1/payments/vnpay/ipn${queryString}`);
         return response.data;
     }

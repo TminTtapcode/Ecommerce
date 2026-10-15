@@ -1,19 +1,22 @@
 package com.tmt.ecommerce.product.repository;
 
 import com.tmt.ecommerce.product.entity.Product;
+import com.tmt.ecommerce.product.enums.ProductStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Long>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<Product> {
+public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
     List<Product> findByShopId(Long shopId);
 
     @EntityGraph(attributePaths = {"category"})
@@ -26,10 +29,10 @@ public interface ProductRepository extends JpaRepository<Product, Long>, org.spr
 
     Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    java.util.Optional<Product> findByIdAndStatus(Long id, com.tmt.ecommerce.product.enums.ProductStatus status);
+    Optional<Product> findByIdAndStatus(Long id, ProductStatus status);
 
     @EntityGraph(attributePaths = {"category"})
-    Page<Product> findByStatus(com.tmt.ecommerce.product.enums.ProductStatus status, Pageable pageable);
+    Page<Product> findByStatus(ProductStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = {"category"})
     Page<Product> findByNameContainingIgnoreCaseAndStatus(String name,

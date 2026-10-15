@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productApi } from '../../api/productApi';
 import type { ProductResponse, ProductVariantResponse } from '../../api/types/product.types';
+import type { CartItemResponse } from '../../api/types/cart.types';
 import { useCart } from '../../contexts/CartContext';
 import { useChatContext } from '../../contexts/ChatContext';
 import { cartApi } from '../../api/cartApi';
+import { getApiError } from '../../api/apiError';
 import { ProductReviewSection } from '../../components/reviews/ProductReviewSection';
 import { RelatedProductsSection } from '../../components/products/RelatedProductsSection';
 import { ShopInfoSection } from '../../components/shop/ShopInfoSection';
@@ -43,9 +45,9 @@ export const ProductDetailPage: React.FC = () => {
         } else {
           setActiveImage('https://placehold.co/600x600?text=No+Image');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError('Không tìm thấy sản phẩm. Có thể sản phẩm đã bị xóa hoặc đường dẫn không chính xác.');
-        console.error('Error fetching product:', err);
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -107,7 +109,6 @@ export const ProductDetailPage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <nav className="flex text-sm text-gray-500 mb-8" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-3">
             <li className="inline-flex items-center">
@@ -136,7 +137,6 @@ export const ProductDetailPage: React.FC = () => {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex flex-col md:flex-row">
-
             <div className="md:w-1/2 p-6 border-b md:border-b-0 md:border-r border-gray-100">
               <div className="aspect-w-1 aspect-h-1 rounded-xl overflow-hidden bg-gray-100 mb-4 h-80 sm:h-96 relative">
                 <img
@@ -187,26 +187,19 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Tùy chọn sản phẩm</h3>
                   <div className="flex flex-wrap gap-2">
-                    {product.variants.map(variant => {
-                      const formatAttributes = (attrs?: Record<string, any>) => {
-                        if (!attrs || Object.keys(attrs).length === 0) return null;
-                        return Object.entries(attrs).map(([k, v]) => `${k}: ${v}`).join(', ');
-                      };
-                      let variantLabel = formatAttributes(variant.attributes) || variant.name || variant.sku;
-                      return (
-                        <button
-                          key={variant.id}
-                          onClick={() => setSelectedVariant(variant)}
-                          className={`px-4 py-2 text-sm border rounded-lg transition-colors ${
-                            selectedVariant?.id === variant.id
-                              ? 'border-orange-500 text-orange-700 bg-orange-50 font-medium shadow-sm'
-                              : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                          }`}
-                        >
-                          {variantLabel}
-                        </button>
-                      );
-                    })}
+                    {product.variants.map((variant) => (
+                      <button
+                        key={variant.id}
+                        onClick={() => setSelectedVariant(variant)}
+                        className={`px-4 py-2 text-sm border rounded-lg transition-colors cursor-pointer ${
+                          selectedVariant?.id === variant.id
+                            ? 'border-orange-500 text-orange-700 bg-orange-50 font-medium shadow-sm'
+                            : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        {variant.name || (variant.attributes ? Object.entries(variant.attributes).map(([k,v]) => `${k}: ${v}`).join(', ') : variant.sku || `Biến thể ${variant.id}`)}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -283,7 +276,7 @@ export const ProductDetailPage: React.FC = () => {
                         const rawData = response.data.data;
                         if (rawData && rawData.items) {
                           const addedItem = rawData.items.find(
-                            (item: any) => (item.productVariantId ?? item.variantId) === selectedVariant.id
+                            (item: CartItemResponse) => (item.productVariantId ?? item.id) === selectedVariant.id
                           );
                           if (addedItem) {
                              navigate('/checkout', { state: { selectedItemIds: [addedItem.cartItemId ?? addedItem.id] } });
@@ -291,9 +284,9 @@ export const ProductDetailPage: React.FC = () => {
                           }
                         }
                         navigate('/cart');
-                      } catch (err: any) {
-                        console.error('Failed to buy now', err);
-                        alert(err.response?.data?.message || 'Có lỗi xảy ra khi xử lý mua ngay');
+                      } catch (err: unknown) {
+                        console.error(err);
+                        alert(getApiError(err, 'Có lỗi xảy ra khi xử lý mua ngay').message);
                       }
                     }}
                     className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
@@ -303,14 +296,11 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
         {product?.shopId && <ShopInfoSection shopId={product.shopId} />}
-
         {product && <ProductReviewSection productId={product.id} />}
-
         {product && <RelatedProductsSection productId={product.id} />}
       </div>
     </div>

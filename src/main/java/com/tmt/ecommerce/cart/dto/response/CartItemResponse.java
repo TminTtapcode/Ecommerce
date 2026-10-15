@@ -5,8 +5,10 @@ import java.util.Map;
 
 public record CartItemResponse(
         Long cartItemId,
+        Long productId,
         Long productVariantId,
         Long shopId,
+        String shopName,
         String productName,
         String sku,
         BigDecimal unitPrice,

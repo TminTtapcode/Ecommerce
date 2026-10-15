@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { orderApi } from '../../api/orderApi';
 import { paymentApi } from '../../api/paymentApi';
+import { getApiError } from '../../api/apiError';
 import type { CartItemResponse } from '../../api/types/cart.types';
+import type { CartPreviewResponse } from '../../api/types/order.types';
 
 export const CheckoutPage: React.FC = () => {
     const location = useLocation();
@@ -14,7 +16,7 @@ export const CheckoutPage: React.FC = () => {
     const [paymentMethod, setPaymentMethod] = useState('COD');
     const [error, setError] = useState<string | null>(null);
     const [voucherCode, setVoucherCode] = useState('');
-    const [previewData, setPreviewData] = useState<import('../../api/types/order.types').CartPreviewResponse | null>(null);
+    const [previewData, setPreviewData] = useState<CartPreviewResponse | null>(null);
     const [voucherError, setVoucherError] = useState<string | null>(null);
     const [applyingVoucher, setApplyingVoucher] = useState(false);
 
@@ -29,7 +31,9 @@ export const CheckoutPage: React.FC = () => {
             try {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-            } catch (e) {}
+            } catch {
+                return [];
+            }
         }
         return [];
     }, [state?.selectedItemIds]);
@@ -56,8 +60,8 @@ export const CheckoutPage: React.FC = () => {
             if (res.data) {
                 setPreviewData(res.data);
             }
-        } catch (err: any) {
-            setVoucherError(err.response?.data?.message || 'Không thể tính toán giỏ hàng hoặc mã giảm giá không hợp lệ');
+        } catch (err: unknown) {
+            setVoucherError(getApiError(err, 'Không thể tính toán giỏ hàng hoặc mã giảm giá không hợp lệ').message);
         } finally {
             setApplyingVoucher(false);
         }
@@ -109,7 +113,7 @@ export const CheckoutPage: React.FC = () => {
                         window.location.href = paymentRes.data.paymentUrl;
                         return;
                     }
-                } catch (paymentErr: any) {
+                } catch {
                     setError('Đặt hàng thành công nhưng có lỗi khi tạo thanh toán VNPAY');
                     setSubmitting(false);
                     return;
@@ -117,8 +121,8 @@ export const CheckoutPage: React.FC = () => {
             }
 
             navigate('/orders', { replace: true });
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Có lỗi xảy ra khi đặt hàng');
+        } catch (err: unknown) {
+            setError(getApiError(err, 'Có lỗi xảy ra khi đặt hàng').message);
             setSubmitting(false);
         }
     };

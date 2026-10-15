@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { orderApi } from '../../api/orderApi';
+import { getApiError } from '../../api/apiError';
 import type { OrderResponse } from '../../api/types/order.types';
 import { VendorNav } from '../../components/vendor/VendorNav';
 
@@ -34,7 +35,7 @@ export const VendorOrderListPage = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const params: any = { page, size: 10 };
+      const params: { page: number; size: number; status?: string } = { page, size: 15 };
       if (activeTab) params.status = activeTab;
       const res = await orderApi.getVendorOrders(params);
       if (!res.data) throw new Error('Thiếu dữ liệu phản hồi');
@@ -66,8 +67,8 @@ export const VendorOrderListPage = () => {
       await orderApi.updateVendorOrderStatus(orderId, { status: newStatus, reason });
       showToast('Cập nhật trạng thái thành công!');
       fetchOrders();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái.');
+    } catch (err: unknown) {
+      alert(getApiError(err, 'Có lỗi xảy ra khi cập nhật trạng thái.').message);
     } finally {
       setUpdatingId(null);
     }
@@ -131,11 +132,10 @@ export const VendorOrderListPage = () => {
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
-              activeTab === tab.value
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${activeTab === tab.value
                 ? 'bg-orange-500 text-white'
                 : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
-            }`}
+              }`}
           >
             {tab.label}
           </button>

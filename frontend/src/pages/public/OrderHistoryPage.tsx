@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { orderApi } from '../../api/orderApi';
+import { paymentApi } from '../../api/paymentApi';
+import { getApiError } from '../../api/apiError';
 import type { OrderResponse } from '../../api/types/order.types';
 
 export const OrderHistoryPage: React.FC = () => {
@@ -28,8 +30,8 @@ export const OrderHistoryPage: React.FC = () => {
                 setOrders(res.data?.content || []);
                 setTotalPages(res.data?.totalPages || 1);
                 setError(null);
-            } catch (err: any) {
-                setError('Có lỗi xảy ra khi tải danh sách đơn hàng');
+            } catch (err: unknown) {
+                setError(getApiError(err, 'Có lỗi xảy ra khi tải danh sách đơn hàng').message);
             } finally {
                 setLoading(false);
             }
@@ -48,7 +50,8 @@ export const OrderHistoryPage: React.FC = () => {
         });
     };
 
-    const getStatusText = (status: string) => {
+    const getStatusText = (status: string, paymentMethod: string) => {
+        if (status === 'PENDING' && paymentMethod === 'VNPAY') return 'Chờ thanh toán';
         const map: Record<string, string> = {
             'PENDING': 'Chờ xác nhận',
             'CONFIRMED': 'Đã xác nhận',
@@ -68,6 +71,24 @@ export const OrderHistoryPage: React.FC = () => {
             'CANCELLED': 'text-red-500'
         };
         return map[status] || 'text-gray-500';
+    };
+
+    const isOrderExpired = (createdAt: string) => {
+        const orderTime = new Date(createdAt).getTime();
+        const expiryTime = orderTime + 15 * 60 * 1000;
+        return new Date().getTime() > expiryTime;
+    };
+
+    const handlePayAgain = async (paymentGroupId: string | undefined) => {
+        if (!paymentGroupId) return;
+        try {
+            const response = await paymentApi.createPaymentUrl({ paymentGroupId });
+            if (response.data?.paymentUrl) {
+                window.location.href = response.data.paymentUrl;
+            }
+        } catch (err: unknown) {
+            alert(getApiError(err, 'Không thể tạo link thanh toán. Vui lòng thử lại.').message);
+        }
     };
 
     return (
@@ -111,7 +132,7 @@ export const OrderHistoryPage: React.FC = () => {
                                     <span className="text-gray-500">{formatDate(order.createdAt)}</span>
                                 </div>
                                 <div className={`text-sm font-medium uppercase ${getStatusColor(order.status)}`}>
-                                    {getStatusText(order.status)}
+                                    {getStatusText(order.status, order.paymentMethod)}
                                 </div>
                             </div>
 
@@ -159,13 +180,21 @@ export const OrderHistoryPage: React.FC = () => {
                                                     try {
                                                         await orderApi.cancelOrder(order.id);
                                                         setOrders(orders.map(o => o.id === order.id ? { ...o, status: 'CANCELLED' } : o));
-                                                    } catch (err: any) {
-                                                        alert(err.response?.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.');
+                                                    } catch (err: unknown) {
+                                                        alert(getApiError(err, 'Không thể hủy đơn hàng. Vui lòng thử lại.').message);
                                                     }
                                                 }}
                                                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm"
                                             >
                                                 Hủy Đơn Hàng
+                                            </button>
+                                        )}
+                                        {order.status === 'PENDING' && order.paymentMethod === 'VNPAY' && !isOrderExpired(order.createdAt) && (
+                                            <button
+                                                onClick={() => handlePayAgain(order.paymentGroupId)}
+                                                className="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors text-sm font-medium"
+                                            >
+                                                Thanh Toán Ngay
                                             </button>
                                         )}
                                         {order.status === 'SHIPPED' && (
@@ -175,8 +204,8 @@ export const OrderHistoryPage: React.FC = () => {
                                                     try {
                                                         await orderApi.confirmDelivery(order.id);
                                                         setOrders(orders.map(o => o.id === order.id ? { ...o, status: 'DELIVERED' } : o));
-                                                    } catch (err: any) {
-                                                        alert(err.response?.data?.message || 'Không thể xác nhận nhận hàng. Vui lòng thử lại.');
+                                                    } catch (err: unknown) {
+                                                        alert(getApiError(err, 'Không thể xác nhận nhận hàng. Vui lòng thử lại.').message);
                                                     }
                                                 }}
                                                 className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium transition-colors text-sm shadow-xs cursor-pointer"

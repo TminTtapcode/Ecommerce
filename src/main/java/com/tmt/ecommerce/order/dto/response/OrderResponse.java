@@ -18,5 +18,6 @@ public record OrderResponse(
         LocalDateTime createdAt,
         LocalDateTime deliveredAt,
         String deliveryConfirmationSource,
+        String paymentGroupId,
         List<OrderItemResponse> items
 ) {}

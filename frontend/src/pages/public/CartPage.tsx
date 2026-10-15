@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { cartApi } from '../../api/cartApi';
+import { getApiError } from '../../api/apiError';
 import type { CartItemResponse } from '../../api/types/cart.types';
 
 export const CartPage: React.FC = () => {
@@ -55,8 +56,8 @@ export const CartPage: React.FC = () => {
     try {
       await cartApi.updateQuantity(itemId, { quantity: newQuantity });
       await fetchCart();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật số lượng');
+    } catch (error: unknown) {
+      alert(getApiError(error, 'Có lỗi xảy ra khi cập nhật số lượng').message);
     } finally {
       setUpdatingItemId(null);
     }
@@ -69,8 +70,8 @@ export const CartPage: React.FC = () => {
       await cartApi.removeCartItem(itemId);
       setSelectedItemIds(prev => prev.filter(id => id !== itemId));
       await fetchCart();
-    } catch (error: any) {
-      alert('Có lỗi xảy ra khi xóa sản phẩm');
+    } catch (error: unknown) {
+      alert(getApiError(error, 'Có lỗi xảy ra khi xóa sản phẩm').message);
     } finally {
       setUpdatingItemId(null);
     }
@@ -82,12 +83,11 @@ export const CartPage: React.FC = () => {
 
     setUpdatingItemId(-1);
     try {
-
       await Promise.all(selectedItemIds.map(id => cartApi.removeCartItem(id)));
       setSelectedItemIds([]);
       await fetchCart();
-    } catch (error) {
-      alert('Có lỗi xảy ra khi xóa sản phẩm');
+    } catch (error: unknown) {
+      alert(getApiError(error, 'Có lỗi xảy ra khi xóa sản phẩm').message);
     } finally {
       setUpdatingItemId(null);
     }
@@ -102,8 +102,8 @@ export const CartPage: React.FC = () => {
       await cartApi.clearCart();
       setSelectedItemIds([]);
       await fetchCart();
-    } catch (error) {
-      alert('Có lỗi xảy ra khi dọn dẹp giỏ hàng');
+    } catch (error: unknown) {
+      alert(getApiError(error, 'Có lỗi xảy ra khi dọn dẹp giỏ hàng').message);
     } finally {
       setUpdatingItemId(null);
     }
@@ -170,7 +170,9 @@ export const CartPage: React.FC = () => {
                 checked={isShopAllSelected}
                 onChange={(e) => handleSelectShop(Number(shopId), e.target.checked)}
               />
-              <span className="font-medium">Shop ID: {shopId}</span>
+              <Link to={`/shops/${shopId}`} className="font-medium hover:text-orange-500 transition-colors">
+                {items[0].shopName}
+              </Link>
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             </div>
 

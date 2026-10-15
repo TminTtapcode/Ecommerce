@@ -12,6 +12,7 @@ export interface CartItemResponse {
   cartItemId: number;
   productVariantId: number;
   shopId: number;
+  shopName: string;
   productName: string;
   sku: string;
   unitPrice: number;

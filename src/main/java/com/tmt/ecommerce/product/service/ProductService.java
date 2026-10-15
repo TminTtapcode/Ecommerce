@@ -6,6 +6,7 @@ import com.tmt.ecommerce.product.dto.response.ProductResponse;
 import org.springframework.data.domain.Page;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface ProductService {
     ProductResponse getVendorProductById(Long userId, Long id);
@@ -25,7 +26,7 @@ public interface ProductService {
 
     Page<ProductResponse> getRecommendedProducts(Long userId, int limit);
 
-    java.util.List<ProductResponse> getRelatedProducts(Long productId, Integer limit);
+    List<ProductResponse> getRelatedProducts(Long productId, Integer limit);
 
     void deleteProduct(Long userId, Long id);
 

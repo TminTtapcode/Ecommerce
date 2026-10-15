@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { orderApi } from '../../api/orderApi';
 import { reviewApi } from '../../api/reviewApi';
+import { paymentApi } from '../../api/paymentApi';
+import { getApiError } from '../../api/apiError';
 import { CreateReviewModal } from '../../components/reviews/CreateReviewModal';
 import type { OrderResponse } from '../../api/types/order.types';
 import type { ReviewResponse } from '../../api/types/review.types';
@@ -14,6 +16,8 @@ export const OrderDetailPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [confirmingDelivery, setConfirmingDelivery] = useState(false);
     const [cancellingOrder, setCancellingOrder] = useState(false);
+    const [paying, setPaying] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [reviewModalState, setReviewModalState] = useState<{
         isOpen: boolean;
         productId: number;
@@ -35,14 +39,42 @@ export const OrderDetailPage: React.FC = () => {
                 const res = await orderApi.getOrderDetail(Number(id));
                 setOrder(res.data);
                 setError(null);
-            } catch (err: any) {
-                setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải chi tiết đơn hàng');
+            } catch (err: unknown) {
+                setError(getApiError(err, 'Có lỗi xảy ra khi tải chi tiết đơn hàng').message);
             } finally {
                 setLoading(false);
             }
         };
         fetchOrderDetail();
     }, [id]);
+
+    useEffect(() => {
+        if (!order || order.status !== 'PENDING' || order.paymentMethod !== 'VNPAY') return;
+
+        const orderTime = new Date(order.createdAt).getTime();
+        const expiryTime = orderTime + 15 * 60 * 1000;
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const diff = expiryTime - now;
+            if (diff <= 0) {
+                setTimeLeft(0);
+            } else {
+                setTimeLeft(diff);
+            }
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, [order]);
+
+    const formatTimeLeft = (ms: number) => {
+        if (ms <= 0) return 'Đã hết hạn thanh toán';
+        const mins = Math.floor(ms / 60000);
+        const secs = Math.floor((ms % 60000) / 1000);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
@@ -55,7 +87,8 @@ export const OrderDetailPage: React.FC = () => {
         });
     };
 
-    const getStatusText = (status: string) => {
+    const getStatusText = (status: string, paymentMethod: string) => {
+        if (status === 'PENDING' && paymentMethod === 'VNPAY') return 'Chờ thanh toán';
         const map: Record<string, string> = {
             'PENDING': 'Chờ xác nhận',
             'CONFIRMED': 'Đã xác nhận',
@@ -72,8 +105,8 @@ export const OrderDetailPage: React.FC = () => {
             const res = await reviewApi.getMyReviews(productId);
             const myReviews = res.data ?? [];
             existingReview = myReviews.find(r => r.orderId === orderId) || null;
-        } catch (e) {
-
+        } catch {
+            existingReview = null;
         }
 
         setReviewModalState({
@@ -94,25 +127,39 @@ export const OrderDetailPage: React.FC = () => {
             const response = await orderApi.confirmDelivery(order.id);
             setOrder(response.data);
             setError(null);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Không thể xác nhận nhận hàng. Vui lòng tải lại đơn hàng và thử lại.');
+        } catch (err: unknown) {
+            setError(getApiError(err, 'Không thể xác nhận nhận hàng. Vui lòng tải lại đơn hàng và thử lại.').message);
         } finally {
             setConfirmingDelivery(false);
         }
     };
 
     const handleCancelOrder = async () => {
-        if (!order || order.status !== 'PENDING' || cancellingOrder) return;
+        if (!order || !['PENDING', 'CONFIRMED'].includes(order.status) || cancellingOrder) return;
         if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
         setCancellingOrder(true);
         try {
             const response = await orderApi.cancelOrder(order.id);
             setOrder(response.data);
             setError(null);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.');
+        } catch (err: unknown) {
+            setError(getApiError(err, 'Không thể hủy đơn hàng. Vui lòng thử lại.').message);
         } finally {
             setCancellingOrder(false);
+        }
+    };
+
+    const handlePayAgain = async () => {
+        if (!order || !order.paymentGroupId || paying) return;
+        setPaying(true);
+        try {
+            const response = await paymentApi.createPaymentUrl({ paymentGroupId: order.paymentGroupId });
+            if (response.data?.paymentUrl) {
+                window.location.href = response.data.paymentUrl;
+            }
+        } catch (err: unknown) {
+            setError(getApiError(err, 'Không thể tạo link thanh toán. Vui lòng thử lại.').message);
+            setPaying(false);
         }
     };
 
@@ -145,9 +192,23 @@ export const OrderDetailPage: React.FC = () => {
                 <div className="text-sm">
                     <span className="text-gray-500 mr-2">MÃ ĐƠN HÀNG. {order.id}</span>
                     <span className="text-gray-300 mr-2">|</span>
-                    <span className="text-orange-500 font-medium uppercase">{getStatusText(order.status)}</span>
+                    <span className="text-orange-500 font-medium uppercase">{getStatusText(order.status, order.paymentMethod)}</span>
                 </div>
             </div>
+
+            {order.status === 'CANCELLED' && (
+                <div className="bg-rose-50 border-l-4 border-rose-500 p-4 mb-6 rounded-r">
+                    <h3 className="text-rose-800 font-bold mb-1">Đơn hàng đã bị hủy</h3>
+                    <p className="text-rose-600 text-sm">
+                        Rất tiếc, đơn hàng này đã bị hủy.
+                        {order.paymentMethod === 'VNPAY' && (
+                            <span className="block mt-1 font-medium text-orange-600">
+                                Tiền của bạn sẽ được tự động hoàn trả vào thẻ/tài khoản VNPAY trong vòng 3-5 ngày làm việc.
+                            </span>
+                        )}
+                    </p>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-white p-6 rounded-sm shadow-sm">
@@ -161,6 +222,11 @@ export const OrderDetailPage: React.FC = () => {
                     <div className="text-gray-700 space-y-2 text-sm">
                         <p>Phương thức: <span className="font-medium">{order.paymentMethod}</span></p>
                         <p>Ngày đặt: {formatDate(order.createdAt)}</p>
+                        {order.status === 'PENDING' && order.paymentMethod === 'VNPAY' && timeLeft !== null && (
+                            <p className="text-orange-600 font-medium">
+                                Thời gian thanh toán còn lại: {formatTimeLeft(timeLeft)}
+                            </p>
+                        )}
                         {order.deliveredAt && <p>Đã hoàn tất: {formatDate(order.deliveredAt)}</p>}
                     </div>
                 </div>
@@ -230,8 +296,8 @@ export const OrderDetailPage: React.FC = () => {
                     </div>
                 </div>
 
-                {order.status === 'PENDING' && (
-                    <div className="flex justify-end pt-4 mt-4 border-t">
+                {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+                    <div className="flex justify-end pt-4 mt-4 border-t gap-3">
                         <button
                             disabled={cancellingOrder}
                             onClick={handleCancelOrder}
@@ -239,6 +305,19 @@ export const OrderDetailPage: React.FC = () => {
                         >
                             {cancellingOrder ? 'Đang xử lý...' : 'Hủy Đơn Hàng'}
                         </button>
+                        {order.paymentMethod === 'VNPAY' && (
+                            <button
+                                disabled={paying || (timeLeft !== null && timeLeft <= 0)}
+                                onClick={handlePayAgain}
+                                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                                    (timeLeft !== null && timeLeft <= 0) 
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50'
+                                }`}
+                            >
+                                {paying ? 'Đang chuyển hướng...' : 'Thanh toán ngay'}
+                            </button>
+                        )}
                     </div>
                 )}
                 {order.status === 'SHIPPED' && (

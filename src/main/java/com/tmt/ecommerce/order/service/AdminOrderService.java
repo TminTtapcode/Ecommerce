@@ -1,25 +1,34 @@
 package com.tmt.ecommerce.order.service;
 
-import com.tmt.ecommerce.common.exception.*;
+import com.tmt.ecommerce.common.exception.AppException;
+import com.tmt.ecommerce.common.exception.ErrorCode;
 import com.tmt.ecommerce.common.security.CurrentUserPrincipal;
 import com.tmt.ecommerce.order.dto.request.AdminOrderStatusRequest;
-import com.tmt.ecommerce.order.dto.response.*;
-import com.tmt.ecommerce.order.entity.*;
-import com.tmt.ecommerce.order.repository.*;
+import com.tmt.ecommerce.order.dto.response.OrderAdminHistoryResponse;
+import com.tmt.ecommerce.order.dto.response.OrderResponse;
+import com.tmt.ecommerce.order.entity.DeliveryConfirmationSource;
+import com.tmt.ecommerce.order.entity.Order;
+import com.tmt.ecommerce.order.entity.OrderAdminStatusHistory;
+import com.tmt.ecommerce.order.entity.OrderStatus;
+import com.tmt.ecommerce.order.repository.OrderAdminStatusHistoryRepository;
+import com.tmt.ecommerce.order.repository.OrderRepository;
 import com.tmt.ecommerce.payment.api.PaymentEligibilityQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.*;
+
 import java.time.Instant;
 import java.util.List;
 
-@Service @RequiredArgsConstructor @Slf4j
+@Service
+@RequiredArgsConstructor
+@Slf4j
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminOrderService {
     private final OrderRepository orders;
@@ -31,6 +40,7 @@ public class AdminOrderService {
         return (lock ? orders.findByIdForUpdate(id) : orders.findById(id))
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
     }
+
     private List<OrderStatus> transitions(OrderStatus status) {
         return switch (status) {
             case CONFIRMED -> List.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED);
@@ -38,22 +48,26 @@ public class AdminOrderService {
             default -> List.of();
         };
     }
+
     private boolean paymentAllows(Order order, OrderStatus target) {
         if ("COD".equalsIgnoreCase(order.getPaymentMethod())) return true;
-        return "VNPAY".equalsIgnoreCase(order.getPaymentMethod()) && target != OrderStatus.CANCELLED
+        return "VNPAY".equalsIgnoreCase(order.getPaymentMethod()) 
                 && paymentEligibility.hasSuccessfulVnpayPayment(order.getPaymentGroupId());
     }
+
     @Transactional(readOnly = true)
     public List<OrderStatus> allowedTransitions(Long id) {
         Order order = load(id, false);
         return transitions(order.getStatus()).stream().filter(target -> paymentAllows(order, target)).toList();
     }
+
     @Transactional(readOnly = true)
     public Page<OrderAdminHistoryResponse> history(Long id, int page, int size) {
         if (page < 0 || size < 1 || size > 100) throw new AppException(ErrorCode.INVALID_INPUT);
         load(id, false);
         return history.findByOrderIdOrderByIdDesc(id, PageRequest.of(page, size)).map(OrderAdminHistoryResponse::from);
     }
+
     @Transactional
     public OrderResponse update(Long id, AdminOrderStatusRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -75,13 +89,11 @@ public class AdminOrderService {
                 request.status() == OrderStatus.DELIVERED ? principal.getId() : null);
         var entry = history.saveAndFlush(OrderAdminStatusHistory.builder().orderId(id).actorUserId(principal.getId())
                 .oldStatus(oldStatus).newStatus(request.status()).reason(request.reason()).createdAt(Instant.now()).build());
-        Long historyId = entry.getId(), actorId = principal.getId();
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() {
-                log.info("event=admin_order_status_changed historyId={} orderId={} actorId={} oldStatus={} newStatus={}",
-                        historyId, id, actorId, oldStatus, request.status());
-            }
-        });
+
+        log.info("event=admin_order_status_changed historyId={} orderId={} actorId={} oldStatus={} newStatus={}",
+                entry.getId(), id, principal.getId(), oldStatus, request.status());
+
         return response;
     }
 }
+

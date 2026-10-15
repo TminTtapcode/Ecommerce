@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reviewApi } from '../../api/reviewApi';
 import { mediaApi } from '../../api/mediaApi';
+import { getApiError } from '../../api/apiError';
 import type { ReviewResponse } from '../../api/types/review.types';
 
 interface CreateReviewModalProps {
@@ -118,8 +119,8 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu đánh giá');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Có lỗi xảy ra khi lưu đánh giá').message);
     } finally {
       setIsSubmitting(false);
     }

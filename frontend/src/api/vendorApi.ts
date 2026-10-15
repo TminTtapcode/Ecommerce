@@ -8,7 +8,7 @@ import type {
 import type { ApiResponse } from './types/common.types';
 
 export const vendorApi = {
-  getProducts: (page: number = 0, size: number = 10, keyword?: string) => {
+  getProducts: (page: number = 0, size: number = 15, keyword?: string) => {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),

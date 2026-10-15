@@ -19,7 +19,7 @@ export const ShopProfilePage: React.FC = () => {
 
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const size = 12;
+  const size = 15;
 
   useEffect(() => {
     if (!shopId) return;
@@ -30,8 +30,8 @@ export const ShopProfilePage: React.FC = () => {
       try {
         const response = await shopApi.getShopPublicInfo(shopId);
         setShop(response.data.data || null);
-      } catch (err: any) {
-        console.error('Lỗi khi tải thông tin shop:', err);
+      } catch (err: unknown) {
+        console.error(err);
         setError('Không thể tải thông tin shop. Có thể shop không tồn tại.');
       } finally {
         setLoadingShop(false);
@@ -50,8 +50,8 @@ export const ShopProfilePage: React.FC = () => {
         const response = await productApi.getProducts({ shopId, page, size });
         setProducts(response.data.data?.content || []);
         setTotalPages(response.data.data?.totalPages || 0);
-      } catch (err) {
-        console.error('Lỗi khi tải sản phẩm của shop:', err);
+      } catch (err: unknown) {
+        console.error(err);
       } finally {
         setLoadingProducts(false);
       }
@@ -89,7 +89,6 @@ export const ShopProfilePage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="w-24 h-24 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
@@ -159,7 +158,6 @@ export const ShopProfilePage: React.FC = () => {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

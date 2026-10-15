@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { productApi } from '../../api/productApi';
+import { getApiError } from '../../api/apiError';
 import type { ProductResponse } from '../../api/types/product.types';
 import { Pagination } from '../../components/common/Pagination';
 
@@ -12,7 +13,7 @@ export const AdminProductListPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const page = parseInt(searchParams.get('page') || '0', 10);
-  const size = parseInt(searchParams.get('size') || '10', 10);
+  const size = parseInt(searchParams.get('size') || '15', 10);
   const keyword = searchParams.get('keyword') || '';
 
   const [searchInput, setSearchInput] = useState(keyword);
@@ -26,8 +27,8 @@ export const AdminProductListPage: React.FC = () => {
         setProducts(response.data.data.content);
         setTotalPages(response.data.data.totalPages);
       }
-    } catch (err: any) {
-      setError('Lỗi tải danh sách sản phẩm.');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Lỗi tải danh sách sản phẩm.').message);
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -62,8 +63,8 @@ export const AdminProductListPage: React.FC = () => {
       try {
         await productApi.deleteProduct(id);
         fetchProducts();
-      } catch (err: any) {
-        alert(err.response?.data?.message || 'Có lỗi xảy ra khi xóa sản phẩm');
+      } catch (err: unknown) {
+        alert(getApiError(err, 'Có lỗi xảy ra khi xóa sản phẩm').message);
       }
     }
   };
@@ -84,15 +85,6 @@ export const AdminProductListPage: React.FC = () => {
             Theo dõi và kiểm duyệt toàn bộ danh mục sản phẩm trên sàn
           </p>
         </div>
-        <Link
-          to="/admin/products/create"
-          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Thêm sản phẩm mới
-        </Link>
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
@@ -191,12 +183,6 @@ export const AdminProductListPage: React.FC = () => {
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        <Link
-                          to={`/admin/products/${product.id}/edit`}
-                          className="px-3 py-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 text-xs font-semibold transition-colors"
-                        >
-                          Sửa
-                        </Link>
                         <button
                           onClick={() => handleDelete(product.id)}
                           className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 text-xs font-semibold transition-colors cursor-pointer"

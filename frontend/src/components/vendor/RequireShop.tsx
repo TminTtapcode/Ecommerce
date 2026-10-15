@@ -28,7 +28,7 @@ export const RequireShop: React.FC<RequireShopProps> = ({ children, allowBanned 
     try {
       const res = await shopApi.getMyShop();
       setShop(res.data.data ?? null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const details = getApiError(err, 'Có lỗi xảy ra khi tải thông tin Shop.');
       if (details.errorCode === ERROR_CODES.SHOP_NOT_FOUND) {
         setNeedsRegistration(true);

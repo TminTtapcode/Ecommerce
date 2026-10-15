@@ -37,6 +37,11 @@ public enum ErrorCode {
     VOUCHER_EXPIRED(HttpStatus.BAD_REQUEST, "Mã giảm giá đã hết hạn"),
     VOUCHER_USAGE_LIMIT_REACHED(HttpStatus.BAD_REQUEST, "Mã giảm giá đã hết lượt sử dụng"),
     VOUCHER_MIN_ORDER_NOT_MET(HttpStatus.BAD_REQUEST, "Đơn hàng chưa đạt giá trị tối thiểu"),
+ 
+    PAYOUT_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy yêu cầu rút tiền"),
+    PAYOUT_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "Số tiền rút tối thiểu là 50.000đ"),
+    PAYOUT_BALANCE_INSUFFICIENT(HttpStatus.BAD_REQUEST, "Số dư khả dụng không đủ để thực hiện yêu cầu rút tiền"),
+    PAYOUT_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "Yêu cầu rút tiền này đã được xử lý trước đó"),
 
     NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy tài nguyên"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Phương thức không được hỗ trợ"),

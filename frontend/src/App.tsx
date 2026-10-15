@@ -5,6 +5,7 @@ import { RegisterPage } from './pages/auth/RegisterPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AdminLayout } from './components/layout/AdminLayout';
+import { VendorLayout } from './components/layout/VendorLayout';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { ProductListPage } from './pages/public/ProductListPage';
 import { ProductDetailPage } from './pages/public/ProductDetailPage';
@@ -31,6 +32,9 @@ import { AdminVoucherListPage } from './pages/admin/AdminVoucherListPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import { VendorVoucherListPage } from './pages/vendor/VendorVoucherListPage';
 import { VendorAnalyticsPage } from './pages/vendor/VendorAnalyticsPage';
+import { VendorOverviewPage } from './pages/vendor/VendorOverviewPage';
+import { VendorPayoutPage } from './pages/vendor/VendorPayoutPage';
+import { AdminPayoutListPage } from './pages/admin/AdminPayoutListPage';
 
 function App() {
   return (
@@ -57,16 +61,27 @@ function App() {
             <Route path="/chat-test" element={<ProtectedRoute requireAdmin={false}><ChatTestPage /></ProtectedRoute>} />
           </Route>
 
-          <Route element={<PublicLayout />}>
-            <Route path="/vendor/products" element={<ProtectedRoute requireAdmin={false}><RequireShop allowBanned><VendorProductListPage /></RequireShop></ProtectedRoute>} />
-            <Route path="/vendor/products/new" element={<ProtectedRoute requireAdmin={false}><RequireShop><VendorProductFormPage /></RequireShop></ProtectedRoute>} />
-            <Route path="/vendor/products/:id/edit" element={<ProtectedRoute requireAdmin={false}><RequireShop allowBanned><VendorProductFormPage /></RequireShop></ProtectedRoute>} />
-            <Route path="/vendor/orders" element={<ProtectedRoute requireAdmin={false}><RequireShop allowBanned><VendorOrderListPage /></RequireShop></ProtectedRoute>} />
-            <Route path="/vendor/vouchers" element={<ProtectedRoute requireAdmin={false}><RequireShop><VendorVoucherListPage /></RequireShop></ProtectedRoute>} />
-            <Route path="/vendor/analytics" element={<ProtectedRoute requireAdmin={false}><RequireShop allowBanned><VendorAnalyticsPage /></RequireShop></ProtectedRoute>} />
-            <Route path="/vendor" element={<Navigate to="/vendor/products" replace />} />
-            <Route path="/seller" element={<Navigate to="/vendor/products" replace />} />
+          <Route
+            path="/vendor"
+            element={
+              <ProtectedRoute requireAdmin={false}>
+                <RequireShop allowBanned>
+                  <VendorLayout />
+                </RequireShop>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/vendor/overview" replace />} />
+            <Route path="overview" element={<VendorOverviewPage />} />
+            <Route path="products" element={<VendorProductListPage />} />
+            <Route path="products/new" element={<RequireShop><VendorProductFormPage /></RequireShop>} />
+            <Route path="products/:id/edit" element={<VendorProductFormPage />} />
+            <Route path="orders" element={<VendorOrderListPage />} />
+            <Route path="vouchers" element={<RequireShop><VendorVoucherListPage /></RequireShop>} />
+            <Route path="analytics" element={<VendorAnalyticsPage />} />
+            <Route path="payouts" element={<VendorPayoutPage />} />
           </Route>
+          <Route path="/seller" element={<Navigate to="/vendor/overview" replace />} />
 
           <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboardPage />} />
@@ -77,6 +92,7 @@ function App() {
             <Route path="orders" element={<AdminOrderListPage />} />
             <Route path="orders/:id" element={<AdminOrderDetailPage />} />
             <Route path="vouchers" element={<AdminVoucherListPage />} />
+            <Route path="payouts" element={<AdminPayoutListPage />} />
           </Route>
               </Routes>
             </ChatProvider>

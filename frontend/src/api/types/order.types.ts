@@ -21,6 +21,7 @@ export interface OrderResponse {
   createdAt: string;
   deliveredAt?: string | null;
   deliveryConfirmationSource?: 'BUYER' | 'ADMIN' | null;
+  paymentGroupId?: string;
   items: OrderItemResponse[];
 }
 
